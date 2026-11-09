@@ -3,7 +3,7 @@
 // It only relays calls on an allow-list: the hub, the crews' DAOs, and the listed test pools.
 import { readFileSync } from 'node:fs';
 import { Account, Connection, InMemorySigner, KeyPair, keyStores, transactions } from 'near-api-js';
-import { decodeDelegate, describeDelegate, kumiEvents, listCrews, getAssets, txStatus, txFailure, TESTNET_RPC, accountExists, type TxStatus } from '@kumi/sdk';
+import { decodeDelegate, describeDelegate, kumiEvents, listCrews, getAssets, txStatus, txFailure, TESTNET_RPC, accountExists, viewAccessKey, type TxStatus } from '@kumi/sdk';
 
 export const ONE_NEAR = 10n ** 24n;
 const MAX_DEPOSIT = ONE_NEAR; // per relayed call, except create_crew
@@ -43,6 +43,10 @@ export class Relayer {
     const outcome = await this.account.createAccount(accountId, publicKey, gift) as unknown as TxStatus;
     const failure = txFailure(outcome);
     if (failure) throw new Error(`Account creation failed: ${failure}`);
+    // Wait until the key is readable at 'final', so the player can sign right away.
+    for (let i = 0; i < 20; i++) {
+      try { await viewAccessKey(accountId, publicKey, this.rpc); break; } catch { await new Promise(r => setTimeout(r, 1500)); }
+    }
     return outcome.transaction.hash;
   }
 
@@ -91,7 +95,7 @@ export class Relayer {
     // Wait for every receipt (cross-contract callbacks included) at FINAL.
     const tx = await txStatus(hash, this.accountId, this.rpc);
     const failure = txFailure(tx);
-    const last = [...tx.receipts_outcome].reverse().find(r => r.outcome.status.SuccessValue !== undefined && r.outcome.executor_id === this.hub);
+    const last = [...tx.receipts_outcome].reverse().find(r => r.outcome.status.SuccessValue && r.outcome.executor_id === checked.summary.receiverId);
     const value = last?.outcome.status.SuccessValue ? Buffer.from(last.outcome.status.SuccessValue, 'base64').toString('utf8') : null;
     return { hash, sender: checked.summary.senderId, receiver: checked.summary.receiverId, methods: checked.summary.calls.map(c => c.methodName), failure, events: kumiEvents(tx), value };
   }

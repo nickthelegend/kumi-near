@@ -11,12 +11,26 @@ export const accountUrl = (id: string) => `${EXPLORER}/address/${id}`;
 
 export class ChainError extends Error {}
 
+/** Tried in order when the primary public RPC rate-limits (HTTP 429) or errors. */
+export const TESTNET_RPC_FALLBACKS = ['https://rpc.testnet.near.org'];
+
 export async function rpc<T>(method: string, params: unknown, url = TESTNET_RPC): Promise<T> {
-  const response = await fetch(url, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 'kumi', method, params }),
-  });
-  if (!response.ok) throw new ChainError(`NEAR RPC HTTP ${response.status} from ${url}`);
+  const urls = url === TESTNET_RPC ? [url, ...TESTNET_RPC_FALLBACKS] : [url];
+  let response: Response | undefined;
+  let used = url;
+  // Public RPCs rate-limit bursts; back off, then fall back, then fail loudly.
+  outer: for (const u of urls) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      used = u;
+      try {
+        response = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'kumi', method, params }) });
+      } catch { response = undefined; }
+      if (response && response.status !== 429 && response.status < 500) break outer;
+      await new Promise(r => setTimeout(r, 600 * 2 ** attempt));
+    }
+  }
+  if (!response) throw new ChainError(`NEAR RPC unreachable: ${urls.join(', ')}`);
+  if (!response.ok) throw new ChainError(`NEAR RPC HTTP ${response.status} from ${used}`);
   const body = await response.json() as { result?: T & { error?: string }; error?: { cause?: { name?: string }; data?: unknown; message?: string } };
   if (body.error) throw new ChainError(`NEAR RPC: ${body.error.cause?.name ?? body.error.message ?? 'error'} ${JSON.stringify(body.error.data ?? '').slice(0, 200)}`);
   if (body.result && typeof body.result === 'object' && 'error' in body.result && body.result.error) throw new ChainError(`NEAR RPC: ${body.result.error}`);

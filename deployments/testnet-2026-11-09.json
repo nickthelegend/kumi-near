@@ -5,7 +5,11 @@
   "accounts": {
     "root": "kumi-77b50457fb.testnet",
     "hub": "hub.kumi-77b50457fb.testnet",
-    "sol": "tsol.kumi-77b50457fb.testnet"
+    "sol": "tsol.kumi-77b50457fb.testnet",
+    "btc": "tbtc.kumi-77b50457fb.testnet",
+    "dao": "owls-mw1n.sputnikv2.testnet",
+    "players": "mika.kumi-77b50457fb.testnet,bo.kumi-77b50457fb.testnet,juno.kumi-77b50457fb.testnet",
+    "follower": "rin.kumi-77b50457fb.testnet"
   },
   "config": {
     "tsol_seed": {
@@ -20,7 +24,19 @@
       "token_in": "20712842"
     },
     "factory": "sputnikv2.testnet",
-    "dao_deposit": "5500000000000000000000000"
+    "dao_deposit": "5500000000000000000000000",
+    "tbtc_seed": {
+      "near_usd": 3.60065,
+      "asset_usd": 74808.215,
+      "source": [
+        "https://api.coinbase.com/v2/prices/NEAR-USD/spot",
+        "https://api.coinbase.com/v2/prices/BTC-USD/spot"
+      ],
+      "at": "2026-11-09T16:40:40.460Z",
+      "near_in": "500000000000000000000000",
+      "token_in": "2407"
+    },
+    "captain_proposal": 2
   },
   "transactions": [
     {
@@ -79,7 +95,297 @@
       "signer": "hub.kumi-77b50457fb.testnet",
       "receiver": "tsol.kumi-77b50457fb.testnet",
       "explorer": "https://testnet.nearblocks.io/txns/GJDPDNb8DdpxQqQ7jtB6WGp5FQsTJttj7dcPf9DvMF4Q"
+    },
+    {
+      "step": "top_up_from_kumi-0fd4e34c99.testnet",
+      "hash": "D6JSmd62BJozCvexRb5eiLM3NTLadnh1bpszeENPDHxe",
+      "signer": "kumi-0fd4e34c99.testnet",
+      "receiver": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/D6JSmd62BJozCvexRb5eiLM3NTLadnh1bpszeENPDHxe",
+      "note": "helper-funded account -> relayer (9.950 NEAR)"
+    },
+    {
+      "step": "create_tbtc",
+      "hash": "DJ1biPAz8Npwhyzg1gDDabhQUVVBHhnn3PN9CUsm8A5m",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "tbtc.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/DJ1biPAz8Npwhyzg1gDDabhQUVVBHhnn3PN9CUsm8A5m"
+    },
+    {
+      "step": "deploy_tbtc",
+      "hash": "3fxFCXauLuqo77TApUAFrvZLiiRq5F5G3ukn4xWogwpm",
+      "signer": "tbtc.kumi-77b50457fb.testnet",
+      "receiver": "tbtc.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/3fxFCXauLuqo77TApUAFrvZLiiRq5F5G3ukn4xWogwpm"
+    },
+    {
+      "step": "init_tbtc",
+      "hash": "Aq4onto8pbDEzryE8ibt24AoHP3JLJzKiEhECMiU1QfS",
+      "signer": "tbtc.kumi-77b50457fb.testnet",
+      "receiver": "tbtc.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/Aq4onto8pbDEzryE8ibt24AoHP3JLJzKiEhECMiU1QfS"
+    },
+    {
+      "step": "liquidity_tbtc",
+      "hash": "7ewnPZp1UEzoFVx9HsUKeABcbiPgR1ErfyBPWV1ouDzt",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "tbtc.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/7ewnPZp1UEzoFVx9HsUKeABcbiPgR1ErfyBPWV1ouDzt",
+      "note": "BTC seeded at Coinbase spot 74808.215 USD vs NEAR 3.60065 USD"
+    },
+    {
+      "step": "add_asset_BTC",
+      "hash": "Et2B7iRVgo4dvASSXASx3yU82Z5NB73dwcDN6wjaQBjr",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/Et2B7iRVgo4dvASSXASx3yU82Z5NB73dwcDN6wjaQBjr"
+    },
+    {
+      "step": "hub_storage_BTC",
+      "hash": "CyGPVX4EpoNrWDLAr3xeyVPNkx8a8AsdcZE2pDVHwVt3",
+      "signer": "hub.kumi-77b50457fb.testnet",
+      "receiver": "tbtc.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/CyGPVX4EpoNrWDLAr3xeyVPNkx8a8AsdcZE2pDVHwVt3"
+    },
+    {
+      "step": "signup_p1",
+      "hash": "FeD5Q8AeKQe1CbZHWRYapRhA5DGAKpXWc7VgWDFjVKZq",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/FeD5Q8AeKQe1CbZHWRYapRhA5DGAKpXWc7VgWDFjVKZq",
+      "note": "email sign-up (setup-required); relayer created the account"
+    },
+    {
+      "step": "signup_p2",
+      "hash": "51Ur1FC3bQKcMCHEjpvvFi13YU44Ua2LoMNncnDp6wUM",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/51Ur1FC3bQKcMCHEjpvvFi13YU44Ua2LoMNncnDp6wUM",
+      "note": "email sign-up (setup-required); relayer created the account"
+    },
+    {
+      "step": "signup_p3",
+      "hash": "HUDXLZ7A3Wj9FHhtChmkeWDZNPWV5hDEyNnhgkddytAU",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "juno.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/HUDXLZ7A3Wj9FHhtChmkeWDZNPWV5hDEyNnhgkddytAU",
+      "note": "email sign-up (setup-required); relayer created the account"
+    },
+    {
+      "step": "create_crew",
+      "hash": "2SjeG2N36HGTPfvkD4nAdPtwiEf3HUn2jVDrSEzRw7EX",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/2SjeG2N36HGTPfvkD4nAdPtwiEf3HUn2jVDrSEzRw7EX",
+      "note": "factory create + policy check"
+    },
+    {
+      "step": "join_mika",
+      "hash": "5QBNvnjddoRkU2S7r6afoBVdDhTMKRFebg4QS8eQynsQ",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/5QBNvnjddoRkU2S7r6afoBVdDhTMKRFebg4QS8eQynsQ",
+      "note": "meta tx by mika.kumi-77b50457fb.testnet: hub.kumi-77b50457fb.testnet.join"
+    },
+    {
+      "step": "join_bo",
+      "hash": "EU38TeCJttyhvtZidTjEnZ4KA9irqgEHJqtoW64qYvaL",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/EU38TeCJttyhvtZidTjEnZ4KA9irqgEHJqtoW64qYvaL",
+      "note": "meta tx by bo.kumi-77b50457fb.testnet: hub.kumi-77b50457fb.testnet.join"
+    },
+    {
+      "step": "join_juno",
+      "hash": "BRVD2KXvvuLtSLwTEmBJyoJ4ybBMrcM9XniA3RkuAri4",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "juno.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/BRVD2KXvvuLtSLwTEmBJyoJ4ybBMrcM9XniA3RkuAri4",
+      "note": "meta tx by juno.kumi-77b50457fb.testnet: hub.kumi-77b50457fb.testnet.join"
+    },
+    {
+      "step": "vote1_propose",
+      "hash": "4dVXyn19AFLvxGTX3SsXceoGjT4zfoSZorfrURwKDJnA",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/4dVXyn19AFLvxGTX3SsXceoGjT4zfoSZorfrURwKDJnA",
+      "note": "meta tx by mika.kumi-77b50457fb.testnet: hub.kumi-77b50457fb.testnet.propose_trade"
+    },
+    {
+      "step": "vote1_vote_mika",
+      "hash": "FT6bgvjywKKh8DkodHViYT7crTtbZnoRENcFSszzHM93",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/FT6bgvjywKKh8DkodHViYT7crTtbZnoRENcFSszzHM93",
+      "note": "meta tx by mika.kumi-77b50457fb.testnet: owls-mw1n.sputnikv2.testnet.act_proposal"
+    },
+    {
+      "step": "vote1_vote_bo",
+      "hash": "HMn7NfmLU5rMFCPBsCMU2AZTsPKCGbGQRCoUFvkULXfs",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/HMn7NfmLU5rMFCPBsCMU2AZTsPKCGbGQRCoUFvkULXfs",
+      "note": "meta tx by bo.kumi-77b50457fb.testnet: owls-mw1n.sputnikv2.testnet.act_proposal"
+    },
+    {
+      "step": "signup_f1",
+      "hash": "4tB57pGHidXjS7oR4JsNh1VvyrdT1sedGJX7Hkqn9ok8",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "rin.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/4tB57pGHidXjS7oR4JsNh1VvyrdT1sedGJX7Hkqn9ok8",
+      "note": "email sign-up (setup-required); relayer created the account"
+    },
+    {
+      "step": "follow_rin",
+      "hash": "ASyquPcwfeVgLqtFgrPTXGubzevgvbiJrscma3J5ce1D",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "rin.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/ASyquPcwfeVgLqtFgrPTXGubzevgvbiJrscma3J5ce1D",
+      "note": "meta tx by rin.kumi-77b50457fb.testnet: hub.kumi-77b50457fb.testnet.follow"
+    },
+    {
+      "step": "vote2_propose",
+      "hash": "65g4GSEUGRVvn2fcbLgzuwWXomdQkoFtYZFTdJsGafpm",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/65g4GSEUGRVvn2fcbLgzuwWXomdQkoFtYZFTdJsGafpm",
+      "note": "meta tx by bo.kumi-77b50457fb.testnet: hub.kumi-77b50457fb.testnet.propose_trade"
+    },
+    {
+      "step": "vote2_vote_bo",
+      "hash": "FeuGrDosKGhimcqagFBPrgGHHSGv9sEAUhJZaPtsyQJ1",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/FeuGrDosKGhimcqagFBPrgGHHSGv9sEAUhJZaPtsyQJ1",
+      "note": "meta tx by bo.kumi-77b50457fb.testnet: owls-mw1n.sputnikv2.testnet.act_proposal"
+    },
+    {
+      "step": "vote2_vote_juno",
+      "hash": "Ebd47jHq2vSWANUEfidAMHq1tb3JNUVdV24sLH3Lcehk",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "juno.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/Ebd47jHq2vSWANUEfidAMHq1tb3JNUVdV24sLH3Lcehk",
+      "note": "meta tx by juno.kumi-77b50457fb.testnet: owls-mw1n.sputnikv2.testnet.act_proposal"
+    },
+    {
+      "step": "captain_propose",
+      "hash": "BGzcFc4SY39V1A4GJnA6Ai14bhmKLzw2D7BZp9owKx2L",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/BGzcFc4SY39V1A4GJnA6Ai14bhmKLzw2D7BZp9owKx2L",
+      "note": "meta tx by mika.kumi-77b50457fb.testnet: owls-mw1n.sputnikv2.testnet.add_proposal"
+    },
+    {
+      "step": "captain_vote_mika",
+      "hash": "BANK2s6rirMnxixZNpi9HjaTDcDSZdTbS61MrLkG6Bhq",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/BANK2s6rirMnxixZNpi9HjaTDcDSZdTbS61MrLkG6Bhq",
+      "note": "meta tx by mika.kumi-77b50457fb.testnet: owls-mw1n.sputnikv2.testnet.act_proposal"
+    },
+    {
+      "step": "captain_vote_bo",
+      "hash": "tpTnvD8o4ubESXcXDF2PT5XPxidMowVTW4RwKf3zee3",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/tpTnvD8o4ubESXcXDF2PT5XPxidMowVTW4RwKf3zee3",
+      "note": "meta tx by bo.kumi-77b50457fb.testnet: owls-mw1n.sputnikv2.testnet.act_proposal"
+    },
+    {
+      "step": "captain_trade",
+      "hash": "5W1dsz5EsxjhmsvG8BPw4rp3vzC8ps9f8eRbqNf5qvmH",
+      "signer": "hub.kumi-77b50457fb.testnet",
+      "receiver": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/5W1dsz5EsxjhmsvG8BPw4rp3vzC8ps9f8eRbqNf5qvmH",
+      "note": "signed by the captain function-call key on the hub"
+    },
+    {
+      "step": "bo_register_sol",
+      "hash": "76L8xNnHw8rgHJ4SBt5S8WvQe1ZZvqWRbmUxWzBqXePf",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/76L8xNnHw8rgHJ4SBt5S8WvQe1ZZvqWRbmUxWzBqXePf",
+      "note": "meta tx by bo.kumi-77b50457fb.testnet: tsol.kumi-77b50457fb.testnet.storage_deposit"
+    },
+    {
+      "step": "ragequit_bo",
+      "hash": "AZaaLvsxdxh48UvVciRPEKySX2ZRy1ACXQ7mcemiQ6do",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/AZaaLvsxdxh48UvVciRPEKySX2ZRy1ACXQ7mcemiQ6do",
+      "note": "meta tx by bo.kumi-77b50457fb.testnet: hub.kumi-77b50457fb.testnet.ragequit"
     }
   ],
-  "updated_at": "2026-11-09T16:30:46.132Z"
+  "updated_at": "2026-11-09T16:47:33.559Z",
+  "state": {
+    "crew": {
+      "id": 0,
+      "name": "Night Owls",
+      "dao": "owls-mw1n.sputnikv2.testnet",
+      "creator": "kumi-77b50457fb.testnet",
+      "created_at": "1794242466262457251",
+      "allowed": [
+        "mika.kumi-77b50457fb.testnet",
+        "bo.kumi-77b50457fb.testnet",
+        "juno.kumi-77b50457fb.testnet"
+      ],
+      "members": [
+        [
+          "juno.kumi-77b50457fb.testnet",
+          "100000000000000000000000"
+        ],
+        [
+          "mika.kumi-77b50457fb.testnet",
+          "150000000000000000000000"
+        ]
+      ],
+      "supply": "250000000000000000000000",
+      "near": "154726195162773626135312",
+      "tokens": [
+        [
+          "SOL",
+          "3062910"
+        ]
+      ],
+      "deposited": "370000000000000000000000",
+      "slippage_bps": 300,
+      "captain": {
+        "account_id": "juno.kumi-77b50457fb.testnet",
+        "public_key": "ed25519:6zLyNj8JWfsAKeyrHFntWFf4Ft7kmL3iDhxrkNu1xjND",
+        "max_bps": 1500,
+        "max_daily": 3,
+        "assets": [
+          "SOL"
+        ]
+      },
+      "captain_trades_today": 1,
+      "vault_supply": "100000000000000000000000",
+      "vault_near": "82143743498656113348754",
+      "vault_tokens": [
+        [
+          "SOL",
+          "445879"
+        ]
+      ],
+      "vault_fee_bps": 2000,
+      "vault_hwm": "1000000000000000000000000",
+      "vault_fees_paid": "0",
+      "followers": [
+        [
+          "rin.kumi-77b50457fb.testnet",
+          "100000000000000000000000"
+        ]
+      ],
+      "busy": false,
+      "trade_count": 3,
+      "receipt_count": 8
+    },
+    "pnl": {
+      "pps": 1.1319470535457916,
+      "returnPct": 13.194705354579161,
+      "maxDrawdownPct": 1.4883023900418533,
+      "verified": true,
+      "note": "Recomputed from 8 on-chain receipts; latest receipt equals live state"
+    }
+  }
 }
