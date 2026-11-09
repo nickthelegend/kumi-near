@@ -5,6 +5,7 @@ import { signedChat, useSession, type Session } from '../lib/session';
 import { Art, Avatar, CrewAvatar, EmptyArt, Ic, Link, Notice, crewTone, navigate, shortName, Tx } from '../ui/bits';
 import { CrewInfo, FundPane, JoinSheet, QuitSheet } from '../ui/Fund';
 import { TradeCard } from '../ui/TradeCard';
+import { TokenLogo } from '../ui/logos';
 
 const HINTS: [string, string][] = [['/buy SOL 20%', 'coral'], ['/sell SOL 50%', 'pink'], ['/buy BTC 10%', 'butter'], ['/captain buy SOL 5%', 'mint']];
 const SEEN = (id: number) => `kumi:seen:v1:${id}`;
@@ -147,7 +148,7 @@ function CrewList({ crews, marks, current, me }: { crews: Crew[]; marks: import(
           <span style={{ minWidth: 0 }}><span className="n" style={{ display: 'block' }}>{c.name}</span><span className="p" style={{ display: 'block' }}>{preview}</span></span>
           <span className="meta">
             <span className="t">{l?.msg ? new Date(l.msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
-            {l && l.unread > 0 ? <span className="badge" aria-label={`${l.unread} unread`}>{l.unread > 99 ? '99+' : l.unread}</span> : <span className="badge badge-ret">{nav.toFixed(2)}N</span>}
+            {l && l.unread > 0 ? <span className="badge" aria-label={`${l.unread} unread`}>{l.unread > 99 ? '99+' : l.unread}</span> : <span className="badge badge-ret row" style={{ gap: 4 }}><TokenLogo sym="NEAR" size={14} />{nav.toFixed(2)}</span>}
           </span>
         </a>
       </li>;

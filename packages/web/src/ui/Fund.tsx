@@ -4,6 +4,7 @@ import { HUB, useAsync, type CrewState } from '../lib/api';
 import { makeCaptainKey, type Session } from '../lib/session';
 import { ragequit, relay, vote } from './actions';
 import { Art, Avatar, Ic, Link, Notice, Tx, memberHue, shortName } from './bits';
+import { ChainLogo, TokenLogo } from './logos';
 
 export function Spark({ pnl, height, light }: { pnl: Pnl; height?: number; light?: boolean }) {
   const pts = pnl.points;
@@ -47,7 +48,7 @@ export function FundPane({ st, me, onJoin, onQuit }: { st: CrewState; me: Sessio
     <div className="hero-card">
       <div className="row-between"><span className="label">Crew fund · NAV</span>
         <span className={`verify ${pnl.verified ? '' : 'bad'}`} title={pnl.verifyNote}><i />{pnl.verified ? 'Verified on-chain' : 'Unverified'}</span></div>
-      <div className="big">{pnl.navNear.toFixed(4)} <small>NEAR</small></div>
+      <div className="big row" style={{ gap: 10 }}><TokenLogo sym="NEAR" size={34} />{pnl.navNear.toFixed(4)} <small>NEAR</small></div>
       <div className="row" style={{ flexWrap: 'wrap' }}><span className={`ret ${pnl.returnPct >= 0 ? '' : 'neg'}`}><Ic name={pnl.returnPct >= 0 ? 'up' : 'down'} size={14} />{pct(pnl.returnPct)}</span><span className="sub">all time · {pnl.pps.toFixed(4)} NEAR a share</span></div>
       <Spark pnl={pnl} />
     </div>
@@ -73,7 +74,7 @@ export function FundPane({ st, me, onJoin, onQuit }: { st: CrewState; me: Sessio
       <div className="card-head"><h3>Holdings</h3><span className="label">marks: on-chain test pools</span></div>
       <div className="alloc" role="img" aria-label="Allocation">{rows.map(r => share(r.v) > 0 && <span key={r.sym} style={{ flexGrow: share(r.v), background: ASSET_COLOR[r.sym] ?? '#ccc' }} title={`${r.sym} ${share(r.v).toFixed(1)}%`} />)}</div>
       {rows.map(r => <div className="holding" key={r.sym}>
-        <span className={`asset asset-${r.sym}`}>{r.sym}</span>
+        <TokenLogo sym={r.sym} size={38} test={r.sym !== 'NEAR'} />
         <div style={{ minWidth: 0 }}><div className="n">{r.sym === 'NEAR' ? 'NEAR' : `t${r.sym}`} <span className="faint mono" style={{ fontSize: 11 }}>{share(r.v).toFixed(1)}%</span></div><div className="s">{r.sub}</div></div>
         <div className="amt">{r.sym === 'NEAR' ? formatNear(r.amount, 4) : formatUnits(r.amount, assets.find(a => a.symbol === r.sym)?.decimals ?? 0, 6)}<div>{formatNear(r.v, 4)} N</div></div>
       </div>)}
@@ -148,7 +149,7 @@ export function JoinSheet({ st, me, hub, onClose, onDone }: { st: CrewState; me:
       }}>
         <div className="sheet-art"><Art name={['kumi3-pool', 'kumi-feature-vote']} alt="Hands dropping coins into a jar" eager /></div>
         <div><h3>Chip into {st.crew.name}</h3><p className="sub">You get crew shares at the live NAV, {st.pnl.pps.toFixed(4)} NEAR a share, and a vote on every trade. Leave any time with your exact slice.</p></div>
-        <label className="field"><span className="label">Amount (testnet NEAR)</span><input className="input mono" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} /></label>
+        <label className="field"><span className="label">Amount (testnet NEAR)</span><span className="logo-select"><span className="ls-logo"><TokenLogo sym="NEAR" size={26} /></span><input className="input mono" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} /></span></label>
         <Notice>New players get a small testnet NEAR gift to try this. Deposits from any chain go through 1Click on mainnet: {LIVE_SWAP_SETUP}.</Notice>
         {error && <Notice error>{error}</Notice>}
         {hash ? <><div className="row">Joined in <Tx hash={hash} /></div><button type="button" className="btn btn-plum btn-lg" onClick={onClose}>Back to the chat</button></>
@@ -174,8 +175,8 @@ export function QuitSheet({ st, me, hub, shares, onClose, onDone }: { st: CrewSt
         <div className="sheet-art"><Art name={['kumi3-leave', 'kumi-og']} alt="" eager /></div>
         <div><h3>Ragequit</h3><p className="sub">Leave {st.crew.name} with your exact slice of every asset. No vote, no permission.</p></div>
         <div className="payout">
-          <div className="row-between"><span>NEAR</span><b className="mono">{formatNear(preview.near, 6)}</b></div>
-          {preview.tokens.map(t => <div className="row-between" key={t.symbol}><span>t{t.symbol} <span className="faint" style={{ fontSize: 12 }}>test pool token</span></span><b className="mono">{formatUnits(t.amount, st.assets.find(a => a.symbol === t.symbol)?.decimals ?? 0, 8)}</b></div>)}
+          <div className="row-between"><span className="row"><TokenLogo sym="NEAR" size={24} />NEAR</span><b className="mono">{formatNear(preview.near, 6)}</b></div>
+          {preview.tokens.map(t => <div className="row-between" key={t.symbol}><span className="row"><TokenLogo sym={t.symbol} size={24} test />t{t.symbol} <span className="faint" style={{ fontSize: 12 }}>test pool token</span></span><b className="mono">{formatUnits(t.amount, st.assets.find(a => a.symbol === t.symbol)?.decimals ?? 0, 8)}</b></div>)}
         </div>
         <div className="seg" role="group" aria-label="Payout">
           <button aria-pressed={mode === 'kind'} onClick={() => setMode('kind')}>In kind on NEAR</button>
@@ -183,10 +184,11 @@ export function QuitSheet({ st, me, hub, shares, onClose, onDone }: { st: CrewSt
         </div>
         {mode === 'chain' && <div className="stack" style={{ gap: 10 }}>
           <label className="field"><span className="label">Receive as</span>
+            <span className="logo-select"><span className="ls-logo">{(() => { const t = destOptions.find(o => o.assetId === dest); return <><TokenLogo sym={t?.symbol ?? 'SOL'} size={26} /><ChainLogo chain={t?.blockchain ?? 'sol'} size={14} /></>; })()}</span>
             <select className="input" value={dest} onChange={e => setDest(e.target.value)}>
               {destOptions.length === 0 && <option value={dest}>SOL on Solana</option>}
               {destOptions.map(t => <option key={t.assetId} value={t.assetId}>{t.symbol} on {t.blockchain.toUpperCase()}</option>)}
-            </select></label>
+            </select></span></label>
           {quote.loading ? <div className="skeleton" style={{ height: 52 }} /> : quote.error ? <Notice error>1Click: {quote.error}</Notice> : quote.data && (
             <Notice>Mainnet 1Click dry quote for your NEAR: <b className="mono">{Number(quote.data.quote.amountInFormatted).toPrecision(5)} → {Number(quote.data.quote.amountOutFormatted).toPrecision(5)}</b>{quote.data.quote.amountOutUsd ? ` (~$${Number(quote.data.quote.amountOutUsd).toFixed(2)})` : ''}. Live cross-chain payout: <b>{LIVE_SWAP_SETUP}</b>. On testnet you exit in kind.</Notice>
           )}

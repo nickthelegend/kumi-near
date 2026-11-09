@@ -33,10 +33,15 @@ export function CrewAvatar({ id, name, size }: { id: number; name: string; size?
 
 const HUES = ['#ff6f59', '#ffd166', '#3ddc97', '#ff8fc7', '#b69cff', '#7cc8ff'];
 export function shortName(accountId: string) { return accountId.split('.')[0]; }
+const MASCOT_SET = ['owl', 'fox', 'bear', 'frog'];
+const hashOf = (id: string) => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
+/** Every member is one of the clay crew mascots, picked from their account id. */
+export const mascotOf = (id: string) => MASCOT_SET[hashOf(id) % MASCOT_SET.length];
 export function Avatar({ id, size, initial }: { id: string; size?: 'lg'; initial?: boolean }) {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return <span className={`avatar ${size === 'lg' ? 'avatar-lg' : ''}`} style={{ background: HUES[h % HUES.length] }} aria-hidden>{shortName(id).slice(0, initial ? 1 : 2)}</span>;
+  const [ok, setOk] = useState(true);
+  return <span className={`avatar ${size === 'lg' ? 'avatar-lg' : ''} ${ok ? 'avatar-m' : ''}`} style={{ background: HUES[hashOf(id) % HUES.length] }} title={shortName(id)} aria-hidden>
+    {ok ? <img src={`/art/kumi3-av-${mascotOf(id)}.webp`} alt="" onError={() => setOk(false)} /> : shortName(id).slice(0, initial ? 1 : 2)}
+  </span>;
 }
 export const memberHue = (id: string) => { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return HUES[h % HUES.length]; };
 

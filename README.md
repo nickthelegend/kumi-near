@@ -113,3 +113,10 @@ Lead: <TBD by Nick>
 Other NEAR Hackathon project by the same person: <TBD by Nick>. The rules allow one person at most two independent projects, and each must disclose the other.
 
 MIT. Copyright (c) 2026 Nivesh Gajengi.
+
+## Credits
+
+- Token and network logos (NEAR, SOL, BTC, ETH, USDC, ZEC; NEAR, Solana, Bitcoin, Ethereum, Base and Arbitrum networks) come from [`@web3icons/core`](https://github.com/0xa3k5/web3icons) 4.0.58, MIT licensed, bundled into the web build (no hotlinking). The logos remain the trademarks of their projects and are used only to identify the assets.
+- Testnet pool tokens (tSOL, tBTC) show the real logo with a "test" badge: they are Kumi's NEP-141 test pools, not the mainnet assets.
+- Sputnik DAO and NEAR Intents have no licensed mark in that package, so the app uses neutral line glyphs with the protocol name written next to them.
+- Clay mascots and scenes (`packages/web/public/art`) were generated for Kumi.

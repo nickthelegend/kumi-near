@@ -5,6 +5,7 @@ import { useSession, type Session } from '../lib/session';
 import { relay } from '../ui/actions';
 import { Art, Avatar, CrewAvatar, Ic, Link, Notice, shortName, Tx } from '../ui/bits';
 import { Spark } from '../ui/Fund';
+import { TokenLogo } from '../ui/logos';
 
 export function CrewPage({ crewId, onSignIn }: { crewId: number; onSignIn: () => void }) {
   const st = useAsync(() => readCrew(crewId), [crewId], 15_000);
@@ -35,7 +36,7 @@ export function CrewPage({ crewId, onSignIn }: { crewId: number; onSignIn: () =>
             <Spark pnl={pnl} height={170} />
           </div>
           <div className="tiles" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-            <div className="tile tone-butter"><div className="label">NAV</div><div className="v">{pnl.navNear.toFixed(4)} <small>NEAR</small></div></div>
+            <div className="tile tone-butter"><div className="label">NAV</div><div className="v row" style={{ gap: 8 }}><TokenLogo sym="NEAR" size={24} />{pnl.navNear.toFixed(4)} <small>NEAR</small></div></div>
             <div className="tile tone-pink"><div className="label">Max drawdown</div><div className="v">{pnl.maxDrawdownPct.toFixed(2)}%</div></div>
             <div className="tile tone-coral"><div className="label">Executed trades</div><div className="v">{done.length}</div></div>
           </div>
@@ -54,7 +55,7 @@ function TradeRow({ t, st }: { t: Trade; st: CrewState }) {
   const a = st.assets.find(x => x.symbol === t.asset);
   const leg = (v: string, near: boolean) => near ? `${formatNear(v, 4)} NEAR` : `${formatUnits(v, a?.decimals ?? 0, Math.min(a?.decimals ?? 0, 8))} t${t.asset}`;
   return (
-    <div className="trade-row"><span className="w"><span className={`chip ${t.side === 'buy' ? 'chip-coral' : 'chip-plum'}`}>{t.side.toUpperCase()} {t.asset} {(t.bps / 100).toFixed(0)}%</span> {leg(t.crew_in, t.side === 'buy')} → {leg(t.crew_out, t.side !== 'buy')}</span>
+    <div className="trade-row"><span className="w row" style={{ gap: 8 }}><TokenLogo sym={t.asset} size={26} test /><span className={`chip ${t.side === 'buy' ? 'chip-coral' : 'chip-plum'}`}>{t.side.toUpperCase()} {t.asset} {(t.bps / 100).toFixed(0)}%</span> {leg(t.crew_in, t.side === 'buy')} → {leg(t.crew_out, t.side !== 'buy')}</span>
       <span className={`chip ${t.kind === 'captain' ? 'chip-butter' : 'chip-mint'}`}>{t.kind === 'captain' ? 'captain' : `vote #${t.dao_proposal_id}`}</span></div>
   );
 }

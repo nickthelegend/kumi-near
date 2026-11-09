@@ -1,6 +1,7 @@
 import { rankSeason, seasonRow, seasonStart } from '@kumi/sdk';
 import { readCrew, readHub, useAsync } from '../lib/api';
 import { Art, CrewAvatar, EmptyArt, Ic, Link, Notice } from '../ui/bits';
+import { TokenLogo } from '../ui/logos';
 
 export function Leaderboard() {
   const start = seasonStart();
@@ -36,7 +37,7 @@ export function Leaderboard() {
           {data.data && data.data.length > 0 && <div className="card" style={{ padding: '8px 6px', overflowX: 'auto' }}>
             <table className="table">
               <thead><tr><th>Crew</th><th className="num">Return</th><th className="num">Drawdown</th><th className="num hide-sm">NAV</th><th className="hide-sm">Proof</th></tr></thead>
-              <tbody>{data.data.map(r => <tr key={r.crewId}><td><b>{r.name}</b></td><td className={`num ${r.returnPct >= 0 ? 'up' : 'down'}`}>{sign(r.returnPct)}</td><td className="num down">{r.maxDrawdownPct.toFixed(2)}%</td><td className="num hide-sm">{r.navNear.toFixed(3)} N</td>
+              <tbody>{data.data.map(r => <tr key={r.crewId}><td><b>{r.name}</b></td><td className={`num ${r.returnPct >= 0 ? 'up' : 'down'}`}>{sign(r.returnPct)}</td><td className="num down">{r.maxDrawdownPct.toFixed(2)}%</td><td className="num hide-sm"><span className="row" style={{ gap: 6, justifyContent: 'flex-end' }}><TokenLogo sym="NEAR" size={18} />{r.navNear.toFixed(3)}</span></td>
                 <td className="hide-sm"><span className={r.verified ? 'chip chip-mint' : 'chip chip-pink'}><span className="dot" />{r.verified ? 'verified' : 'unverified'}</span></td></tr>)}</tbody>
             </table>
           </div>}

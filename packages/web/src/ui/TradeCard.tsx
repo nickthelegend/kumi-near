@@ -4,6 +4,7 @@ import type { ChatMessage } from '../lib/api';
 import { captainKey, type Session } from '../lib/session';
 import { captainTrade, fileTrade, vote } from './actions';
 import { Avatar, Ic, Notice, shortName, Tx } from './bits';
+import { IntentsGlyph, TokenLogo } from './logos';
 
 const STATUS: Record<string, string> = { draft: 'Quote ready', filing: 'Filing', voting: 'Voting', executing: 'Executing', executed: 'Executed', failed: 'Not filled', expired: 'Expired' };
 const trim = (v: string) => { const n = Number(v); return n === 0 ? '0' : n.toPrecision(5).replace(/\.?0+$/, ''); };
@@ -38,7 +39,7 @@ export function TradeCard({ m, me, crew, trade, proposal, policy, assets, hub, o
   return (
     <article className={`trade ${mine ? 'mine' : ''}`} aria-label={`Trade proposal: ${t.side} ${t.asset} ${t.bps / 100}%, ${STATUS[status]}`} data-vote={canVote ? 'open' : undefined}>
       <div className={`trade-top ${t.side}`}>
-        <span className={`asset asset-${t.asset}`}>{t.asset}</span>
+        <TokenLogo sym={t.asset} size={46} test />
         <div className="trade-title">
           <span className="trade-kind">{t.lane === 'captain' ? 'Captain trade · no vote' : 'Trade proposal · crew vote'}</span>
           <b>{t.side === 'buy' ? 'Buy' : 'Sell'} {t.asset} with {(t.bps / 100).toLocaleString()}%</b>
@@ -52,13 +53,13 @@ export function TradeCard({ m, me, crew, trade, proposal, policy, assets, hub, o
         {q && <>
           <div className="quote">
             <div><div className="label">{filled ? 'Crew paid' : 'Crew pays'}</div>
-              <div className="v">{filled ? units(trade!.crew_in, t.side === 'buy') : units(q.amount_in, t.side === 'buy')} <small>{t.side === 'buy' ? 'NEAR' : `t${t.asset}`}</small></div></div>
+              <div className="v qv"><TokenLogo sym={t.side === 'buy' ? 'NEAR' : t.asset} size={20} test={t.side !== 'buy'} />{filled ? units(trade!.crew_in, t.side === 'buy') : units(q.amount_in, t.side === 'buy')} <small>{t.side === 'buy' ? 'NEAR' : `t${t.asset}`}</small></div></div>
             <span className="arrow" aria-hidden><Ic name="arrow" /></span>
             <div className="r"><div className="label">{filled ? 'Crew got' : 'Pool quote'}</div>
-              <div className="v">{filled ? units(trade!.crew_out, t.side !== 'buy') : units(q.pool.amount_out, t.side !== 'buy')} <small>{t.side === 'buy' ? `t${t.asset}` : 'NEAR'}</small></div></div>
+              <div className="v qv qv-r">{filled ? units(trade!.crew_out, t.side !== 'buy') : units(q.pool.amount_out, t.side !== 'buy')} <small>{t.side === 'buy' ? `t${t.asset}` : 'NEAR'}</small><TokenLogo sym={t.side === 'buy' ? t.asset : 'NEAR'} size={20} test={t.side === 'buy'} /></div></div>
           </div>
           <div className="intents">
-            <span>{intents ? <>Mainnet 1Click: {trim(intents.amountInFormatted)} → {trim(intents.amountOutFormatted)} {t.side === 'buy' ? t.asset : 'NEAR'}{intents.amountOutUsd ? ` (~$${Number(intents.amountOutUsd).toFixed(2)})` : ''} · dry quote</> : <>Mainnet 1Click: {'error' in q.intents ? q.intents.error.replace(/^1Click HTTP \d+: /, '').replace('No liquidity available', 'no liquidity at this size') : 'no quote'}</>}</span>
+            <span className="row" style={{ gap: 6 }}><IntentsGlyph size={15} />{intents ? <>NEAR Intents 1Click (mainnet): {trim(intents.amountInFormatted)} → {trim(intents.amountOutFormatted)} {t.side === 'buy' ? t.asset : 'NEAR'}{intents.amountOutUsd ? ` (~$${Number(intents.amountOutUsd).toFixed(2)})` : ''} · dry quote</> : <>NEAR Intents 1Click (mainnet): {'error' in q.intents ? q.intents.error.replace(/^1Click HTTP \d+: /, '').replace('No liquidity available', 'no liquidity at this size') : 'no quote'}</>}</span>
             <span className="mono faint" title={q.hash}>quote {q.hash.slice(0, 8)}</span>
           </div>
           {filled && BigInt(trade!.vault_in) > 0n && <div className="mirror"><Ic name="star" size={15} />Followers mirrored {units(trade!.vault_in, t.side === 'buy')} {t.side === 'buy' ? 'NEAR' : `t${t.asset}`} in the same swap</div>}

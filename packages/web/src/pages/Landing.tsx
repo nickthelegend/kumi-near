@@ -2,6 +2,8 @@ import { crewNav, formatNear, accountUrl, seasonRow } from '@kumi/sdk';
 import { EVIDENCE, HUB, readCrew, readHub, useAsync, type CrewState } from '../lib/api';
 import { Art, Avatar, CrewAvatar, Ic, Link, Notice, Sticker, Tx, shortName } from '../ui/bits';
 import { Spark } from '../ui/Fund';
+import { DaoGlyph, IntentsGlyph, NearMark, TokenLogo } from '../ui/logos';
+const MARKS: Record<string, React.ReactNode> = { 'Sputnik DAO v2': <DaoGlyph size={20} />, 'Function-call keys': <NearMark size={20} />, 'NEP-366 meta transactions': <NearMark size={20} />, 'NEAR Intents (1Click)': <span className="row" style={{ gap: 2 }}><IntentsGlyph size={20} /><TokenLogo sym="SOL" size={22} /><TokenLogo sym="BTC" size={22} /><TokenLogo sym="ETH" size={22} /><TokenLogo sym="USDC" size={22} /><TokenLogo sym="ZEC" size={22} /></span>, 'Sub-accounts': <NearMark size={20} />, 'NEP-245 + NEP-141': <span className="row" style={{ gap: 2 }}><TokenLogo sym="SOL" size={22} test /><TokenLogo sym="BTC" size={22} test /></span> };
 
 const LABELS: Record<string, [string, string]> = {
   create_crew: ['Crew created, Sputnik DAO via factory', 'coral'], join_mika: ['Mika chips in by meta transaction', 'butter'], join_bo: ['Bo chips in', 'butter'], join_juno: ['Juno chips in', 'butter'],
@@ -32,7 +34,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
       <section className="l-hero">
         <div className="l-hero-in">
           <div>
-            <span className="kicker"><b>LIVE</b>On NEAR testnet · Sputnik DAO + NEAR Intents</span>
+            <span className="kicker"><b>LIVE</b><NearMark size={16} />On NEAR testnet · <DaoGlyph size={15} />Sputnik DAO + <IntentsGlyph size={15} />NEAR Intents</span>
             <h1>Your group chat is a <em>fund.</em></h1>
             <p className="lead">Pool money with friends. Pitch a trade in chat with <code>/buy SOL 20%</code>. When the vote passes, it executes, and everyone's share stays exact and on-chain.</p>
             <div className="l-cta">
@@ -55,7 +57,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
           ['Members', hub.data ? String(members) : null, 'email sign-ups, no wallet', 'pink']].map(([k, v, s, tone]) => (
           <div className={`l-stat tone-${tone}`} key={k}>
             <div className="label">{k}</div>
-            {v === null ? <div className="skeleton" style={{ height: 34, marginTop: 8, width: '60%' }} /> : <div className="v">{v}{k === 'Crew NAV' && <small> NEAR</small>}</div>}
+            {v === null ? <div className="skeleton" style={{ height: 34, marginTop: 8, width: '60%' }} /> : <div className="v row" style={{ gap: 8 }}>{k === 'Crew NAV' && <TokenLogo sym="NEAR" size={30} />}{v}{k === 'Crew NAV' && <small> NEAR</small>}</div>}
             <div className="s">{s}</div>
           </div>
         ))}
@@ -93,7 +95,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
             ['NEAR Intents (1Click)', 'Every trade card carries a real mainnet dry quote for the real asset. Live swaps need a funded NEAR_MAINNET_ACCOUNT, and say so.', 'pink'],
             ['Sub-accounts', 'Each player is a named sub-account of the relayer, created at sign-up. The hub and test pools are sub-accounts too.', 'butter'],
             ['NEP-245 + NEP-141', 'Crew and follower shares are NEP-245 ids, non-transferable. Testnet trades settle against NEP-141 test pools, labelled as such.', 'mint']].map(([h, p, tone]) =>
-            <div className={`tech-item tone-${tone}`} key={h}><h4>{h}</h4><p>{p}</p></div>)}
+            <div className={`tech-item tone-${tone}`} key={h}><h4 className="row" style={{ gap: 8 }}>{MARKS[h]}{h}</h4><p>{p}</p></div>)}
         </div>
       </section>
 
@@ -127,7 +129,7 @@ function CrewMini({ st }: { st: CrewState }) {
     </div>
     <div className="hero-card" style={{ marginTop: 14, boxShadow: 'none' }}>
       <div className="row-between"><span className="label">NAV</span><span className={`verify ${pnl.verified ? '' : 'bad'}`}><i />{pnl.verified ? 'Verified on-chain' : 'Unverified'}</span></div>
-      <div className="big">{pnl.navNear.toFixed(4)} <small>NEAR</small></div>
+      <div className="big row" style={{ gap: 10 }}><TokenLogo sym="NEAR" size={30} />{pnl.navNear.toFixed(4)} <small>NEAR</small></div>
       <span className={`ret ${pnl.returnPct >= 0 ? '' : 'neg'}`}>{pnl.returnPct >= 0 ? '+' : '−'}{Math.abs(pnl.returnPct).toFixed(2)}% all time</span>
       <Spark pnl={pnl} />
     </div>
