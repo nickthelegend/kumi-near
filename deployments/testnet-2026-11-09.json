@@ -1,0 +1,85 @@
+{
+  "network": "testnet",
+  "rpc": "https://test.rpc.fastnear.com",
+  "started_at": "2026-11-09T16:30:23.885Z",
+  "accounts": {
+    "root": "kumi-77b50457fb.testnet",
+    "hub": "hub.kumi-77b50457fb.testnet",
+    "sol": "tsol.kumi-77b50457fb.testnet"
+  },
+  "config": {
+    "tsol_seed": {
+      "near_usd": 3.5856,
+      "asset_usd": 86.555,
+      "source": [
+        "https://api.coinbase.com/v2/prices/NEAR-USD/spot",
+        "https://api.coinbase.com/v2/prices/SOL-USD/spot"
+      ],
+      "at": "2026-11-09T16:30:37.399Z",
+      "near_in": "500000000000000000000000",
+      "token_in": "20712842"
+    },
+    "factory": "sputnikv2.testnet",
+    "dao_deposit": "5500000000000000000000000"
+  },
+  "transactions": [
+    {
+      "step": "create_hub",
+      "hash": "5UjBAfEJhBEAe3sDXhLZkj9yk9LtpGMcVFKmyuyPNHxz",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/5UjBAfEJhBEAe3sDXhLZkj9yk9LtpGMcVFKmyuyPNHxz"
+    },
+    {
+      "step": "deploy_hub",
+      "hash": "9qHBQeioxmdAMAQUxCoLUynwAUMUXC3dZMqhDGxRCuhZ",
+      "signer": "hub.kumi-77b50457fb.testnet",
+      "receiver": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/9qHBQeioxmdAMAQUxCoLUynwAUMUXC3dZMqhDGxRCuhZ"
+    },
+    {
+      "step": "create_tsol",
+      "hash": "5du8BKcyBVff8SPZrHesce6NYtndQjPZdU4R1SM3skpP",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "tsol.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/5du8BKcyBVff8SPZrHesce6NYtndQjPZdU4R1SM3skpP"
+    },
+    {
+      "step": "deploy_tsol",
+      "hash": "Dowvy45JhKLEENWkvdAtxCqeP3pA2gS7Ry1BWCiepUPc",
+      "signer": "tsol.kumi-77b50457fb.testnet",
+      "receiver": "tsol.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/Dowvy45JhKLEENWkvdAtxCqeP3pA2gS7Ry1BWCiepUPc"
+    },
+    {
+      "step": "init_tsol",
+      "hash": "2dWJs5GEKNuTeD52cbdRVxgZxSxAUc4Bnx7xaGGbe9vj",
+      "signer": "tsol.kumi-77b50457fb.testnet",
+      "receiver": "tsol.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/2dWJs5GEKNuTeD52cbdRVxgZxSxAUc4Bnx7xaGGbe9vj"
+    },
+    {
+      "step": "liquidity_tsol",
+      "hash": "DqKY3fwCKdV3w76hyy8B6RNTngCqqGJW2kHNs1gq9XZm",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "tsol.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/DqKY3fwCKdV3w76hyy8B6RNTngCqqGJW2kHNs1gq9XZm",
+      "note": "SOL seeded at Coinbase spot 86.555 USD vs NEAR 3.5856 USD"
+    },
+    {
+      "step": "init_hub",
+      "hash": "EzR2osHDituGyHzXWvsV3L5KoUmd1VxEtDXeXoiZ8npZ",
+      "signer": "hub.kumi-77b50457fb.testnet",
+      "receiver": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/EzR2osHDituGyHzXWvsV3L5KoUmd1VxEtDXeXoiZ8npZ"
+    },
+    {
+      "step": "hub_storage_SOL",
+      "hash": "GJDPDNb8DdpxQqQ7jtB6WGp5FQsTJttj7dcPf9DvMF4Q",
+      "signer": "hub.kumi-77b50457fb.testnet",
+      "receiver": "tsol.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/GJDPDNb8DdpxQqQ7jtB6WGp5FQsTJttj7dcPf9DvMF4Q"
+    }
+  ],
+  "updated_at": "2026-11-09T16:30:46.132Z"
+}

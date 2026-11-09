@@ -1,0 +1,10 @@
+{
+  "name": "@kumi/server",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "description": "Kumi crew chat (WebSocket), email sign-in and NEP-366 relayer",
+  "scripts": {"start": "tsx src/main.ts", "build": "tsc --noEmit", "test": "vitest run"},
+  "dependencies": {"@kumi/sdk": "workspace:*", "near-api-js": "5.0.0", "ws": "^8.18.3"},
+  "devDependencies": {"@types/node": "^22.15.30", "@types/ws": "^8.18.1", "typescript": "^5.9.3", "vitest": "^3.2.4"}
+}

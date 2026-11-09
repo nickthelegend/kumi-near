@@ -8,6 +8,15 @@ importers:
 
   .:
     devDependencies:
+      '@kumi/sdk':
+        specifier: workspace:*
+        version: link:packages/sdk
+      '@kumi/server':
+        specifier: workspace:*
+        version: link:packages/server
+      near-api-js:
+        specifier: 5.0.0
+        version: 5.0.0
       tsx:
         specifier: 4.20.6
         version: 4.20.6
@@ -55,6 +64,31 @@ importers:
       '@types/node':
         specifier: ^22.15.30
         version: 22.20.5
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.7(@types/node@22.20.5)(tsx@4.20.6)
+
+  packages/server:
+    dependencies:
+      '@kumi/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      near-api-js:
+        specifier: 5.0.0
+        version: 5.0.0
+      ws:
+        specifier: ^8.18.3
+        version: 8.22.2
+    devDependencies:
+      '@types/node':
+        specifier: ^22.15.30
+        version: 22.20.5
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.2
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -674,6 +708,9 @@ packages:
 
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
+
+  '@types/ws@8.18.2':
+    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
   '@vitest/expect@3.2.7':
     resolution: {integrity: sha512-E8eBXaKibuvH2pSZErOjdVb5vF4PbKYcrnluBTYxEk1l/VhhwZg1kZQsdtjq+CsF5CFydf2Rdkz7jDHKSisi3w==}
@@ -1551,6 +1588,18 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  ws@8.22.2:
+    resolution: {integrity: sha512-/rEZ2ejown2N5gxVTHUu9bVVC7ttu0/Tgzf5hbTOixR3Fs7mbbXgn2DbdbcKgJOmpQMtrIUWivtYuVMnp/W/yA==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
@@ -2018,6 +2067,10 @@ snapshots:
   '@types/react@19.3.0':
     dependencies:
       csstype: 3.2.3
+
+  '@types/ws@8.18.2':
+    dependencies:
+      '@types/node': 22.20.5
 
   '@vitest/expect@3.2.7':
     dependencies:
@@ -2966,6 +3019,8 @@ snapshots:
       strip-ansi: 6.0.1
 
   wrappy@1.0.2: {}
+
+  ws@8.22.2: {}
 
   xtend@4.0.2: {}
 

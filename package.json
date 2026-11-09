@@ -3,11 +3,22 @@
   "private": true,
   "packageManager": "pnpm@10.29.2",
   "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "dev": "pnpm --filter @kumi/web dev"
+    "build": "pnpm -r build && pnpm build:contracts",
+    "build:contracts": "cargo near build non-reproducible-wasm --no-abi --manifest-path packages/contract/Cargo.toml && cargo near build non-reproducible-wasm --no-abi --manifest-path packages/testpool/Cargo.toml",
+    "test": "pnpm -r test && pnpm test:contracts",
+    "test:contracts": "node scripts/fetch-sputnik.mjs && cargo test --workspace -- --test-threads=1",
+    "deploy:testnet": "tsx scripts/deploy-testnet.ts",
+    "run:testnet": "tsx scripts/testnet-run.ts",
+    "verify:testnet": "tsx scripts/verify-testnet.ts",
+    "dev": "pnpm --filter @kumi/web dev",
+    "server": "pnpm --filter @kumi/server start"
   },
   "devDependencies": {
-    "tsx": "4.20.6"
-  }
+    "tsx": "4.20.6",
+    "@kumi/sdk": "workspace:*",
+    "@kumi/server": "workspace:*",
+    "near-api-js": "5.0.0"
+  },
+  "type": "module",
+  "license": "MIT"
 }

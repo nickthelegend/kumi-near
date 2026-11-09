@@ -43,7 +43,9 @@ export function describeDelegate(sd: SignedDelegate): { senderId: string; receiv
     try { args = JSON.parse(Buffer.from(fc.args).toString('utf8')); } catch { args = null; }
     calls.push({ methodName: fc.methodName, args, deposit: BigInt(fc.deposit), gas: BigInt(fc.gas) });
   }
-  const pk = da.publicKey as unknown as PublicKey;
+  const raw = da.publicKey as unknown as { ed25519Key?: { data: Uint8Array } };
+  if (!(raw instanceof PublicKey) && !raw.ed25519Key) throw new Error('Only ed25519 player keys are relayed');
+  const pk = raw instanceof PublicKey ? raw : new PublicKey({ keyType: 0, data: new Uint8Array(raw.ed25519Key!.data) });
   return { senderId: da.senderId, receiverId: da.receiverId, publicKey: pk.toString(), maxBlockHeight: BigInt(da.maxBlockHeight), calls, other };
 }
 
