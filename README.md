@@ -21,7 +21,7 @@ Without `.env`, the web app reads the recorded testnet deployment straight from 
 | Do | See |
 | --- | --- |
 | Open `/` | Live hub numbers (crews, NAV, trades, members) and the recorded lifecycle with NearBlocks links. |
-| Open `/app` | The **Night Owls** crew room. The chat shows signed messages and the trade cards from the testnet run (quote, Sputnik votes, executed tx links). The fund pane shows NAV, the P&L chart, holdings and members' shares. "Verified on-chain" means the P&L was recomputed from receipts and matches live state. |
+| Open `/app` | The **Night Owls** crew room, laid out like a chat app. Left: the crew list (colour-coded avatar, last message, unread count) and a first-run path (sign in, join, chip in, pitch a trade, vote) checked against chain state. Middle: signed messages and colour-coded cards: coral trade proposals with the quote and a butter Sputnik vote band, butter joins, mint follows, pink ragequits, each with its tx link. Right: the fund (NAV, return, chart, stat tiles, your position, holdings, members' shares, captain lane). On a phone these are the Crews / Chat / Fund tabs. "Verified on-chain" means the P&L was recomputed from receipts and matches live state. |
 | Click **Sign in**, enter any email | Without `RESEND_API_KEY` the sheet says "Email delivery: Setup required: RESEND_API_KEY" and shows the code. Verifying creates `<name>.<relayer>.testnet` with a key made in your browser. |
 | As a member, type `/buy BTC 10%` | A trade card appears with the testnet pool quote and a mainnet 1Click `dry: true` quote. **File to the crew DAO** creates a Sputnik proposal. **👍 Approve** from 2 of 3 members executes it. |
 | Open `/crew/0` | The public crew page: verified return, the trade list and **Follow** (a follower vault deposit). |
@@ -46,7 +46,7 @@ Re-check the testnet evidence (no keys needed): `pnpm verify:testnet`. It re-que
 | `packages/testpool` | **Testnet only.** A NEP-141 token with a built-in NEAR constant-product pool (0.30% fee). NEAR Intents has no testnet, so testnet trades fill here. Pools were seeded at the Coinbase spot ratio at deploy time (source URLs and timestamps are in the evidence file). |
 | `packages/server` | Email sign-in (Resend if keyed). The relayer creates player sub-accounts and relays NEP-366 delegates on an allow-list: player senders only, Kumi contracts only, capped deposits and gas, and approve or reject votes only. The crew chat runs over WebSocket. Each message is ed25519-signed by the player's key and checked against the account's on-chain access keys. There is also a cached read-only RPC proxy for the browser. |
 | `packages/sdk` | Typed hub reads, the trade quote (pool view plus 1Click dry quote), delegate signing, P&L and seasons. |
-| `packages/web` | Landing, crew room, public crew and follow page, season board. |
+| `packages/web` | Landing, crew room (crew list, chat, fund pane), public crew and follow page, season board. |
 
 NEAR features used, and why:
 - **Sputnik DAO v2**: one DAO per crew, created through the factory. It is the only authority over trades and captain keys.
