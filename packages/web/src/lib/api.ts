@@ -122,3 +122,19 @@ export function useChat(crewId: number | null) {
   }, []);
   return { messages, status, error, setError, send };
 }
+
+export type World = { hub: HubState; crews: CrewState[]; readAt: number };
+let worldCache: { at: number; data: World } | null = null;
+/** The hub plus every crew's full state (trades, receipts, P&L), read live from NEAR testnet. */
+export async function readWorld(): Promise<World> {
+  if (worldCache && Date.now() - worldCache.at < 10_000) return worldCache.data;
+  const hub = await readHub();
+  const crews = await Promise.all(hub.crews.map(c => readCrew(c.id)));
+  const data = { hub, crews, readAt: Date.now() };
+  worldCache = { at: Date.now(), data };
+  return data;
+}
+export function useWorld(refreshMs = 30_000) {
+  const r = useAsync(() => readWorld(), [], refreshMs);
+  return { ...r, reload: () => { worldCache = null; r.reload(); } };
+}
