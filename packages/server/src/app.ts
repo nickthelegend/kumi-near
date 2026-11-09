@@ -100,7 +100,9 @@ export function createApp(cfg: AppConfig) {
   async function proxyRpc(b: Record<string, unknown>) {
     const method = String(b.method ?? '');
     if (!RPC_METHODS.has(method)) throw new HttpError(403, `RPC method ${method} is not proxied`);
-    const cacheable = method === 'query' || method === 'block';
+    // Never cache access keys: a stale nonce would make the next signed delegate invalid.
+    const rt = (b.params as { request_type?: string } | undefined)?.request_type ?? '';
+    const cacheable = (method === 'query' && !rt.startsWith('view_access_key')) || method === 'block';
     const key = JSON.stringify([method, b.params]);
     const hit = rpcCache.get(key);
     if (cacheable && hit && Date.now() - hit.at < 4000) return { jsonrpc: '2.0', id: b.id, result: hit.value };

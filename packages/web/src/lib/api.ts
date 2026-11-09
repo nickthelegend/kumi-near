@@ -1,7 +1,7 @@
 // Calls to the Kumi server (sign-in, relayer, chat) and live chain reads through the SDK.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  computePnl, getAssets, getCrew, getMarks, getPolicy, getProposal, getReceipts, getTrades, listCrews, rpcUrl,
+  computePnl, getAssets, getCrew, getMarks, getPolicy, getProposals, getReceipts, getTrades, listCrews, rpcUrl,
   type Asset, type Crew, type DaoPolicy, type Mark, type Pnl, type Proposal, type Receipt, type Trade,
 } from '@kumi/sdk';
 import evidence from '../../../../deployments/testnet-2026-11-09.json';
@@ -71,7 +71,9 @@ export async function readCrew(crewId: number, hub = HUB): Promise<CrewState> {
 
 export async function readProposals(dao: string, ids: number[]): Promise<Record<number, Proposal>> {
   const out: Record<number, Proposal> = {};
-  await Promise.all(ids.map(async id => { try { out[id] = await getProposal(dao, id); } catch { /* removed */ } }));
+  if (!ids.length) return out;
+  const from = Math.min(...ids), to = Math.max(...ids);
+  for (const p of await getProposals(dao, from, to - from + 1)) out[p.id] = p;
   return out;
 }
 

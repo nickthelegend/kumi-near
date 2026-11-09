@@ -8,6 +8,14 @@ import { latestBlock, rpcUrl, viewAccessKey } from './chain.js';
 
 export const TGAS = 10n ** 12n;
 
+// Two delegates signed in quick succession must not reuse a nonce even if a read lags.
+const lastNonce = new Map<string, bigint>();
+function nextNonce(pk: string, onChain: bigint): bigint {
+  const n = onChain + 1n > (lastNonce.get(pk) ?? 0n) ? onChain + 1n : lastNonce.get(pk)! + 1n;
+  lastNonce.set(pk, n);
+  return n;
+}
+
 export type CallSpec = { methodName: string; args: Record<string, unknown>; gas?: bigint; deposit?: bigint };
 
 /** Signs a delegate action for `receiverId` with the player's key. Returns base64 borsh. */
@@ -18,7 +26,7 @@ export async function signDelegate(opts: { senderId: string; keyPair: KeyPair; r
   const actions = opts.calls.map(c => actionCreators.functionCall(c.methodName, Buffer.from(JSON.stringify(c.args)), c.gas ?? 100n * TGAS, c.deposit ?? 0n));
   const delegateAction = buildDelegateAction({
     senderId: opts.senderId, receiverId: opts.receiverId, actions,
-    nonce: BigInt(key.nonce) + 1n, maxBlockHeight: BigInt(block.height + (opts.ttlBlocks ?? 120)), publicKey,
+    nonce: nextNonce(publicKey.toString(), BigInt(key.nonce)), maxBlockHeight: BigInt(block.height + (opts.ttlBlocks ?? 120)), publicKey,
   });
   // NEP-366: ed25519 over sha256(NEP-461 prefix || borsh(DelegateAction)).
   const { signedDelegateAction } = await signDelegateAction({ delegateAction, signer: {

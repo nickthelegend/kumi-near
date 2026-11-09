@@ -45,7 +45,7 @@ export function CrewPage({ crewId, onSignIn }: { crewId: number; onSignIn: () =>
 
 function TradeRow({ t, st }: { t: Trade; st: CrewState }) {
   const a = st.assets.find(x => x.symbol === t.asset);
-  const leg = (v: string, near: boolean) => near ? `${formatNear(v, 4)} NEAR` : `${formatUnits(v, a?.decimals ?? 0, 6)} t${t.asset}`;
+  const leg = (v: string, near: boolean) => near ? `${formatNear(v, 4)} NEAR` : `${formatUnits(v, a?.decimals ?? 0, Math.min(a?.decimals ?? 0, 8))} t${t.asset}`;
   return (
     <li><span className="what"><span className={t.side === 'buy' ? 'up' : 'down'} style={{ fontWeight: 700 }}>{t.side.toUpperCase()}</span> {t.asset} {(t.bps / 100).toFixed(0)}% · {leg(t.crew_in, t.side === 'buy')} → {leg(t.crew_out, t.side !== 'buy')}</span>
       <span className="chip">{t.kind === 'captain' ? 'captain' : `vote #${t.dao_proposal_id}`}</span></li>

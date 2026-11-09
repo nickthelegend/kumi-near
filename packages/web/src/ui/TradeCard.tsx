@@ -35,8 +35,8 @@ export function TradeCard({ m, me, crew, trade, proposal, policy, assets, hub, o
     try { await fn(); onDone(); } catch (e) { setError(String(e instanceof Error ? e.message : e)); } finally { setBusy(null); }
   }
 
-  const inAmt = q ? (t.side === 'buy' ? `${formatNear(q.amount_in, 4)}` : formatUnits(q.amount_in, asset?.decimals ?? 0, 6)) : '—';
-  const outAmt = q ? (t.side === 'buy' ? formatUnits(q.pool.amount_out, asset?.decimals ?? 0, 6) : formatNear(q.pool.amount_out, 4)) : '—';
+  const inAmt = q ? (t.side === 'buy' ? `${formatNear(q.amount_in, 4)}` : formatUnits(q.amount_in, asset?.decimals ?? 0, Math.min(asset?.decimals ?? 0, 8))) : '—';
+  const outAmt = q ? (t.side === 'buy' ? formatUnits(q.pool.amount_out, asset?.decimals ?? 0, Math.min(asset?.decimals ?? 0, 8)) : formatNear(q.pool.amount_out, 4)) : '—';
   const filled = trade?.status === 'executed';
   const intents = q && 'quote' in q.intents ? q.intents.quote : null;
 
@@ -56,16 +56,16 @@ export function TradeCard({ m, me, crew, trade, proposal, policy, assets, hub, o
         <>
           <div className="quote">
             <div className="leg"><div className="label">{filled ? 'Crew paid' : 'Crew pays'}</div>
-              <div className="v">{filled ? (t.side === 'buy' ? formatNear(trade!.crew_in, 4) : formatUnits(trade!.crew_in, asset?.decimals ?? 0, 6)) : inAmt} <span className="faint" style={{ fontSize: 13 }}>{t.side === 'buy' ? 'NEAR' : `t${t.asset}`}</span></div></div>
+              <div className="v">{filled ? (t.side === 'buy' ? formatNear(trade!.crew_in, 4) : formatUnits(trade!.crew_in, asset?.decimals ?? 0, Math.min(asset?.decimals ?? 0, 8))) : inAmt} <span className="faint" style={{ fontSize: 13 }}>{t.side === 'buy' ? 'NEAR' : `t${t.asset}`}</span></div></div>
             <span className="arrow" aria-hidden>→</span>
             <div className="leg"><div className="label">{filled ? 'Crew got' : 'Pool quote'}</div>
-              <div className="v">{filled ? (t.side === 'buy' ? formatUnits(trade!.crew_out, asset?.decimals ?? 0, 6) : formatNear(trade!.crew_out, 4)) : outAmt} <span className="faint" style={{ fontSize: 13 }}>{t.side === 'buy' ? `t${t.asset}` : 'NEAR'}</span></div></div>
+              <div className="v">{filled ? (t.side === 'buy' ? formatUnits(trade!.crew_out, asset?.decimals ?? 0, Math.min(asset?.decimals ?? 0, 8)) : formatNear(trade!.crew_out, 4)) : outAmt} <span className="faint" style={{ fontSize: 13 }}>{t.side === 'buy' ? `t${t.asset}` : 'NEAR'}</span></div></div>
           </div>
           <div className="intents">
             <span>{intents ? <>Mainnet 1Click: {trim(intents.amountInFormatted)} → {trim(intents.amountOutFormatted)} {t.side === 'buy' ? t.asset : 'NEAR'}{intents.amountOutUsd ? ` (~$${Number(intents.amountOutUsd).toFixed(2)})` : ''} <span className="chip" style={{ height: 20 }}>dry: true</span></> : <span className="faint">Mainnet 1Click: {'error' in q.intents ? q.intents.error.replace(/^1Click HTTP \d+: /, '').replace('No liquidity available', 'no liquidity at this size') : 'no quote'}</span>}</span>
             <span className="faint mono" title={q.hash}>quote {q.hash.slice(0, 8)}</span>
           </div>
-          {filled && BigInt(trade!.vault_in) > 0n && <div className="intents" style={{ marginTop: 6 }}><span className="up">Followers mirrored in the same swap: {t.side === 'buy' ? formatNear(trade!.vault_in, 4) + ' NEAR' : formatUnits(trade!.vault_in, asset?.decimals ?? 0, 6) + ' t' + t.asset}</span></div>}
+          {filled && BigInt(trade!.vault_in) > 0n && <div className="intents" style={{ marginTop: 6 }}><span className="up">Followers mirrored in the same swap: {t.side === 'buy' ? formatNear(trade!.vault_in, 4) + ' NEAR' : formatUnits(trade!.vault_in, asset?.decimals ?? 0, Math.min(asset?.decimals ?? 0, 8)) + ' t' + t.asset}</span></div>}
         </>
       )}
       {votes && (

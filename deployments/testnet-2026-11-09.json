@@ -314,9 +314,89 @@
       "receiver": "bo.kumi-77b50457fb.testnet",
       "explorer": "https://testnet.nearblocks.io/txns/AZaaLvsxdxh48UvVciRPEKySX2ZRy1ACXQ7mcemiQ6do",
       "note": "meta tx by bo.kumi-77b50457fb.testnet: hub.kumi-77b50457fb.testnet.ragequit"
+    },
+    {
+      "step": "ui_signup_sora",
+      "hash": "HW4TjUhLVkr3SCsDDCe4oRHjrtLY8Z4udTjBo2Qf8WPG",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "sora.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/HW4TjUhLVkr3SCsDDCe4oRHjrtLY8Z4udTjBo2Qf8WPG",
+      "note": "email sign-up in the web app"
+    },
+    {
+      "step": "ui_11_proposed_by_mika",
+      "hash": "8i23JNw47hbwB7SEKwRLfrsawWhGUjrpCSPRrJwG3ETU",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/8i23JNw47hbwB7SEKwRLfrsawWhGUjrpCSPRrJwG3ETU",
+      "note": "web app: /buy BTC 10% \u00b7 proposed by mika by mika.kumi-77b50457fb.testnet"
+    },
+    {
+      "step": "ui_12_vote_mika",
+      "hash": "7Xi3CPBAeX2ak41f7pX9ZV3p981RejPDXVrEGCcQ1ReD",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/7Xi3CPBAeX2ak41f7pX9ZV3p981RejPDXVrEGCcQ1ReD",
+      "note": "web app: /buy BTC 10% \u00b7 \ud83d\udc4d mika by mika.kumi-77b50457fb.testnet"
+    },
+    {
+      "step": "ui_13_vote_juno",
+      "hash": "2nUcFmVL8QqUx1uvtLrUbswnnFXXq1X8kUexUWVtFxnT",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "juno.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/2nUcFmVL8QqUx1uvtLrUbswnnFXXq1X8kUexUWVtFxnT",
+      "note": "web app: /buy BTC 10% \u00b7 \ud83d\udc4d juno by juno.kumi-77b50457fb.testnet"
+    },
+    {
+      "step": "ui_15_proposed_by_mika",
+      "hash": "32soc2ZkrdybAeLwXAbKX6tZjripekiG13Brm9xdZG6U",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/32soc2ZkrdybAeLwXAbKX6tZjripekiG13Brm9xdZG6U",
+      "note": "web app: /buy BTC 10% \u00b7 proposed by mika by mika.kumi-77b50457fb.testnet"
+    },
+    {
+      "step": "ui_16_vote_mika",
+      "hash": "8MCeyM4sQ5bekaeYbLTwFVioReSRM5oixQDyuMjLzz9D",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "mika.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/8MCeyM4sQ5bekaeYbLTwFVioReSRM5oixQDyuMjLzz9D",
+      "note": "web app: /buy BTC 10% \u00b7 \ud83d\udc4d mika by mika.kumi-77b50457fb.testnet"
+    },
+    {
+      "step": "ui_17_vote_juno_slippage_refused",
+      "hash": "EMtk9pDCbEoDejV6aDWH2tUErV44NyJGtK8EHKpWTR63",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "juno.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/EMtk9pDCbEoDejV6aDWH2tUErV44NyJGtK8EHKpWTR63",
+      "note": "web app: /buy BTC 10% \u00b7 \ud83d\udc4d juno (failed) by juno.kumi-77b50457fb.testnet; a receipt failed: {\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: ERR_SLIPPAGE\"}}}}"
+    },
+    {
+      "step": "ui_19_follow",
+      "hash": "9gHRFKC1jjffp7znWDpNBBmRkjuzXxrqRTcfaDBpjjYD",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "sora.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/9gHRFKC1jjffp7znWDpNBBmRkjuzXxrqRTcfaDBpjjYD",
+      "note": "web app: follow by sora.kumi-77b50457fb.testnet"
+    },
+    {
+      "step": "ui_20_join",
+      "hash": "57nXJ2xbjoLfykdLcu78fxJZbWz1MfPKsPfkPDuGiTfR",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/57nXJ2xbjoLfykdLcu78fxJZbWz1MfPKsPfkPDuGiTfR",
+      "note": "web app: join by bo.kumi-77b50457fb.testnet"
+    },
+    {
+      "step": "ui_21_ragequit",
+      "hash": "GqGRJGRYpJivjgZePFpsyv4PTW5GvcQBi8G15vnjYxkb",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "bo.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/GqGRJGRYpJivjgZePFpsyv4PTW5GvcQBi8G15vnjYxkb",
+      "note": "web app: ragequit by bo.kumi-77b50457fb.testnet"
     }
   ],
-  "updated_at": "2026-11-09T16:47:33.559Z",
+  "updated_at": "2026-11-09T17:19:36.487Z",
   "state": {
     "crew": {
       "id": 0,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { accountUrl, formatNear, getProposal, memberShare, type Proposal } from '@kumi/sdk';
+import { accountUrl, formatNear, getProposals, memberShare, view, type Proposal } from '@kumi/sdk';
 import { HUB, readCrew, readHub, readProposals, useAsync, useChat, useConfig, type ChatMessage } from '../lib/api';
 import { makeCaptainKey, signedChat, useSession, type Session } from '../lib/session';
 import { relay, vote } from '../ui/actions';
@@ -121,10 +121,10 @@ function Message({ m, prev, me, st, proposals, onDone }: { m: ChatMessage; prev?
 function Rail({ st, me, onChanged }: { st: import('../lib/api').CrewState; me: Session | null; onChanged: () => void }) {
   const { crew } = st;
   const open = useAsync(async () => {
-    const last = await import('@kumi/sdk').then(s => s.view<number>(crew.dao, 'get_last_proposal_id'));
-    const ids = Array.from({ length: Math.min(last, 8) }, (_, i) => last - 1 - i);
-    const ps = await Promise.all(ids.map(id => getProposal(crew.dao, id).catch(() => null)));
-    return ps.filter((p): p is Proposal => !!p && p.status === 'InProgress' && !p.description.startsWith('Kumi trade'));
+    const last = await view<number>(crew.dao, 'get_last_proposal_id');
+    const from = Math.max(0, last - 8);
+    const ps = last > 0 ? await getProposals(crew.dao, from, last - from) : [];
+    return ps.filter(p => p.status === 'InProgress' && !p.description.startsWith('Kumi trade')).reverse();
   }, [crew.dao, st.readAt]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

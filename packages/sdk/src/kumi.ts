@@ -42,6 +42,8 @@ export const listCrews = (hub: string, rpc = rpcUrl()) => view<Crew[]>(hub, 'lis
 export const getTrade = (hub: string, crewId: number, tradeId: number, rpc = rpcUrl()) => view<Trade | null>(hub, 'get_trade', { crew_id: crewId, trade_id: tradeId }, rpc);
 export const getReserves = (token: string, rpc = rpcUrl()) => view<Reserves>(token, 'get_reserves', {}, rpc);
 export const getProposal = (dao: string, id: number, rpc = rpcUrl()) => view<Proposal>(dao, 'get_proposal', { id }, rpc);
+/** One call for a range of Sputnik proposals (fewer RPC round trips than one per id). */
+export const getProposals = (dao: string, from: number, limit: number, rpc = rpcUrl()) => view<Proposal[]>(dao, 'get_proposals', { from_index: from, limit }, rpc);
 export const getPolicy = (dao: string, rpc = rpcUrl()) => view<DaoPolicy>(dao, 'get_policy', {}, rpc);
 export const ftBalance = (token: string, accountId: string, rpc = rpcUrl()) => view<U128>(token, 'ft_balance_of', { account_id: accountId }, rpc);
 export const storageBalance = (token: string, accountId: string, rpc = rpcUrl()) => view<{ total: U128 } | null>(token, 'storage_balance_of', { account_id: accountId }, rpc);
