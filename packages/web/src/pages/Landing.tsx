@@ -36,7 +36,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
             <h1>Your group chat is a <em>fund.</em></h1>
             <p className="lead">Pool money with friends. Pitch a trade in chat with <code>/buy SOL 20%</code>. When the vote passes, it executes, and everyone's share stays exact and on-chain.</p>
             <div className="l-cta">
-              <Link to="/room" className="btn btn-primary btn-lg">Open the crew chat <Ic name="arrow" /></Link>
+              <Link to="/app" className="btn btn-primary btn-lg">Open Kumi <Ic name="arrow" /></Link>
               <button className="btn btn-lg" onClick={onSignIn}>Join with email</button>
             </div>
           </div>

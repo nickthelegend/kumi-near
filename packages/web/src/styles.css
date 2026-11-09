@@ -587,6 +587,11 @@ h1, h2, h3, h4, .brand, .trade-title b, .big, .v, .bal3 b, .boxes3 b { font-fami
 .lobby-foot { position: relative; z-index: 1; margin-top: 36px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); }
 
 /* chat room in the chunky style */
+.fund { gap: 18px; }
+.l-hero h1 { font-size: clamp(46px, 5.4vw, 80px); line-height: .98; }
+.tabs { box-shadow: 0 6px 0 #1f0e29, 0 24px 40px -16px rgba(42, 20, 54, .6); border: 3px solid #fff; }
+.tabs button { font-family: var(--display); }
+.tabs button[aria-pressed='true'] { background: linear-gradient(180deg, #ff8a72, var(--coral) 60%); box-shadow: 0 4px 0 #d4472f; }
 .list, .fund { background: rgba(255, 252, 246, .9); }
 .thread { background-color: #fff6e6; }
 .crew-item { border: 2px solid transparent; }
