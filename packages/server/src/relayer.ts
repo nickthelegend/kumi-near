@@ -51,37 +51,7 @@ export class Relayer {
   }
 
   /** Checks a signed delegate against the allow-list. Returns a reason when it is refused. */
-  async check(b64: string): Promise<{ ok: true; summary: ReturnType<typeof describeDelegate> } | { ok: false; reason: string }> {
-    let summary: ReturnType<typeof describeDelegate>;
-    try { summary = describeDelegate(decodeDelegate(b64)); }
-    catch (e) { return { ok: false, reason: `Not a NEP-366 signed delegate: ${String(e).slice(0, 120)}` }; }
-    if (!summary.senderId.endsWith(`.${this.accountId}`)) return { ok: false, reason: 'Only Kumi player accounts can use the relayer' };
-    if (summary.other > 0 || summary.calls.length === 0) return { ok: false, reason: 'Only function calls are relayed' };
-    const crews = await listCrews(this.hub, this.rpc);
-    const daos = new Set(crews.map(c => c.dao));
-    const tokens = new Set((await getAssets(this.hub, this.rpc)).map(a => a.token));
-    for (const c of summary.calls) {
-      if (summary.receiverId === this.hub) {
-        if (!['join', 'propose_trade', 'ragequit', 'follow', 'unfollow', 'claim_token', 'crystallize_fee', 'create_crew'].includes(c.methodName)) return { ok: false, reason: `hub.${c.methodName} is not relayed` };
-        if (c.deposit > (c.methodName === 'create_crew' ? DAO_DEPOSIT_CAP : MAX_DEPOSIT)) return { ok: false, reason: 'Deposit above the relayer cap' };
-      } else if (daos.has(summary.receiverId)) {
-        if (c.methodName === 'act_proposal') {
-          const action = (c.args as { action?: string })?.action;
-          if (action !== 'VoteApprove' && action !== 'VoteReject') return { ok: false, reason: 'Only approve and reject votes are relayed' };
-        } else if (c.methodName === 'add_proposal') {
-          const kind = (c.args as { proposal?: { kind?: { FunctionCall?: { receiver_id?: string; actions?: { method_name: string }[] } } } })?.proposal?.kind?.FunctionCall;
-          if (!kind || kind.receiver_id !== this.hub || !kind.actions?.every(a => ['set_captain', 'revoke_captain', 'add_member'].includes(a.method_name))) {
-            return { ok: false, reason: 'Only captain and member proposals to the hub are relayed' };
-          }
-        } else return { ok: false, reason: `DAO method ${c.methodName} is not relayed` };
-        if (c.deposit > 0n) return { ok: false, reason: 'DAO calls carry no deposit' };
-      } else if (tokens.has(summary.receiverId)) {
-        if (c.methodName !== 'storage_deposit' || c.deposit > ONE_NEAR / 100n) return { ok: false, reason: 'Only token storage registration is relayed' };
-      } else return { ok: false, reason: `Receiver ${summary.receiverId} is not a Kumi contract` };
-      if (c.gas > 300n * 10n ** 12n) return { ok: false, reason: 'Gas above 300 Tgas' };
-    }
-    return { ok: true, summary };
-  }
+  check(b64: string) { return checkDelegate(b64, { relayerId: this.accountId, hub: this.hub, rpc: this.rpc }); }
 
   /** Wraps the signed delegate in a transaction from the relayer and waits for finality. */
   async relay(b64: string): Promise<{ hash: string; sender: string; receiver: string; methods: string[]; failure: string | null; events: ReturnType<typeof kumiEvents>; value: string | null }> {
@@ -101,6 +71,39 @@ export class Relayer {
   }
 
   async balance(): Promise<bigint> { return BigInt((await this.account.state()).amount); }
+}
+
+/** The relayer's allow-list: player senders only, Kumi contracts only, capped deposits and gas. */
+export async function checkDelegate(b64: string, ctx: { relayerId: string; hub: string; rpc: string }): Promise<{ ok: true; summary: ReturnType<typeof describeDelegate> } | { ok: false; reason: string }> {
+  let summary: ReturnType<typeof describeDelegate>;
+  try { summary = describeDelegate(decodeDelegate(b64)); }
+  catch (e) { return { ok: false, reason: `Not a NEP-366 signed delegate: ${String(e).slice(0, 120)}` }; }
+  if (!summary.senderId.endsWith(`.${ctx.relayerId}`)) return { ok: false, reason: 'Only Kumi player accounts can use the relayer' };
+  if (summary.other > 0 || summary.calls.length === 0) return { ok: false, reason: 'Only function calls are relayed' };
+  const crews = await listCrews(ctx.hub, ctx.rpc);
+  const daos = new Set(crews.map(c => c.dao));
+  const tokens = new Set((await getAssets(ctx.hub, ctx.rpc)).map(a => a.token));
+  for (const c of summary.calls) {
+    if (summary.receiverId === ctx.hub) {
+      if (!['join', 'propose_trade', 'ragequit', 'follow', 'unfollow', 'claim_token', 'crystallize_fee', 'create_crew'].includes(c.methodName)) return { ok: false, reason: `hub.${c.methodName} is not relayed` };
+      if (c.deposit > (c.methodName === 'create_crew' ? DAO_DEPOSIT_CAP : MAX_DEPOSIT)) return { ok: false, reason: 'Deposit above the relayer cap' };
+    } else if (daos.has(summary.receiverId)) {
+      if (c.methodName === 'act_proposal') {
+        const action = (c.args as { action?: string })?.action;
+        if (action !== 'VoteApprove' && action !== 'VoteReject') return { ok: false, reason: 'Only approve and reject votes are relayed' };
+      } else if (c.methodName === 'add_proposal') {
+        const kind = (c.args as { proposal?: { kind?: { FunctionCall?: { receiver_id?: string; actions?: { method_name: string }[] } } } })?.proposal?.kind?.FunctionCall;
+        if (!kind || kind.receiver_id !== ctx.hub || !kind.actions?.every(a => ['set_captain', 'revoke_captain', 'add_member'].includes(a.method_name))) {
+          return { ok: false, reason: 'Only captain and member proposals to the hub are relayed' };
+        }
+      } else return { ok: false, reason: `DAO method ${c.methodName} is not relayed` };
+      if (c.deposit > 0n) return { ok: false, reason: 'DAO calls carry no deposit' };
+    } else if (tokens.has(summary.receiverId)) {
+      if (c.methodName !== 'storage_deposit' || c.deposit > ONE_NEAR / 100n) return { ok: false, reason: 'Only token storage registration is relayed' };
+    } else return { ok: false, reason: `Receiver ${summary.receiverId} is not a Kumi contract` };
+    if (c.gas > 300n * 10n ** 12n) return { ok: false, reason: 'Gas above 300 Tgas' };
+  }
+  return { ok: true, summary };
 }
 
 export class RelayRefused extends Error {}

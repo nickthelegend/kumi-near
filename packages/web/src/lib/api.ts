@@ -33,6 +33,11 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
   return parsed as T;
 }
 
+function friendly(e: unknown): string {
+  const m = String(e instanceof Error ? e.message : e);
+  return /429|rate-limit/i.test(m) ? 'NEAR testnet RPC is rate-limiting right now (HTTP 429). Retrying automatically…' : m;
+}
+
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[], refreshMs = 0) {
   const [state, setState] = useState<{ data?: T; error?: string; loading: boolean }>({ loading: true });
   const [tick, setTick] = useState(0);
@@ -40,10 +45,15 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[], refreshMs = 0
   useEffect(() => {
     let live = true;
     setState(s => ({ ...s, loading: true }));
-    fn().then(data => live && setState({ data, loading: false }), (e: unknown) => live && setState(s => ({ ...s, error: String(e instanceof Error ? e.message : e), loading: false })));
+    fn().then(data => live && setState({ data, loading: false }), (e: unknown) => live && setState(s => ({ ...s, error: friendly(e), loading: false })));
     return () => { live = false; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, tick]);
+  useEffect(() => {
+    if (!state.error || state.data) return;
+    const t = setTimeout(reload, 8000);
+    return () => clearTimeout(t);
+  }, [state.error, state.data, reload]);
   useEffect(() => {
     if (!refreshMs) return;
     const t = setInterval(reload, refreshMs);

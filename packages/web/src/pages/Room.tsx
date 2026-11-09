@@ -20,7 +20,7 @@ export function Room({ onSignIn }: { onSignIn: () => void }) {
     return (me && crews.find(c => c.allowed.includes(me.accountId))?.id) ?? crews[0]?.id ?? null;
   }, [hub.data, wanted, me]);
 
-  if (hub.error) return <div className="page"><Notice error>Could not read the Kumi hub {HUB} on NEAR testnet: {hub.error}</Notice></div>;
+  if (hub.error && !hub.data) return <div className="page"><Notice error>Could not read the Kumi hub {HUB} on NEAR testnet: {hub.error}</Notice></div>;
   if (!hub.data) return <div className="room" data-tab="chat"><div className="rail"><div className="skeleton" style={{ height: 200 }} /></div><div className="thread"><div className="messages"><div className="skeleton" style={{ height: 120 }} /><div className="skeleton" style={{ height: 220 }} /></div></div><div className="fund"><div className="skeleton" style={{ height: 260 }} /></div></div>;
   if (crewId === null) return (
     <div className="page"><div className="panel empty" style={{ padding: 48 }}>
@@ -44,7 +44,7 @@ function CrewRoom({ crewId, me, onSignIn }: { crewId: number; me: Session | null
   // Keep the newest message in view unless the reader scrolled up.
   useEffect(() => { const b = box.current; if (b && stuck.current) b.scrollTop = b.scrollHeight; }, [chat.messages, st.data?.readAt, props.data]);
 
-  if (st.error) return <div className="page"><Notice error>{st.error}</Notice></div>;
+  if (st.error && !st.data) return <div className="page"><Notice error>{st.error}</Notice></div>;
   if (!st.data) return <div className="room" data-tab="chat"><div className="rail"><div className="skeleton" style={{ height: 200 }} /></div><div className="thread"><div className="messages"><div className="skeleton" style={{ height: 220 }} /></div></div><div className="fund"><div className="skeleton" style={{ height: 260 }} /></div></div>;
   const { crew } = st.data;
   const isMember = !!me && crew.allowed.includes(me.accountId);

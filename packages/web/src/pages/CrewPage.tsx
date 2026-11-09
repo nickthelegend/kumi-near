@@ -9,7 +9,7 @@ import { Spark } from '../ui/Fund';
 export function CrewPage({ crewId, onSignIn }: { crewId: number; onSignIn: () => void }) {
   const st = useAsync(() => readCrew(crewId), [crewId], 15_000);
   const me = useSession();
-  if (st.error) return <div className="page"><Notice error>{st.error}</Notice></div>;
+  if (st.error && !st.data) return <div className="page"><Notice error>{st.error}</Notice></div>;
   if (!st.data) return <div className="page"><div className="skeleton" style={{ height: 80, width: 420, maxWidth: '100%' }} /><div className="skeleton" style={{ height: 320, marginTop: 24 }} /></div>;
   const { crew, pnl, trades } = st.data;
   const done = trades.filter(t => t.status === 'executed');

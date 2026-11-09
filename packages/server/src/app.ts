@@ -96,6 +96,7 @@ export function createApp(cfg: AppConfig) {
   // Read-only JSON-RPC proxy for the browser: one origin, short cache, so a page load does not
   // burst the public RPC (which rate-limits and then omits CORS headers).
   const rpcCache = new Map<string, { at: number; value: unknown }>();
+  const inflight = new Map<string, Promise<unknown>>();
   const RPC_METHODS = new Set(['query', 'block', 'EXPERIMENTAL_tx_status', 'tx', 'status', 'send_tx', 'broadcast_tx_commit']);
   async function proxyRpc(b: Record<string, unknown>) {
     const method = String(b.method ?? '');
@@ -105,13 +106,17 @@ export function createApp(cfg: AppConfig) {
     const cacheable = (method === 'query' && !rt.startsWith('view_access_key')) || method === 'block';
     const key = JSON.stringify([method, b.params]);
     const hit = rpcCache.get(key);
-    if (cacheable && hit && Date.now() - hit.at < 4000) return { jsonrpc: '2.0', id: b.id, result: hit.value };
+    if (cacheable && hit && Date.now() - hit.at < 6000) return { jsonrpc: '2.0', id: b.id, result: hit.value };
     try {
-      const result = await rpcCall(method, b.params, rpc);
+      // Identical reads in flight share one upstream call.
+      let p = inflight.get(key);
+      if (!p || !cacheable) { p = rpcCall(method, b.params, rpc); if (cacheable) { inflight.set(key, p); void p.finally(() => inflight.delete(key)).catch(() => {}); } }
+      const result = await p;
       if (cacheable) { rpcCache.set(key, { at: Date.now(), value: result }); if (rpcCache.size > 2000) rpcCache.clear(); }
       return { jsonrpc: '2.0', id: b.id, result };
     } catch (e) {
-      return { jsonrpc: '2.0', id: b.id, error: { message: String(e instanceof Error ? e.message : e).replace(/^NEAR RPC: /, ''), cause: { name: String(e).match(/NEAR RPC: (\w+)/)?.[1] ?? 'ERROR' } } };
+      const msg = String(e instanceof Error ? e.message : e).replace(/^NEAR RPC:? ?/, '');
+      return { jsonrpc: '2.0', id: b.id, error: { message: /429/.test(msg) ? 'the public testnet RPC is rate-limiting this server (HTTP 429)' : msg, cause: { name: 'ERROR' } } };
     }
   }
 
@@ -198,11 +203,12 @@ export function createApp(cfg: AppConfig) {
     const proposed = r.events.find(e => e.event === 'trade_proposed');
     const executed = r.events.find(e => e.event === 'trade_executed' || e.event === 'trade_failed');
     if (card) {
-      card.txs.push({ label: r.failure ? `${label} (failed)` : label, hash: r.hash, account: who, at: Date.now() });
+      const refused = r.events.some(e => e.event === 'trade_failed');
+      card.txs.push({ label: r.failure && !refused ? `${label} (failed)` : label, hash: r.hash, account: who, at: Date.now() });
       if (proposed) { card.trade!.tradeId = Number(proposed.data.trade_id); card.trade!.proposalId = Number(proposed.data.dao_proposal_id); }
       if (executed && card.trade) {
         card.trade.tradeId ??= Number(executed.data.trade_id);
-        card.txs.push({ label: executed.event === 'trade_executed' ? 'executed' : 'execution failed', hash: r.hash, account: who, at: Date.now() });
+        card.txs.push({ label: executed.event === 'trade_executed' ? 'executed' : 'fill refused, holdings restored', hash: r.hash, account: who, at: Date.now() });
       }
       upsert(crewId, card, false);
     }

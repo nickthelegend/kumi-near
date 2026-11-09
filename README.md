@@ -1,0 +1,114 @@
+# Kumi (組, "crew"): your group chat is a fund
+
+Kumi lets a group of friends pool money in one crew treasury and trade it from their group chat. Typing `/buy SOL 20%` in the chat turns into a trade card with a live quote and a vote in the crew's own **Sputnik DAO**. When a strict majority approves, the DAO executes the trade, once. A captain can hold a **function-call key** for small instant trades within limits the contract enforces. Any member can **ragequit** at any time with their exact share, with no vote needed. Returns are recomputed only from on-chain receipts, and outsiders can **follow** a crew through a vault that mirrors its trades and pays the crew a performance fee above a high-water mark. Players sign in with email; their browser key signs **NEP-366 meta transactions** and Kumi's relayer pays the gas.
+
+Inspired by Alpha Group Trading (a Colosseum Frontier 2026 top-25 winner on Solana). This NEAR version is DAO-native: one Sputnik DAO per crew, and NEAR Intents quotes for the real assets.
+
+Tracks: `social` (primary), `defi` (secondary). The social track asks to build what communities do with Sputnik DAO, not to rebuild the multisig. A crew's DAO here is the group's trading desk.
+
+## Try it (do X, see Y)
+
+Requirements: Node 22+ (tested on 26), pnpm 10, Rust via rustup (the repo pins 1.95.0), `cargo-near` 0.22.0.
+
+```sh
+pnpm install
+pnpm --filter @kumi/web build && pnpm --filter @kumi/web preview   # http://127.0.0.1:5196
+pnpm server                                                        # chat, sign-in and relayer on 127.0.0.1:15196
+```
+
+Without `.env`, the web app reads the recorded testnet deployment straight from NEAR RPC. The landing page and crew pages work with no server, while the chat and the actions need `pnpm server` with a funded relayer (see `.env.example`).
+
+| Do | See |
+| --- | --- |
+| Open `/` | Live hub numbers (crews, NAV, trades, members) and the recorded lifecycle with NearBlocks links. |
+| Open `/app` | The **Night Owls** crew room. The chat shows signed messages and the trade cards from the testnet run (quote, Sputnik votes, executed tx links). The fund pane shows NAV, the P&L chart, holdings and members' shares. "Verified on-chain" means the P&L was recomputed from receipts and matches live state. |
+| Click **Sign in**, enter any email | Without `RESEND_API_KEY` the sheet says "Email delivery: Setup required: RESEND_API_KEY" and shows the code. Verifying creates `<name>.<relayer>.testnet` with a key made in your browser. |
+| As a member, type `/buy BTC 10%` | A trade card appears with the testnet pool quote and a mainnet 1Click `dry: true` quote. **File to the crew DAO** creates a Sputnik proposal. **👍 Approve** from 2 of 3 members executes it. |
+| Open `/crew/0` | The public crew page: verified return, the trade list and **Follow** (a follower vault deposit). |
+| Open `/leaderboard` | This week's season, ranked by return minus half the max drawdown. |
+| Fund pane, **Ragequit** | The exact payout preview. "To any chain" shows a real 1Click dry quote and "Setup required: NEAR_MAINNET_ACCOUNT". The testnet exit pays in kind. |
+
+Agent surface (read-only MCP over stdio): `pnpm --filter @kumi/mcp start`. The tools are `list_crews`, `crew_pnl`, `season_leaderboard`, `quote_trade` and `crew_trades`.
+
+Re-check the testnet evidence (no keys needed): `pnpm verify:testnet`. It re-queries all 46 hashes, compares the deployed code hashes with the local build, and recomputes P&L.
+
+## How it works
+
+| Piece | What it does |
+| --- | --- |
+| `packages/contract` (hub) | Holds every crew's vault. `create_crew` calls the **Sputnik v2 factory** (`sputnikv2.testnet`) with a policy the hub writes: the members form the only voting role, the threshold is a strict majority, the bond is 0 and the period is one day, and the hub may only *file* proposals. The crew is registered only after the hub reads back the new DAO's policy. Shares are NEP-245 token ids (`crew:<id>`, `vault:<id>`), minted at NAV and non-transferable. |
+| Voted trades | `propose_trade` stores the quote (`quote_in`, `quote_out`, sha256 of the full quote JSON) and files a FunctionCall proposal for `execute_trade`. Only the crew's DAO can call `execute_trade`. A trade executes once, so a second proposal for the same trade fails (the vote-replay test). |
+| Swap | Size is `bps` of what the crew holds *at execution*. Crew and follower vault go in **one combined swap**, split pro rata. `min_out` = the quoted rate × (1 − 3%). If the pool would fill worse, it refuses, and the hub restores holdings and marks the trade failed. |
+| Captain lane | A DAO vote calls `set_captain`. The hub adds a **function-call access key on itself** that may call only `captain_trade`, with a 0.5 NEAR gas allowance. The contract checks the signer key, max bps per trade, trades per UTC day and allowed assets. Revoking the captain deletes the key. |
+| Ragequit | `ragequit(crew, shares)`: the exact pro-rata NEAR and every token, and the last holder takes the dust. NEAR is paid immediately. A token payout that fails becomes `claim_token`-able. It is refused only while a swap is in flight. |
+| Follower vault | `follow` / `unfollow`. Before every deposit or exit, the performance fee is crystallized in kind to the crew: `(pps − HWM) × supply × fee`. The HWM then moves to the post-fee price. |
+| Receipts | Every state change appends a receipt with the crew's post-state and the marks or fill amounts. The SDK's `computePnl` rebuilds the price-per-share series from receipts only, then compares the latest receipt with live state. |
+| `packages/testpool` | **Testnet only.** A NEP-141 token with a built-in NEAR constant-product pool (0.30% fee). NEAR Intents has no testnet, so testnet trades fill here. Pools were seeded at the Coinbase spot ratio at deploy time (source URLs and timestamps are in the evidence file). |
+| `packages/server` | Email sign-in (Resend if keyed). The relayer creates player sub-accounts and relays NEP-366 delegates on an allow-list: player senders only, Kumi contracts only, capped deposits and gas, and approve or reject votes only. The crew chat runs over WebSocket. Each message is ed25519-signed by the player's key and checked against the account's on-chain access keys. There is also a cached read-only RPC proxy for the browser. |
+| `packages/sdk` | Typed hub reads, the trade quote (pool view plus 1Click dry quote), delegate signing, P&L and seasons. |
+| `packages/web` | Landing, crew room, public crew and follow page, season board. |
+
+NEAR features used, and why:
+- **Sputnik DAO v2**: one DAO per crew, created through the factory. It is the only authority over trades and captain keys.
+- **Function-call access keys**: the captain lane, installed and removed by votes.
+- **NEP-366 meta transactions**: players never hold gas or see a wallet.
+- **Sub-accounts**: each player is `<name>.<relayer>`, and the hub and pools are sub-accounts too.
+- **NEP-245**: crew and vault shares.
+- **NEP-141**: the test pool tokens.
+- **NEAR Intents (1Click)**: real mainnet `dry: true` quotes on every trade card and ragequit. Live swaps show "Setup required: NEAR_MAINNET_ACCOUNT".
+
+**Private mode (researched):** the 1Click quote API accepts `confidentiality: "basic" | "advanced"`, but it answers "User authentication is required for confidential intent quotes" without a partner JWT. The SDK passes the flag and fails loudly with "Setup required: ONECLICK_JWT". Private crew trading is not enabled.
+
+## Testnet deployment (NEAR testnet, Nov 9 2026)
+
+| Contract / account | Address |
+| --- | --- |
+| Hub | [hub.kumi-77b50457fb.testnet](https://testnet.nearblocks.io/address/hub.kumi-77b50457fb.testnet) |
+| Test SOL pool (NEP-141) | [tsol.kumi-77b50457fb.testnet](https://testnet.nearblocks.io/address/tsol.kumi-77b50457fb.testnet) |
+| Test BTC pool (NEP-141) | [tbtc.kumi-77b50457fb.testnet](https://testnet.nearblocks.io/address/tbtc.kumi-77b50457fb.testnet) |
+| Night Owls' Sputnik DAO | [owls-mw1n.sputnikv2.testnet](https://testnet.nearblocks.io/address/owls-mw1n.sputnikv2.testnet) |
+| Relayer / owner | [kumi-77b50457fb.testnet](https://testnet.nearblocks.io/address/kumi-77b50457fb.testnet) |
+
+The lifecycle (`pnpm run:testnet`, through the same server code the app uses), plus actions clicked in the web app. All 46 hashes are in [deployments/testnet-2026-11-09.json](deployments/testnet-2026-11-09.json).
+
+| Step | Transaction |
+| --- | --- |
+| 3 email sign-ups (mika, bo, juno), relayer-created accounts | [mika](https://testnet.nearblocks.io/txns/FeD5Q8AeKQe1CbZHWRYapRhA5DGAKpXWc7VgWDFjVKZq), [bo](https://testnet.nearblocks.io/txns/51Ur1FC3bQKcMCHEjpvvFi13YU44Ua2LoMNncnDp6wUM), [juno](https://testnet.nearblocks.io/txns/HUDXLZ7A3Wj9FHhtChmkeWDZNPWV5hDEyNnhgkddytAU) |
+| Crew created; DAO made by the factory, policy checked | [2SjeG2N3…](https://testnet.nearblocks.io/txns/2SjeG2N36HGTPfvkD4nAdPtwiEf3HUn2jVDrSEzRw7EX) |
+| Joins by meta transaction | [mika](https://testnet.nearblocks.io/txns/5QBNvnjddoRkU2S7r6afoBVdDhTMKRFebg4QS8eQynsQ), [bo](https://testnet.nearblocks.io/txns/EU38TeCJttyhvtZidTjEnZ4KA9irqgEHJqtoW64qYvaL), [juno](https://testnet.nearblocks.io/txns/BRVD2KXvvuLtSLwTEmBJyoJ4ybBMrcM9XniA3RkuAri4) |
+| Vote 1: `/buy SOL 30%` proposed, 2 approvals, executed | [propose](https://testnet.nearblocks.io/txns/4dVXyn19AFLvxGTX3SsXceoGjT4zfoSZorfrURwKDJnA), [vote](https://testnet.nearblocks.io/txns/FT6bgvjywKKh8DkodHViYT7crTtbZnoRENcFSszzHM93), [vote + execute](https://testnet.nearblocks.io/txns/HMn7NfmLU5rMFCPBsCMU2AZTsPKCGbGQRCoUFvkULXfs) |
+| Follower (rin) deposits into the vault | [follow](https://testnet.nearblocks.io/txns/ASyquPcwfeVgLqtFgrPTXGubzevgvbiJrscma3J5ce1D) |
+| Vote 2: `/buy SOL 20%`, follower mirrored in the same swap | [propose](https://testnet.nearblocks.io/txns/65g4GSEUGRVvn2fcbLgzuwWXomdQkoFtYZFTdJsGafpm), [vote](https://testnet.nearblocks.io/txns/FeuGrDosKGhimcqagFBPrgGHHSGv9sEAUhJZaPtsyQJ1), [vote + execute](https://testnet.nearblocks.io/txns/Ebd47jHq2vSWANUEfidAMHq1tb3JNUVdV24sLH3Lcehk) |
+| Captain voted in (function-call key installed on the hub) | [proposal](https://testnet.nearblocks.io/txns/BGzcFc4SY39V1A4GJnA6Ai14bhmKLzw2D7BZp9owKx2L), [vote](https://testnet.nearblocks.io/txns/BANK2s6rirMnxixZNpi9HjaTDcDSZdTbS61MrLkG6Bhq), [vote + key added](https://testnet.nearblocks.io/txns/tpTnvD8o4ubESXcXDF2PT5XPxidMowVTW4RwKf3zee3) |
+| Captain trade `/captain sell SOL 10%`, signed by the function-call key | [5W1dsz5E…](https://testnet.nearblocks.io/txns/5W1dsz5EsxjhmsvG8BPw4rp3vzC8ps9f8eRbqNf5qvmH) |
+| Ragequit (bo), exact share in kind | [register tSOL](https://testnet.nearblocks.io/txns/76L8xNnHw8rgHJ4SBt5S8WvQe1ZZvqWRbmUxWzBqXePf), [ragequit](https://testnet.nearblocks.io/txns/AZaaLvsxdxh48UvVciRPEKySX2ZRy1ACXQ7mcemiQ6do) |
+| Web app: `/buy BTC 10%` filed, voted, executed | [file](https://testnet.nearblocks.io/txns/8i23JNw47hbwB7SEKwRLfrsawWhGUjrpCSPRrJwG3ETU), [vote](https://testnet.nearblocks.io/txns/7Xi3CPBAeX2ak41f7pX9ZV3p981RejPDXVrEGCcQ1ReD), [vote + execute](https://testnet.nearblocks.io/txns/2nUcFmVL8QqUx1uvtLrUbswnnFXXq1X8kUexUWVtFxnT) |
+| Web app: a stale-quote trade passes the vote, the pool refuses the fill, holdings restored | [vote, pool returns ERR_SLIPPAGE](https://testnet.nearblocks.io/txns/EMtk9pDCbEoDejV6aDWH2tUErV44NyJGtK8EHKpWTR63) |
+| Web app: email sign-up (sora), follow with the fee crystallized above the HWM | [sign-up](https://testnet.nearblocks.io/txns/HW4TjUhLVkr3SCsDDCe4oRHjrtLY8Z4udTjBo2Qf8WPG), [follow](https://testnet.nearblocks.io/txns/9gHRFKC1jjffp7znWDpNBBmRkjuzXxrqRTcfaDBpjjYD) |
+| Web app: bo re-joins, then ragequits from the sheet | [join](https://testnet.nearblocks.io/txns/57nXJ2xbjoLfykdLcu78fxJZbWz1MfPKsPfkPDuGiTfR), [ragequit](https://testnet.nearblocks.io/txns/GqGRJGRYpJivjgZePFpsyv4PTW5GvcQBi8G15vnjYxkb) |
+
+The test emails (`*@crew.kumi.test`, `*@fans.kumi.test`) use the reserved `.test` domain. Their codes came from the server's "Setup required: RESEND_API_KEY" preview path.
+
+## Tests
+
+See [TESTING.md](TESTING.md). In short:
+- 7 sandbox tests run against the real testnet Sputnik factory and DAO code, plus 3 contract unit tests.
+- 10 SDK tests, 2 relayer allow-list tests and 1 MCP stdio test.
+- The web build, and a headless Chrome check of every route at 1440 and 390.
+- `pnpm verify:testnet`.
+
+## Trust boundary and gaps
+
+- The hub account still has its deployer's full-access key (`hub.kumi-77b50457fb.testnet`). Until that key is deleted, the deployer could upgrade the code. Deleting it is a one-way step for Nick to decide (see BLOCKED.md).
+- Testnet marks are **pool spot prices**, read on-chain at each join, follow and fee, so a large trade right before a join moves the mark. Pyth ended NEAR support. A mainnet build would need the Rhea oracle or a signed price relayer. A join priced while a swap is in flight is refused.
+- Players' keys live in browser localStorage. Linking a second device is not built: the server says so if an email signs in from a new browser.
+- Mainnet 1Click is quote-only (`dry: true`), and live swaps need `NEAR_MAINNET_ACCOUNT`. NEAR Intents has no testnet.
+- Demo scale: a crew has at most 16 members and a hub lists at most 4 assets.
+
+## Team and other projects
+
+Lead: <TBD by Nick>
+
+Other NEAR Hackathon project by the same person: <TBD by Nick>. The rules allow one person at most two independent projects, and each must disclose the other.
+
+MIT. Copyright (c) 2026 Nivesh Gajengi.

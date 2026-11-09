@@ -70,7 +70,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
               <p>The message becomes a trade card with a live quote and a DAO proposal. Members vote with a tap. A strict majority executes it, once.</p></div>
           </article>
           <article className="beat">
-            <div className="beat-art"><Art name="kumi-og" alt="Four friends at a round table sharing a treasure chest" /></div>
+            <div className="beat-art"><Art name="kumi-og" alt="Four friends at a round table sharing a treasure chest" eager /></div>
             <div className="beat-body"><div className="beat-n">03 · Own it</div><h3>Leave whenever, exactly</h3>
               <p>Ragequit any time for your precise slice of every asset, no vote needed. Returns are recomputed from on-chain receipts, so no one can fake their gains.</p></div>
           </article>
@@ -134,12 +134,13 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
   );
 }
 
-const KIND: Record<string, [string, string]> = { join: ['＋', 'joined'], ragequit: ['↩', 'ragequit'], trade: ['⇄', 'voted trade'], captain_trade: ['⚑', 'captain trade'], follow: ['★', 'followed'], unfollow: ['☆', 'unfollowed'], fee: ['%', 'fee to crew'] };
+const KIND: Record<string, [string, string]> = { join: ['＋', 'joined'], ragequit: ['↩', 'ragequit'], trade: ['⇄', 'voted trade'], captain_trade: ['⚑', 'captain trade'], follow: ['★', 'followed'], unfollow: ['☆', 'unfollowed'], fee: ['%', 'paid the crew a fee'] };
 function receiptLine(r: Receipt, st: CrewState) {
   const a = st.assets.find(x => x.symbol === r.asset);
   if (r.kind === 'join') return `${formatNear(r.near_in, 3)} NEAR in`;
-  if (r.kind === 'trade' || r.kind === 'captain_trade') return BigInt(r.near_out) > 0n ? `${formatNear(r.near_out, 3)} NEAR → ${formatUnits(r.token_in, a?.decimals ?? 0, 5)} t${r.asset}` : `${formatUnits(r.token_out, a?.decimals ?? 0, 5)} t${r.asset} → ${formatNear(r.near_in, 3)} NEAR`;
-  if (r.kind === 'ragequit') return `${formatNear(r.near_out, 3)} NEAR${BigInt(r.token_out) > 0n ? ` + ${formatUnits(r.token_out, a?.decimals ?? 0, 5)} t${r.asset}` : ''} out`;
+  if (r.kind === 'trade' || r.kind === 'captain_trade') return BigInt(r.near_out) > 0n ? `${formatNear(r.near_out, 3)} NEAR → ${formatUnits(r.token_in, a?.decimals ?? 0, Math.min(a?.decimals ?? 0, 8))} t${r.asset}` : `${formatUnits(r.token_out, a?.decimals ?? 0, Math.min(a?.decimals ?? 0, 8))} t${r.asset} → ${formatNear(r.near_in, 3)} NEAR`;
+  if (r.kind === 'ragequit') return `${formatNear(r.near_out, 3)} NEAR${BigInt(r.token_out) > 0n ? ` + ${formatUnits(r.token_out, a?.decimals ?? 0, Math.min(a?.decimals ?? 0, 8))} t${r.asset}` : ''} out`;
+  if (r.kind === 'fee') return `${formatNear(r.near_in, 5)} NEAR (plus tokens in kind) above the high-water mark`;
   return `${formatNear(r.shares, 3)} vault shares`;
 }
 function CrewMini({ st }: { st: CrewState }) {
@@ -157,7 +158,7 @@ function CrewMini({ st }: { st: CrewState }) {
       </div>
       <div className="row-between"><span className="label">On-chain receipts</span><span className={pnl.verified ? 'chip chip-butter' : 'chip chip-rose'}><span className="dot" />{pnl.verified ? 'verified' : 'unverified'}</span></div>
       <ul className="receipts">{receipts.slice(-6).reverse().map(r => (
-        <li key={r.seq}><span className="k" aria-hidden>{KIND[r.kind]?.[0]}</span><span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><b>{shortName(r.account_id === HUB ? crew.captain?.account_id ?? 'captain' : r.account_id)}</b> <span className="muted">{KIND[r.kind]?.[1]} · {receiptLine(r, st)}</span></span><span className="faint mono" style={{ fontSize: 11 }}>#{r.block}</span></li>
+        <li key={r.seq}><span className="k" aria-hidden>{KIND[r.kind]?.[0]}</span><span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><b>{r.kind === 'fee' ? 'follower vault' : shortName(r.account_id)}</b> <span className="muted">{KIND[r.kind]?.[1]} · {receiptLine(r, st)}</span></span><span className="faint mono" style={{ fontSize: 11 }}>#{r.block}</span></li>
       ))}</ul>
     </div>
   );
