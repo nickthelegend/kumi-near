@@ -598,10 +598,11 @@ a:has(> .wordmark) { text-decoration: none; }
   .st-bubble { width: 112px; left: -18px; top: 92px; }
   .st-jar { width: 92px; left: 10px; top: auto; bottom: 236px; }
   .st-chart { width: 96px; right: -12px; top: 98px; }
-  .st-lilac { display: none; }
+  .st-lilac { width: 104px; right: -14px; top: auto; bottom: 262px; }
   .st-table { width: 150px; left: -16px; top: auto; bottom: 42px; }
   .st-coins { width: 170px; right: -6px; bottom: 28px; }
   .st-tag-vote { display: none; }
+  .st-tag-cmd { left: 14px; }
   .clay-slab { width: 92%; height: 200px; bottom: -70px; right: -14%; }
   .l-sec { padding-top: 88px; }
   .l-head { margin-bottom: 32px; }

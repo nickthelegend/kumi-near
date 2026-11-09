@@ -168,6 +168,18 @@ function RankCard({ r, rank, me, onJoin, onFollow }: { r: Ranked; rank: number; 
   </article>;
 }
 
+/** Time left in this week's season (seasons end Monday 00:00 UTC). */
+function SeasonClock({ now }: { now: number }) {
+  const { week, range } = seasonLabel();
+  const left = Math.max(0, weekStart(now) + 7 * DAY - now);
+  const d = Math.floor(left / DAY), h = Math.floor((left % DAY) / 3_600_000);
+  return <article className="wcard">
+    <header className="wcard-top"><div className="wcard-src"><p><b>Season {week}</b><span>{range} UTC</span></p></div><span className="tag tag-lilac"><Icon name="clock" size={13} />{d}d {h}h left</span></header>
+    <div className="wcard-art" aria-hidden="true"><Art name="kumi-og" alt="" /></div>
+    <p className="wcard-sum" style={{ margin: '12px 0 0' }}>The board resets Monday 00:00 UTC. Any crew can start climbing the moment it trades.</p>
+  </article>;
+}
+
 function Rules() {
   return <div className="web-grid" style={{ marginTop: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
     {[['Window', 'Monday to Sunday, UTC', 'Season return compares price per share now with the last receipt before Monday 00:00 UTC.'],
@@ -250,7 +262,7 @@ function Web({ world, ranked, me, initial, onJoin, onFollow }: { world: World; r
       {trades.length > 0 && <section className="web-sec"><header className="web-sec-head"><h2>Recent calls</h2><span className="lbl">Trades filed from the chat</span></header>
         <div className="web-grid">{trades.map(({ st, t }) => <TradeWCard key={`${st.crew.id}:${t.id}`} st={st} id={t.id} />)}</div></section>}
     </>}
-    {tab === 'season' && <><div className="web-grid">{ranked.map((r, i) => <RankCard key={r.crewId} r={r} rank={i + 1} me={me} onJoin={onJoin} onFollow={onFollow} />)}</div><Rules /></>}
+    {tab === 'season' && <><div className="web-grid">{ranked.map((r, i) => <RankCard key={r.crewId} r={r} rank={i + 1} me={me} onJoin={onJoin} onFollow={onFollow} />)}{ranked.length % 2 === 1 && <SeasonClock now={world.readAt} />}</div><Rules /></>}
     {tab === 'activity' && <ActivityList world={world} />}
   </>;
 }

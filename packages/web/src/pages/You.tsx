@@ -18,7 +18,7 @@ export function You({ desktop, onSignIn }: { desktop: boolean; onSignIn: () => v
   const invites = world.data && me ? world.data.crews.filter(st => st.crew.allowed.includes(me.accountId) && !mine.some(m => m.st.crew.id === st.crew.id)) : [];
 
   return <div className={desktop ? 'web-page' : 'ph-page'}>
-    <Head world={world.data} desktop={desktop} onSignIn={onSignIn} onRefresh={world.reload} refreshing={world.loading} />
+    <Head world={world.data} desktop={desktop} onSignIn={onSignIn} onDeposit={mine[0] || invites[0] ? () => setSheet({ kind: 'join', st: (mine[0]?.st ?? invites[0])! }) : undefined} onRefresh={world.reload} refreshing={world.loading} />
     {!me ? <div className="state" style={{ alignItems: 'center' }}>
       <div style={{ width: 132, height: 92, borderRadius: 16, overflow: 'hidden', flex: 'none' }}><Art name="kumi-og" alt="" /></div>
       <div><h3>Join with your email</h3><p>No wallet, no seed phrase. Kumi makes you a NEAR testnet account, keeps its key in this browser and pays your gas.</p><button className="pill-coral" onClick={onSignIn}>Sign in with email</button></div>
