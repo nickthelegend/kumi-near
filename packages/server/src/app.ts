@@ -4,7 +4,7 @@ import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
 import {
-  getAssets, getCrew, parseTradeCommand, quoteTrade, txStatus, txFailure, kumiEvents, verifyChat, viewAccessKey, LIVE_SWAP_SETUP, TESTNET_RPC,
+  getAssets, getCrew, parseTradeCommand, rpc as rpcCall, quoteTrade, txStatus, txFailure, kumiEvents, verifyChat, viewAccessKey, formatNear, LIVE_SWAP_SETUP, TESTNET_RPC,
 } from '@kumi/sdk';
 import { Relayer, RelayRefused, ONE_NEAR } from './relayer.js';
 import { Store, type ChatMessage } from './store.js';
@@ -93,9 +93,30 @@ export function createApp(cfg: AppConfig) {
     res.end(JSON.stringify(value));
   };
 
+  // Read-only JSON-RPC proxy for the browser: one origin, short cache, so a page load does not
+  // burst the public RPC (which rate-limits and then omits CORS headers).
+  const rpcCache = new Map<string, { at: number; value: unknown }>();
+  const RPC_METHODS = new Set(['query', 'block', 'EXPERIMENTAL_tx_status', 'tx', 'status', 'send_tx', 'broadcast_tx_commit']);
+  async function proxyRpc(b: Record<string, unknown>) {
+    const method = String(b.method ?? '');
+    if (!RPC_METHODS.has(method)) throw new HttpError(403, `RPC method ${method} is not proxied`);
+    const cacheable = method === 'query' || method === 'block';
+    const key = JSON.stringify([method, b.params]);
+    const hit = rpcCache.get(key);
+    if (cacheable && hit && Date.now() - hit.at < 4000) return { jsonrpc: '2.0', id: b.id, result: hit.value };
+    try {
+      const result = await rpcCall(method, b.params, rpc);
+      if (cacheable) { rpcCache.set(key, { at: Date.now(), value: result }); if (rpcCache.size > 2000) rpcCache.clear(); }
+      return { jsonrpc: '2.0', id: b.id, result };
+    } catch (e) {
+      return { jsonrpc: '2.0', id: b.id, error: { message: String(e instanceof Error ? e.message : e).replace(/^NEAR RPC: /, ''), cause: { name: String(e).match(/NEAR RPC: (\w+)/)?.[1] ?? 'ERROR' } } };
+    }
+  }
+
   const routes: Record<string, (b: Record<string, unknown>, url: URL) => Promise<unknown>> = {
+    'POST /api/rpc': async (b) => proxyRpc(b),
     'GET /api/config': async () => ({
-      hub: cfg.hub, relayer: cfg.relayer.accountId, rpc, network: 'testnet', giftNear: Number(cfg.giftYocto) / 1e24,
+      hub: cfg.hub, relayer: cfg.relayer.accountId, rpc, network: 'testnet', giftNear: formatNear(cfg.giftYocto, 3),
       setup: {
         email: cfg.resendKey ? null : 'Setup required: RESEND_API_KEY',
         liveSwaps: cfg.mainnetAccount ? null : LIVE_SWAP_SETUP,

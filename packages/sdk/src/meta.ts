@@ -4,7 +4,7 @@ import { Buffer } from 'buffer';
 import { KeyPair, PublicKey } from '@near-js/crypto';
 import { actionCreators, buildDelegateAction, encodeSignedDelegate, signDelegateAction, SCHEMA, type SignedDelegate } from '@near-js/transactions';
 import { deserialize } from 'borsh';
-import { latestBlock, TESTNET_RPC, viewAccessKey } from './chain.js';
+import { latestBlock, rpcUrl, viewAccessKey } from './chain.js';
 
 export const TGAS = 10n ** 12n;
 
@@ -12,7 +12,7 @@ export type CallSpec = { methodName: string; args: Record<string, unknown>; gas?
 
 /** Signs a delegate action for `receiverId` with the player's key. Returns base64 borsh. */
 export async function signDelegate(opts: { senderId: string; keyPair: KeyPair; receiverId: string; calls: CallSpec[]; rpc?: string; ttlBlocks?: number }): Promise<string> {
-  const rpc = opts.rpc ?? TESTNET_RPC;
+  const rpc = opts.rpc ?? rpcUrl();
   const publicKey = opts.keyPair.getPublicKey();
   const [key, block] = await Promise.all([viewAccessKey(opts.senderId, publicKey.toString(), rpc), latestBlock(rpc)]);
   const actions = opts.calls.map(c => actionCreators.functionCall(c.methodName, Buffer.from(JSON.stringify(c.args)), c.gas ?? 100n * TGAS, c.deposit ?? 0n));

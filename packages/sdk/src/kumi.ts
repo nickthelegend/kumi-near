@@ -1,5 +1,5 @@
 // Typed reads of the Kumi hub contract, its test pools and the crews' Sputnik DAOs.
-import { canonical, sha256Hex, TESTNET_RPC, view } from './chain.js';
+import { canonical, rpcUrl, sha256Hex, view } from './chain.js';
 import { dryQuote, intentsAssetFor, type DryQuote } from './oneclick.js';
 
 export type U128 = string;
@@ -35,29 +35,29 @@ export type Proposal = {
 };
 export type DaoPolicy = { roles: { name: string; kind: { Group?: string[] } | string; permissions: string[] }[]; proposal_period: string; default_vote_policy: { threshold: [number, number] | string } };
 
-export const hubConfig = (hub: string, rpc = TESTNET_RPC) => view<{ owner: string; factory: string; dao_deposit: U128; crew_count: number }>(hub, 'get_config', {}, rpc);
-export const getAssets = (hub: string, rpc = TESTNET_RPC) => view<Asset[]>(hub, 'get_assets', {}, rpc);
-export const getCrew = (hub: string, crewId: number, rpc = TESTNET_RPC) => view<Crew | null>(hub, 'get_crew', { crew_id: crewId }, rpc);
-export const listCrews = (hub: string, rpc = TESTNET_RPC) => view<Crew[]>(hub, 'list_crews', { from: 0, limit: 50 }, rpc);
-export const getTrade = (hub: string, crewId: number, tradeId: number, rpc = TESTNET_RPC) => view<Trade | null>(hub, 'get_trade', { crew_id: crewId, trade_id: tradeId }, rpc);
-export const getReserves = (token: string, rpc = TESTNET_RPC) => view<Reserves>(token, 'get_reserves', {}, rpc);
-export const getProposal = (dao: string, id: number, rpc = TESTNET_RPC) => view<Proposal>(dao, 'get_proposal', { id }, rpc);
-export const getPolicy = (dao: string, rpc = TESTNET_RPC) => view<DaoPolicy>(dao, 'get_policy', {}, rpc);
-export const ftBalance = (token: string, accountId: string, rpc = TESTNET_RPC) => view<U128>(token, 'ft_balance_of', { account_id: accountId }, rpc);
-export const storageBalance = (token: string, accountId: string, rpc = TESTNET_RPC) => view<{ total: U128 } | null>(token, 'storage_balance_of', { account_id: accountId }, rpc);
+export const hubConfig = (hub: string, rpc = rpcUrl()) => view<{ owner: string; factory: string; dao_deposit: U128; crew_count: number }>(hub, 'get_config', {}, rpc);
+export const getAssets = (hub: string, rpc = rpcUrl()) => view<Asset[]>(hub, 'get_assets', {}, rpc);
+export const getCrew = (hub: string, crewId: number, rpc = rpcUrl()) => view<Crew | null>(hub, 'get_crew', { crew_id: crewId }, rpc);
+export const listCrews = (hub: string, rpc = rpcUrl()) => view<Crew[]>(hub, 'list_crews', { from: 0, limit: 50 }, rpc);
+export const getTrade = (hub: string, crewId: number, tradeId: number, rpc = rpcUrl()) => view<Trade | null>(hub, 'get_trade', { crew_id: crewId, trade_id: tradeId }, rpc);
+export const getReserves = (token: string, rpc = rpcUrl()) => view<Reserves>(token, 'get_reserves', {}, rpc);
+export const getProposal = (dao: string, id: number, rpc = rpcUrl()) => view<Proposal>(dao, 'get_proposal', { id }, rpc);
+export const getPolicy = (dao: string, rpc = rpcUrl()) => view<DaoPolicy>(dao, 'get_policy', {}, rpc);
+export const ftBalance = (token: string, accountId: string, rpc = rpcUrl()) => view<U128>(token, 'ft_balance_of', { account_id: accountId }, rpc);
+export const storageBalance = (token: string, accountId: string, rpc = rpcUrl()) => view<{ total: U128 } | null>(token, 'storage_balance_of', { account_id: accountId }, rpc);
 
 async function paged<T>(hub: string, method: string, crewId: number, count: number, rpc: string): Promise<T[]> {
   const out: T[] = [];
   for (let from = 0; from < count; from += 100) out.push(...await view<T[]>(hub, method, { crew_id: crewId, from, limit: 100 }, rpc));
   return out;
 }
-export async function getTrades(hub: string, crew: Crew, rpc = TESTNET_RPC) { return paged<Trade>(hub, 'get_trades', crew.id, crew.trade_count, rpc); }
-export async function getReceipts(hub: string, crew: Crew, rpc = TESTNET_RPC) { return paged<Receipt>(hub, 'get_receipts', crew.id, crew.receipt_count, rpc); }
+export async function getTrades(hub: string, crew: Crew, rpc = rpcUrl()) { return paged<Trade>(hub, 'get_trades', crew.id, crew.trade_count, rpc); }
+export async function getReceipts(hub: string, crew: Crew, rpc = rpcUrl()) { return paged<Receipt>(hub, 'get_receipts', crew.id, crew.receipt_count, rpc); }
 
 export const held = (pairs: Pair[], symbol: string): bigint => BigInt(pairs.find(p => p[0] === symbol)?.[1] ?? '0');
 
 /** Live pool marks for every listed asset, read on-chain. */
-export async function getMarks(assets: Asset[], rpc = TESTNET_RPC): Promise<Mark[]> {
+export async function getMarks(assets: Asset[], rpc = rpcUrl()): Promise<Mark[]> {
   return Promise.all(assets.map(async a => {
     const r = await getReserves(a.token, rpc);
     return { symbol: a.symbol, near_reserve: r.near, token_reserve: r.token };
@@ -98,7 +98,7 @@ export type TradeQuote = {
 /** Builds the quote a `/buy` or `/sell` attaches: pool quote on-chain plus a mainnet 1Click dry quote. */
 export async function quoteTrade(hub: string, crew: Crew, assets: Asset[], side: Side, asset: string, bps: number,
   opts: { rpc?: string; mainnetAccount?: string; jwt?: string; confidential?: boolean } = {}): Promise<TradeQuote> {
-  const rpc = opts.rpc ?? TESTNET_RPC;
+  const rpc = opts.rpc ?? rpcUrl();
   const a = assets.find(x => x.symbol === asset);
   if (!a) throw new Error(`Unknown asset ${asset}. Listed: ${assets.map(x => x.symbol).join(', ')}`);
   if (!Number.isInteger(bps) || bps < 1 || bps > 10_000) throw new Error('Size must be between 0.01% and 100%');

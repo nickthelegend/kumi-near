@@ -40,7 +40,7 @@ export class Relayer {
   async createPlayer(accountId: string, publicKey: string, gift: bigint): Promise<string> {
     if (!accountId.endsWith(`.${this.accountId}`)) throw new Error('Players are sub-accounts of the relayer');
     if (await accountExists(accountId, this.rpc)) throw new Error(`${accountId} already exists`);
-    const outcome = await this.account.createAccount(accountId, publicKey, gift) as unknown as TxStatus;
+    const outcome = await withRetry(() => this.account.createAccount(accountId, publicKey, gift)) as unknown as TxStatus;
     const failure = txFailure(outcome);
     if (failure) throw new Error(`Account creation failed: ${failure}`);
     // Wait until the key is readable at 'final', so the player can sign right away.
@@ -90,7 +90,7 @@ export class Relayer {
     const signed = decodeDelegate(b64);
     const action = transactions.Action ? new transactions.Action({ signedDelegate: signed } as never) : null;
     if (!action) throw new Error('near-api-js has no SignedDelegate action');
-    const outcome = await this.account.signAndSendTransaction({ receiverId: checked.summary.senderId, actions: [action], returnError: true }) as unknown as TxStatus;
+    const outcome = await withRetry(() => this.account.signAndSendTransaction({ receiverId: checked.summary.senderId, actions: [action], returnError: true })) as unknown as TxStatus;
     const hash = outcome.transaction.hash;
     // Wait for every receipt (cross-contract callbacks included) at FINAL.
     const tx = await txStatus(hash, this.accountId, this.rpc);
@@ -104,3 +104,15 @@ export class Relayer {
 }
 
 export class RelayRefused extends Error {}
+
+/** The public RPC rate-limits by IP (HTTP 429 / code -429). A signed delegate stays valid for
+ * ~120 blocks, so back off and resend instead of failing the player's action. */
+async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try { return await fn(); }
+    catch (e) {
+      if (attempt >= 5 || !/429|Rate limits exceeded/i.test(String(e))) throw e;
+      await new Promise(r => setTimeout(r, 1500 * 2 ** attempt));
+    }
+  }
+}

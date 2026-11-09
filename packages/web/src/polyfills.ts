@@ -1,3 +1,4 @@
 import { Buffer } from 'buffer';
-globalThis.Buffer ??= Buffer;
-globalThis.global ??= globalThis;
+const globals = globalThis as typeof globalThis & { Buffer?: typeof Buffer; global?: typeof globalThis };
+globals.Buffer ??= Buffer;
+globals.global ??= globalThis;
