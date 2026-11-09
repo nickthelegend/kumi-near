@@ -35,7 +35,7 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
   const config = useConfig();
   const cardIds = chat.messages.filter(m => m.kind === 'trade' && m.trade?.proposalId !== undefined).map(m => m.trade!.proposalId!);
   const props = useAsync(() => st.data ? readProposals(st.data.crew.dao, cardIds) : Promise.resolve({} as Record<number, Proposal>), [st.data?.crew.dao, cardIds.join(','), st.data?.readAt]);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => new URLSearchParams(location.search).get('pitch') ?? '');
   const box = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const stuck = useRef(true);
@@ -142,7 +142,7 @@ function CrewList({ crews, marks, current, me }: { crews: Crew[]; marks: import(
       const preview = l?.msg ? `${l.msg.account === me?.accountId ? 'You' : shortName(l.msg.account)}: ${l.msg.kind === 'trade' ? `pitched ${l.msg.text}` : l.msg.text}` : last.loading ? 'Loading…' : `${c.members.length} members · ${c.trade_count} trades`;
       const nav = Number(crewNav(c, marks)) / 1e24;
       return <li key={c.id}>
-        <a href={`/app?crew=${c.id}`} className={`crew-item tone-${crewTone(c.id)}`} aria-current={c.id === current ? 'page' : undefined} onClick={e => { e.preventDefault(); navigate(`/app?crew=${c.id}`); }}>
+        <a href={`/room?crew=${c.id}`} className={`crew-item tone-${crewTone(c.id)}`} aria-current={c.id === current ? 'page' : undefined} onClick={e => { e.preventDefault(); navigate(`/room?crew=${c.id}`); }}>
           <CrewAvatar id={c.id} name={c.name} />
           <span style={{ minWidth: 0 }}><span className="n" style={{ display: 'block' }}>{c.name}</span><span className="p" style={{ display: 'block' }}>{preview}</span></span>
           <span className="meta">

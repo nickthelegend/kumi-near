@@ -36,7 +36,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
             <h1>Your group chat is a <em>fund.</em></h1>
             <p className="lead">Pool money with friends. Pitch a trade in chat with <code>/buy SOL 20%</code>. When the vote passes, it executes, and everyone's share stays exact and on-chain.</p>
             <div className="l-cta">
-              <Link to="/app" className="btn btn-primary btn-lg">Open the crew chat <Ic name="arrow" /></Link>
+              <Link to="/room" className="btn btn-primary btn-lg">Open the crew chat <Ic name="arrow" /></Link>
               <button className="btn btn-lg" onClick={onSignIn}>Join with email</button>
             </div>
           </div>
@@ -102,7 +102,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
           <div className="cta-copy">
             <h2>Start a crew with the people you already text.</h2>
             <p>Sign in with email, chip in, and make your first call together.</p>
-            <div className="l-cta"><Link to="/app" className="btn btn-primary btn-lg">Open the crew chat</Link><Link to="/leaderboard" className="btn btn-lg btn-butter">See the season</Link></div>
+            <div className="l-cta"><Link to="/room" className="btn btn-primary btn-lg">Open the crew chat</Link><Link to="/leaderboard" className="btn btn-lg btn-butter">See the season</Link></div>
           </div>
           <div className="cta-art"><Art eager name={['kumi3-season', 'kumi-og']} alt="Four clay friends around a table with a treasure chest" /></div>
         </div>
@@ -122,7 +122,7 @@ function CrewMini({ st }: { st: CrewState }) {
   return <div className="mini-crew">
     <div className="row">
       <CrewAvatar id={crew.id} name={crew.name} size="lg" />
-      <div style={{ minWidth: 0, flex: 1 }}><Link to={`/app?crew=${crew.id}`}><b style={{ fontSize: 20 }}>{crew.name}</b></Link><div className="faint mono" style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis' }}>{crew.dao}</div></div>
+      <div style={{ minWidth: 0, flex: 1 }}><Link to={`/room?crew=${crew.id}`}><b style={{ fontSize: 20 }}>{crew.name}</b></Link><div className="faint mono" style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis' }}>{crew.dao}</div></div>
       <span className="avatars">{crew.allowed.map(m => <Avatar key={m} id={m} initial />)}</span>
     </div>
     <div className="hero-card" style={{ marginTop: 14, boxShadow: 'none' }}>
@@ -137,6 +137,6 @@ function CrewMini({ st }: { st: CrewState }) {
       <div className="tile tone-butter"><div className="label">Captain</div><div className="v">{crew.captain ? shortName(crew.captain.account_id) : 'none'}</div></div>
       <div className="tile tone-pink"><div className="label">Followers</div><div className="v">{crew.followers.length}</div></div>
     </div>
-    <Link to={`/app?crew=${crew.id}`} className="btn btn-plum btn-block">Open {crew.name}'s chat <Ic name="arrow" size={16} /></Link>
+    <Link to={`/room?crew=${crew.id}`} className="btn btn-plum btn-block">Open {crew.name}'s chat <Ic name="arrow" size={16} /></Link>
   </div>;
 }

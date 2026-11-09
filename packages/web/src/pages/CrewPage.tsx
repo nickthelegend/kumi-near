@@ -24,7 +24,7 @@ export function CrewPage({ crewId, onSignIn }: { crewId: number; onSignIn: () =>
             <span className="muted">{crew.members.length} members · DAO <a className="hash" href={accountUrl(crew.dao)} target="_blank" rel="noreferrer">{crew.dao}</a></span>
           </div>
         </div>
-        <Link to={`/app?crew=${crew.id}`} className="btn btn-plum">Open the crew chat <Ic name="arrow" size={16} /></Link>
+        <Link to={`/room?crew=${crew.id}`} className="btn btn-plum">Open the crew chat <Ic name="arrow" size={16} /></Link>
       </div>
       <div className="crew-grid">
         <div className="stack">

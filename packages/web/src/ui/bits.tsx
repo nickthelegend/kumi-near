@@ -75,10 +75,11 @@ export function TopNav({ path, onSignIn }: { path: string; onSignIn: () => void 
   const cur = (p: string) => (path === p || (p !== '/' && path.startsWith(p)) ? 'page' : undefined);
   return (
     <header className="nav">
-      <div className={`nav-in ${path.startsWith('/app') ? 'wide' : ''}`}>
+      <div className={`nav-in ${path.startsWith('/room') ? 'wide' : ''}`}>
         <Brand />
         <nav className="nav-links" aria-label="Main">
-          <Link to="/app" aria-current={cur('/app')}><Ic name="chat" size={16} />Crew chat</Link>
+          <Link to="/app" aria-current={cur('/app')}><Ic name="crews" size={16} />Lobby</Link>
+          <Link to="/room" aria-current={cur('/room')}><Ic name="chat" size={16} />Crew chat</Link>
           <Link to="/leaderboard" aria-current={cur('/leaderboard')}><Ic name="trophy" size={16} />Season</Link>
           <Link to="/crew/0" aria-current={cur('/crew')}><Ic name="star" size={16} />Follow a crew</Link>
         </nav>
@@ -117,6 +118,7 @@ const paths: Record<string, string> = {
   chart: 'M4 19h16M6 15l4-4 3 3 5-6',
   bolt: 'M13 3L5 13h6l-1 8 8-10h-6z',
   user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+  book: 'M5 4h9a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4zM5 16a4 4 0 0 1 4-4h9',
   external: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
 };
 export function Ic({ name, size = 18 }: { name: string; size?: number }) {
