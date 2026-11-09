@@ -20,7 +20,7 @@
   - trade quotes (on-chain pool view plus a mainnet 1Click dry quote);
   - delegate signing;
   - P&L and seasons from receipts.
-- **Web** (`packages/web`): the landing page, the crew room (chat with trade cards, fund pane, captain and DAO votes), the public crew page with Follow, the season board, and the join and ragequit sheets.
+- **Web** (`packages/web`): the landing page, the crews home (phone: balance header, crew card carousel, receipt day strip, floating tab bar; desktop: sidebar and 2-column card grid with Join and Follow), the crew chat (trade cards with vote bars, fund and crew panes, captain and DAO votes), the public crew page with Follow, the season board, the You page, and the join, follow and ragequit sheets.
 - **MCP** (`packages/mcp`): read-only tools for agents.
 
 ## Evidence
