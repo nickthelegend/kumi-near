@@ -1,0 +1,9 @@
+{
+  "name": "@kumi/mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {"kumi-mcp": "./src/main.ts"},
+  "scripts": {"build": "tsc --noEmit", "test": "vitest run"},
+  "dependencies": {"@kumi/sdk":"workspace:*","@modelcontextprotocol/sdk":"^1.0.0"},
+  "devDependencies": {"typescript":"^5.9.3","vitest":"^3.2.4","@types/node":"^22.15.30"}
+}
