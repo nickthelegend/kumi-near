@@ -1,60 +1,95 @@
-import { accountUrl, formatNear, formatUnits, seasonRow, type Trade } from '@kumi/sdk';
-import { readCrew, useAsync, type CrewState } from '../lib/api';
-import { longDay, nsToMs, signed } from '../lib/activity';
-import { useSession } from '../lib/session';
-import { Art, Avatars, Icon, Link, PnlBar, State } from '../ui/bits';
+import { useState } from 'react';
+import { accountUrl, formatNear, formatUnits, parseNear, vaultNav, type Trade } from '@kumi/sdk';
+import { HUB, readCrew, useAsync, type CrewState } from '../lib/api';
+import { useSession, type Session } from '../lib/session';
+import { relay } from '../ui/actions';
+import { Art, Avatar, Link, Notice, shortName, Tx } from '../ui/bits';
 import { Spark } from '../ui/Fund';
-import { FollowForm } from '../ui/Sheets';
 
-/** Public crew page: verified return, executed trades and the follower vault. */
-export function CrewPage({ crewId, desktop, onSignIn }: { crewId: number; desktop: boolean; onSignIn: () => void }) {
+export function CrewPage({ crewId, onSignIn }: { crewId: number; onSignIn: () => void }) {
   const st = useAsync(() => readCrew(crewId), [crewId], 15_000);
   const me = useSession();
-  const wrap = desktop ? 'web-page' : 'ph-page';
-  if (st.error && !st.data) return <div className={wrap} style={{ paddingTop: 24 }}><State kind="error" title={`Could not read crew ${crewId}`} action={<button className="pill-light" onClick={st.reload}>Retry</button>}>{st.error}</State></div>;
-  if (!st.data) return <div className={wrap} style={{ paddingTop: 24 }}><div className="skeleton" style={{ height: 90 }} /><div className="skeleton" style={{ height: 320, marginTop: 16 }} /></div>;
+  if (st.error && !st.data) return <div className="page"><Notice error>{st.error}</Notice></div>;
+  if (!st.data) return <div className="page"><div className="skeleton" style={{ height: 80, width: 420, maxWidth: '100%' }} /><div className="skeleton" style={{ height: 320, marginTop: 24 }} /></div>;
   const { crew, pnl, trades } = st.data;
   const done = trades.filter(t => t.status === 'executed');
-  const week = seasonRow(crew, pnl).returnPct;
-  return <div className={wrap}>
-    <div className={desktop ? 'web-head-row' : 'ph-top'}>
-      <Link to="/app" className="text-btn"><Icon name="chevL" size={16} />All crews</Link>
-      <Link to={`/chat/${crew.id}`} className={desktop ? 'pill-ink' : 'pill-light pill-sm'}>Open the chat <Icon name="arrow" size={15} /></Link>
-    </div>
-    <div className="page-title" style={{ marginTop: 18 }}>
-      <p className="lbl" style={{ marginBottom: 10 }}>Public crew page · stats from on-chain receipts</p>
-      <h1 style={{ fontSize: desktop ? 44 : 34 }}>{crew.name}</h1>
-      <div className="done-row" style={{ marginTop: 10 }}><Avatars ids={crew.allowed} /><span className="muted">{crew.members.length} members · DAO <a className="hash" href={accountUrl(crew.dao)} target="_blank" rel="noreferrer">{crew.dao}</a></span></div>
-    </div>
-    <div className="crew-grid">
-      <div className="stack">
-        <section className="panel">
-          <div className="row-between"><span className="lbl">Return since first deposit</span>
-            <span className={`tag ${pnl.verified ? 'tag-up' : 'tag-down'}`} title={pnl.verifyNote}><Icon name={pnl.verified ? 'check' : 'x'} size={13} />{pnl.verified ? 'Verified on-chain' : 'Unverified'}</span></div>
-          <div className={`big-ret ${pnl.returnPct >= 0 ? 'pos' : 'neg'}`}>{signed(pnl.returnPct)}</div>
-          <p className="mini">{pnl.verifyNote}. Max drawdown {pnl.maxDrawdownPct.toFixed(2)}%. NAV {pnl.navNear.toFixed(4)} NEAR.</p>
-          <div className="nav-card" style={{ marginTop: 16, paddingBottom: 6 }}><PnlBar pct={week} label="This week" /><Spark pnl={pnl} height={160} /></div>
-        </section>
-        <section className="panel">
-          <div className="panel-head"><h3>Executed trades</h3><span className="lbl">{done.length} of {trades.length}</span></div>
-          {done.length === 0 ? <p className="mini">No executed trades yet.</p> : <ul className="txlist">{done.slice(-8).reverse().map(t => <TradeRow key={t.id} t={t} st={st.data!} />)}</ul>}
-        </section>
-      </div>
-      <aside className="panel follow-card">
-        <div className="follow-art"><Art name="kumi-feature-chat" alt="A chat bubble streaming into a rising trade card" /></div>
-        <div className="follow-in">
-          <div><h3>Follow {crew.name}</h3><p className="mini" style={{ marginTop: 6 }}>Your deposit sits in the crew's follower vault. Every crew trade is mirrored pro rata in the same swap. Exit any time.</p></div>
-          <FollowForm st={st.data} me={me} onSignIn={onSignIn} onDone={st.reload} />
-          <p className="faint" style={{ margin: 0, fontSize: 12.5 }}>The fee is charged only on gains above the high-water mark ({(Number(BigInt(crew.vault_hwm) / 10n ** 20n) / 10_000).toFixed(4)} NEAR per share) and paid on-chain to the crew.</p>
+  return (
+    <main className="page">
+      <div className="page-head">
+        <div>
+          <span className="label">Public crew page · season stats from receipts</span>
+          <h1>{crew.name}</h1>
+          <div className="row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
+            <span className="avatars">{crew.members.map(([a]) => <Avatar key={a} id={a} />)}</span>
+            <span className="muted">{crew.members.length} members · DAO <a className="hash" href={accountUrl(crew.dao)} target="_blank" rel="noreferrer">{crew.dao}</a></span>
+          </div>
         </div>
-      </aside>
-    </div>
-  </div>;
+        <Link to={`/app?crew=${crew.id}`} className="btn">Open the crew room</Link>
+      </div>
+      <div className="crew-hero">
+        <div className="panel">
+          <div className="row-between"><span className="label">Return since first deposit</span><span className={pnl.verified ? 'chip chip-butter' : 'chip chip-rose'} title={pnl.verifyNote}><span className="dot" />{pnl.verified ? 'Verified on-chain' : 'Unverified'}</span></div>
+          <div className="big" style={{ fontSize: 48 }}><span className={pnl.returnPct >= 0 ? 'up' : 'down'}>{pnl.returnPct >= 0 ? '+' : ''}{pnl.returnPct.toFixed(2)}%</span></div>
+          <div className="faint" style={{ fontSize: 14 }}>{pnl.verifyNote}. Max drawdown {pnl.maxDrawdownPct.toFixed(2)}%. NAV {pnl.navNear.toFixed(4)} NEAR.</div>
+          <Spark pnl={pnl} height={180} />
+          <div className="label" style={{ margin: '22px 0 6px' }}>Executed trades</div>
+          {done.length === 0 ? <p className="faint">No executed trades yet.</p> : (
+            <ul className="txlist">{done.slice(-8).reverse().map(t => <TradeRow key={t.id} t={t} st={st.data!} />)}</ul>
+          )}
+        </div>
+        <FollowPanel st={st.data} me={me} onSignIn={onSignIn} onDone={st.reload} />
+      </div>
+    </main>
+  );
 }
 
 function TradeRow({ t, st }: { t: Trade; st: CrewState }) {
   const a = st.assets.find(x => x.symbol === t.asset);
   const leg = (v: string, near: boolean) => near ? `${formatNear(v, 4)} NEAR` : `${formatUnits(v, a?.decimals ?? 0, Math.min(a?.decimals ?? 0, 8))} t${t.asset}`;
-  return <li><span className="what"><b className={t.side === 'buy' ? 'pos' : 'neg'}>{t.side.toUpperCase()}</b> {t.asset} {(t.bps / 100).toFixed(0)}% · {leg(t.crew_in, t.side === 'buy')} → {leg(t.crew_out, t.side !== 'buy')}</span>
-    <span className="tag">{t.kind === 'captain' ? 'captain' : `vote #${t.dao_proposal_id}`} · {longDay(nsToMs(t.executed_at ?? t.created_at))}</span></li>;
+  return (
+    <li><span className="what"><span className={t.side === 'buy' ? 'up' : 'down'} style={{ fontWeight: 700 }}>{t.side.toUpperCase()}</span> {t.asset} {(t.bps / 100).toFixed(0)}% · {leg(t.crew_in, t.side === 'buy')} → {leg(t.crew_out, t.side !== 'buy')}</span>
+      <span className="chip">{t.kind === 'captain' ? 'captain' : `vote #${t.dao_proposal_id}`}</span></li>
+  );
+}
+
+function FollowPanel({ st, me, onSignIn, onDone }: { st: CrewState; me: Session | null; onSignIn: () => void; onDone: () => void }) {
+  const { crew, marks } = st;
+  const [amount, setAmount] = useState('0.05');
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [hash, setHash] = useState<string | null>(null);
+  const nav = vaultNav(crew, marks);
+  const supply = BigInt(crew.vault_supply);
+  const mine = me ? BigInt(crew.followers.find(f => f[0] === me.accountId)?.[1] ?? '0') : 0n;
+  const pps = supply > 0n ? Number(nav * 10_000n / supply) / 10_000 : 1;
+  async function act(name: string, fn: () => Promise<{ hash: string }>) {
+    setBusy(name); setError(null);
+    try { setHash((await fn()).hash); onDone(); } catch (e) { setError(String(e instanceof Error ? e.message : e)); } finally { setBusy(null); }
+  }
+  return (
+    <aside className="panel stack" style={{ alignSelf: 'start', overflow: 'hidden', padding: 0 }}>
+      <div style={{ height: 170, overflow: 'hidden' }}><Art name="kumi-feature-chat" alt="A chat bubble streaming into a rising trade card" /></div>
+      <div className="stack" style={{ padding: '0 22px 22px' }}>
+        <div><h3 style={{ fontSize: 22 }}>Follow {crew.name}</h3><p className="muted" style={{ margin: '6px 0 0', fontSize: 15 }}>Your deposit sits in the crew's follower vault. Every crew trade is mirrored pro rata in the same swap. Exit any time.</p></div>
+        <div className="kpis">
+          <div className="kpi"><div className="label">Vault NAV</div><div className="v">{formatNear(nav, 3)}</div></div>
+          <div className="kpi"><div className="label">Followers</div><div className="v">{crew.followers.length}</div></div>
+          <div className="kpi"><div className="label">Perf fee</div><div className="v">{crew.vault_fee_bps / 100}%</div></div>
+          <div className="kpi"><div className="label">Fees paid</div><div className="v">{formatNear(crew.vault_fees_paid, 4)}</div></div>
+        </div>
+        <p className="faint" style={{ margin: 0, fontSize: 13 }}>The fee is charged only on gains above the high-water mark ({(Number(BigInt(crew.vault_hwm) / 10n ** 20n) / 10_000).toFixed(4)} per share) and paid on-chain to the crew.</p>
+        {crew.followers.length > 0 && <div className="row" style={{ flexWrap: 'wrap' }}>{crew.followers.map(([f]) => <span key={f} className="chip"><Avatar id={f} />{shortName(f)}</span>)}</div>}
+        {!me ? <button className="btn btn-primary btn-lg" onClick={onSignIn}>Sign in to follow</button> : (
+          <>
+            {mine > 0n && <Notice>You hold {(Number(mine * 10_000n / supply) / 100).toFixed(2)}% of the vault, worth about {(pps * Number(mine) / 1e24).toFixed(4)} NEAR.</Notice>}
+            <div className="row"><input className="input mono" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} aria-label="Amount in NEAR" style={{ flex: 1 }} />
+              <button className="btn btn-primary" disabled={!!busy} onClick={() => act('f', () => relay(me, HUB, 'follow', { crew_id: crew.id }, parseNear(amount), { crewId: crew.id, label: 'follow' }))}>{busy === 'f' ? 'Following…' : 'Follow'}</button></div>
+            {mine > 0n && <button className="btn" disabled={!!busy} onClick={() => act('u', () => relay(me, HUB, 'unfollow', { crew_id: crew.id, shares: mine.toString() }))}>{busy === 'u' ? 'Exiting…' : 'Exit the vault, exact share'}</button>}
+          </>
+        )}
+        {error && <Notice error>{error}</Notice>}
+        {hash && <div className="row" style={{ fontSize: 14 }}>Done in <Tx hash={hash} /></div>}
+      </div>
+    </aside>
+  );
 }

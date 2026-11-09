@@ -21,14 +21,12 @@ Without `.env`, the web app reads the recorded testnet deployment straight from 
 | Do | See |
 | --- | --- |
 | Open `/` | Live hub numbers (crews, NAV, trades, members) and the recorded lifecycle with NearBlocks links. |
-| Open `/app` | The crews home, read live from the hub. On a phone: your crew balance, a carousel of crew cards (NAV, a "this week" P&L bar, members, **Open chat →**), a day strip of on-chain receipts with filter chips, and a floating Crews / Chat / You tab bar. On a desktop: a sidebar and a 2-column grid of crew, season and recent-trade cards with **Join** and **Follow** buttons. |
-| Open `/chat/0` | The **Night Owls** crew chat. It shows signed messages and the trade cards from the testnet run: the quote, the Sputnik vote split bar with **Vote →**, and the executed tx links. On a phone the fund and the crew info open as sheets. On a desktop they sit in a side pane: NAV, the P&L chart, holdings, members' shares, the captain lane and open DAO votes. "Verified on-chain" means the P&L was recomputed from receipts and matches live state. `/app?crew=N` redirects here. |
+| Open `/app` | The **Night Owls** crew room. The chat shows signed messages and the trade cards from the testnet run (quote, Sputnik votes, executed tx links). The fund pane shows NAV, the P&L chart, holdings and members' shares. "Verified on-chain" means the P&L was recomputed from receipts and matches live state. |
 | Click **Sign in**, enter any email | Without `RESEND_API_KEY` the sheet says "Email delivery: Setup required: RESEND_API_KEY" and shows the code. Verifying creates `<name>.<relayer>.testnet` with a key made in your browser. |
-| As a member, type `/buy BTC 10%` | A trade card appears with the testnet pool quote and a mainnet 1Click `dry: true` quote. **File to the crew DAO** creates a Sputnik proposal. **Vote →**, then **Approve** from 2 of 3 members executes it. |
+| As a member, type `/buy BTC 10%` | A trade card appears with the testnet pool quote and a mainnet 1Click `dry: true` quote. **File to the crew DAO** creates a Sputnik proposal. **👍 Approve** from 2 of 3 members executes it. |
 | Open `/crew/0` | The public crew page: verified return, the trade list and **Follow** (a follower vault deposit). |
 | Open `/leaderboard` | This week's season, ranked by return minus half the max drawdown. |
-| Open `/you` | Your stake in each crew at live NAV, your follows, and **Ragequit**. |
-| Fund sheet or `/you`, **Ragequit** | The exact payout preview. "To any chain" shows a real 1Click dry quote and "Setup required: NEAR_MAINNET_ACCOUNT". The testnet exit pays in kind. |
+| Fund pane, **Ragequit** | The exact payout preview. "To any chain" shows a real 1Click dry quote and "Setup required: NEAR_MAINNET_ACCOUNT". The testnet exit pays in kind. |
 
 Agent surface (read-only MCP over stdio): `pnpm --filter @kumi/mcp start`. The tools are `list_crews`, `crew_pnl`, `season_leaderboard`, `quote_trade` and `crew_trades`.
 
@@ -48,7 +46,7 @@ Re-check the testnet evidence (no keys needed): `pnpm verify:testnet`. It re-que
 | `packages/testpool` | **Testnet only.** A NEP-141 token with a built-in NEAR constant-product pool (0.30% fee). NEAR Intents has no testnet, so testnet trades fill here. Pools were seeded at the Coinbase spot ratio at deploy time (source URLs and timestamps are in the evidence file). |
 | `packages/server` | Email sign-in (Resend if keyed). The relayer creates player sub-accounts and relays NEP-366 delegates on an allow-list: player senders only, Kumi contracts only, capped deposits and gas, and approve or reject votes only. The crew chat runs over WebSocket. Each message is ed25519-signed by the player's key and checked against the account's on-chain access keys. There is also a cached read-only RPC proxy for the browser. |
 | `packages/sdk` | Typed hub reads, the trade quote (pool view plus 1Click dry quote), delegate signing, P&L and seasons. |
-| `packages/web` | Landing, crews home (phone carousel and desktop card grid), crew chat with trade cards, public crew and follow page, season board, You page. |
+| `packages/web` | Landing, crew room, public crew and follow page, season board. |
 
 NEAR features used, and why:
 - **Sputnik DAO v2**: one DAO per crew, created through the factory. It is the only authority over trades and captain keys.
