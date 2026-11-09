@@ -20,7 +20,7 @@ export function CrewPage({ crewId, onSignIn }: { crewId: number; onSignIn: () =>
           <span className="chip chip-mint"><Ic name="star" size={13} />Public crew page · stats from on-chain receipts</span>
           <div className="row" style={{ marginTop: 10, gap: 14 }}><CrewAvatar id={crew.id} name={crew.name} size="lg" /><h1 style={{ margin: 0 }}>{crew.name}</h1></div>
           <div className="row" style={{ marginTop: 14, flexWrap: 'wrap' }}>
-            <span className="avatars">{crew.members.map(([a]) => <Avatar key={a} id={a} />)}</span>
+            <span className="avatars">{crew.members.map(([a]) => <Avatar key={a} id={a} initial />)}</span>
             <span className="muted">{crew.members.length} members · DAO <a className="hash" href={accountUrl(crew.dao)} target="_blank" rel="noreferrer">{crew.dao}</a></span>
           </div>
         </div>
