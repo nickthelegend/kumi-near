@@ -29,7 +29,7 @@ export function App() {
   else page = <Landing onSignIn={open} />;
   return (
     <>
-      {path !== '/app' && <TopNav path={path} onSignIn={open} />}
+      <TopNav path={path} onSignIn={open} />
       {page}
       {signIn && <SignIn onClose={() => setSignIn(false)} />}
     </>
