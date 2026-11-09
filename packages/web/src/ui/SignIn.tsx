@@ -25,7 +25,7 @@ export function SignIn({ onClose }: { onClose: () => void }) {
   return (
     <div className="scrim" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="signin-title">
-        <div className="sheet-art"><Art name="kumi-og" alt="Four friends around a table sharing a treasure chest" eager /></div>
+        <div className="sheet-art"><Art name={['kumi3-hero', 'kumi-og']} alt="Clay friends cheering around a jar of coins" eager /></div>
         {step === 'email' && (
           <form className="stack" onSubmit={e => { e.preventDefault(); void go(async () => { setStart(await api<Start>('/api/auth/start', { email })); setStep('code'); }); }}>
             <div>
@@ -53,7 +53,7 @@ export function SignIn({ onClose }: { onClose: () => void }) {
             </div>
             {start.delivery === 'setup-required' && (
               <Notice>
-                <div><b>Email delivery: {start.setup}.</b> This testnet preview has no email provider, so your code is shown here: <span className="mono" style={{ color: 'var(--butter)', fontSize: 15 }}>{start.previewCode}</span></div>
+                <div><b>Email delivery: {start.setup}.</b> This testnet preview has no email provider, so your code is shown here: <b className="mono" style={{ fontSize: 16 }}>{start.previewCode}</b></div>
               </Notice>
             )}
             <input className="input mono" inputMode="numeric" pattern="\d{6}" maxLength={6} required value={code} onChange={e => setCode(e.target.value)} placeholder="000000" autoFocus aria-label="Code" style={{ fontSize: 22, letterSpacing: '0.3em', textAlign: 'center' }} />
@@ -67,7 +67,7 @@ export function SignIn({ onClose }: { onClose: () => void }) {
             <h3 id="signin-title">You're in</h3>
             <p className="sub" style={{ margin: 0 }}>Your account <Acct id={made.accountId} /> lives on NEAR testnet. Its key stays in this browser.</p>
             {made.createdTx && <div className="row faint" style={{ fontSize: 14 }}>Created in <Tx hash={made.createdTx} /></div>}
-            <button className="btn btn-primary btn-lg" onClick={onClose}>Go to my crew</button>
+            <button className="btn btn-primary btn-lg" onClick={onClose}>Go to the crew chat</button>
           </div>
         )}
       </div>

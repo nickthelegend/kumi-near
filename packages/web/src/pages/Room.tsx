@@ -1,38 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { accountUrl, formatNear, getProposals, memberShare, view, type Proposal } from '@kumi/sdk';
-import { HUB, readCrew, readHub, readProposals, useAsync, useChat, useConfig, type ChatMessage } from '../lib/api';
-import { makeCaptainKey, signedChat, useSession, type Session } from '../lib/session';
-import { relay, vote } from '../ui/actions';
-import { Art, Avatar, Icon, Link, Notice, shortName, Tx } from '../ui/bits';
-import { FundPane } from '../ui/Fund';
+import { crewNav, memberShare, type Crew, type Proposal } from '@kumi/sdk';
+import { api, HUB, readCrew, readHub, readProposals, useAsync, useChat, useConfig, type ChatMessage, type CrewState } from '../lib/api';
+import { signedChat, useSession, type Session } from '../lib/session';
+import { Art, Avatar, CrewAvatar, EmptyArt, Ic, Link, Notice, crewTone, navigate, shortName, Tx } from '../ui/bits';
+import { CrewInfo, FundPane, JoinSheet, QuitSheet } from '../ui/Fund';
 import { TradeCard } from '../ui/TradeCard';
 
-const HINTS = ['/buy SOL 20%', '/sell SOL 50%', '/buy BTC 10%', '/captain buy SOL 5%'];
+const HINTS: [string, string][] = [['/buy SOL 20%', 'coral'], ['/sell SOL 50%', 'pink'], ['/buy BTC 10%', 'butter'], ['/captain buy SOL 5%', 'mint']];
+const SEEN = (id: number) => `kumi:seen:v1:${id}`;
+const seen = (id: number) => { try { return Number(localStorage.getItem(SEEN(id)) ?? 0); } catch { return 0; } };
+type Tab = 'crews' | 'chat' | 'fund';
 
 export function Room({ onSignIn }: { onSignIn: () => void }) {
   const me = useSession();
   const hub = useAsync(() => readHub(), [], 60_000);
-  const params = new URLSearchParams(location.search);
-  const wanted = params.get('crew');
+  const wanted = new URLSearchParams(location.search).get('crew');
+  const crews = hub.data?.crews ?? [];
   const crewId = useMemo(() => {
-    const crews = hub.data?.crews ?? [];
     if (wanted !== null) return Number(wanted);
     return (me && crews.find(c => c.allowed.includes(me.accountId))?.id) ?? crews[0]?.id ?? null;
-  }, [hub.data, wanted, me]);
+  }, [crews, wanted, me]);
 
   if (hub.error && !hub.data) return <div className="page"><Notice error>Could not read the Kumi hub {HUB} on NEAR testnet: {hub.error}</Notice></div>;
-  if (!hub.data) return <div className="room" data-tab="chat"><div className="rail"><div className="skeleton" style={{ height: 200 }} /></div><div className="thread"><div className="messages"><div className="skeleton" style={{ height: 120 }} /><div className="skeleton" style={{ height: 220 }} /></div></div><div className="fund"><div className="skeleton" style={{ height: 260 }} /></div></div>;
-  if (crewId === null) return (
-    <div className="page"><div className="panel empty" style={{ padding: 48 }}>
-      <div className="empty-art" style={{ width: 240, height: 160 }}><Art name="kumi-og" alt="Friends around a table" /></div>
-      <h4>No crews on this hub yet</h4><p>The first crew needs a Sputnik DAO (5.5 testnet NEAR of code storage). Run <span className="mono">pnpm run:testnet</span> to create one.</p>
-    </div></div>
-  );
-  return <CrewRoom key={crewId} crewId={crewId} me={me} onSignIn={onSignIn} />;
+  if (!hub.data) return <div className="room" data-tab="chat"><aside className="pane list"><div className="skeleton" style={{ height: 300, margin: 16 }} /></aside><section className="pane thread"><div className="skeleton" style={{ height: 220, margin: 24 }} /></section><aside className="pane fund"><div className="skeleton" style={{ height: 260 }} /></aside></div>;
+  if (crewId === null) return <div className="page"><div className="card"><EmptyArt art={['kumi3-empty', 'kumi-og']} title="No crews on this hub yet">The first crew needs a Sputnik DAO (5.5 testnet NEAR of code storage). Run <span className="mono">pnpm run:testnet</span> to create one.</EmptyArt></div></div>;
+  return <CrewRoom key={crewId} crewId={crewId} crews={crews} marks={hub.data.marks} me={me} onSignIn={onSignIn} />;
 }
 
-function CrewRoom({ crewId, me, onSignIn }: { crewId: number; me: Session | null; onSignIn: () => void }) {
-  const [tab, setTab] = useState<'chat' | 'fund' | 'crew'>('chat');
+function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crews: Crew[]; marks: import('@kumi/sdk').Mark[]; me: Session | null; onSignIn: () => void }) {
+  const [tab, setTab] = useState<Tab>('chat');
+  const [sheet, setSheet] = useState<'join' | 'quit' | null>(null);
   const st = useAsync(() => readCrew(crewId), [crewId], 15_000);
   const chat = useChat(crewId);
   const config = useConfig();
@@ -40,151 +37,174 @@ function CrewRoom({ crewId, me, onSignIn }: { crewId: number; me: Session | null
   const props = useAsync(() => st.data ? readProposals(st.data.crew.dao, cardIds) : Promise.resolve({} as Record<number, Proposal>), [st.data?.crew.dao, cardIds.join(','), st.data?.readAt]);
   const [text, setText] = useState('');
   const box = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
   const stuck = useRef(true);
-  // Keep the newest message in view unless the reader scrolled up.
-  useEffect(() => { const b = box.current; if (b && stuck.current) b.scrollTop = b.scrollHeight; }, [chat.messages, st.data?.readAt, props.data]);
+  useEffect(() => { const b = box.current; if (b && stuck.current) b.scrollTop = b.scrollHeight; }, [chat.messages, st.data?.readAt, props.data, tab]);
+  // Mark this crew read up to its newest message.
+  useEffect(() => { const last = chat.messages[chat.messages.length - 1]; if (last) try { localStorage.setItem(SEEN(crewId), String(last.ts)); } catch { /* private mode */ } }, [chat.messages, crewId]);
 
-  if (st.error && !st.data) return <div className="page"><Notice error>{st.error}</Notice></div>;
-  if (!st.data) return <div className="room" data-tab="chat"><div className="rail"><div className="skeleton" style={{ height: 200 }} /></div><div className="thread"><div className="messages"><div className="skeleton" style={{ height: 220 }} /></div></div><div className="fund"><div className="skeleton" style={{ height: 260 }} /></div></div>;
-  const { crew } = st.data;
-  const isMember = !!me && crew.allowed.includes(me.accountId);
   const refresh = () => { st.reload(); props.reload(); };
+  const isMember = !!me && !!st.data && st.data.crew.allowed.includes(me.accountId);
+  const pitch = (t = '/buy SOL 10%') => { setTab('chat'); setText(t); requestAnimationFrame(() => input.current?.focus()); };
+  const toVote = () => { setTab('chat'); requestAnimationFrame(() => document.querySelector('[data-vote="open"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })); };
 
   async function send(t: string) {
     if (!me || !t.trim()) return;
+    stuck.current = true;
     if (chat.send(await signedChat(me, crewId, t.trim()))) setText('');
   }
 
+  const list = <aside className="pane list" aria-label="Crews">
+    <div className="list-head">
+      <div className="row-between"><h2>Crews</h2><Link to="/leaderboard" className="chip chip-butter"><Ic name="trophy" size={13} />Season</Link></div>
+      <label className="search"><Ic name="search" size={16} /><span className="sr">Search crews</span><input placeholder={`Search ${crews.length} ${crews.length === 1 ? 'crew' : 'crews'}`} disabled title="Search arrives when the hub lists more crews" /></label>
+    </div>
+    <CrewList crews={crews} marks={marks} current={crewId} me={me} />
+    <div className="list-foot">
+      {st.data && <FirstRun st={st.data} me={me} messages={chat.messages} proposals={props.data ?? {}} onSignIn={onSignIn} onJoin={() => setSheet('join')} onPitch={() => pitch()} onVote={toVote} />}
+      <Link to="/leaderboard" className="season-mini"><Art name={['kumi3-season', 'kumi-og']} alt="" /><span><b>This week's season</b><small>Return minus half the drawdown, from receipts. See the board →</small></span></Link>
+      <section className="legend" aria-label="What the colours mean"><h3>Reading the chat</h3><ul>
+        <li className="tone-coral"><i /><span><b>Coral</b> trade proposals</span></li>
+        <li className="tone-butter"><i /><span><b>Butter</b> votes and deposits</span></li>
+        <li className="tone-mint"><i /><span><b>Mint</b> followers and gains</span></li>
+        <li className="tone-pink"><i /><span><b>Pink</b> ragequits and losses</span></li>
+      </ul></section>
+      <Link to={`/crew/${crewId}`} className="btn btn-sm btn-ghost"><Ic name="star" size={15} />Not in a crew? Follow one</Link>
+    </div>
+  </aside>;
+
+  if (st.error && !st.data) return <div className="page"><Notice error>{st.error}</Notice></div>;
+  if (!st.data) return <div className="room" data-tab={tab}>{list}<section className="pane thread"><div className="skeleton" style={{ height: 220, margin: 24 }} /></section><aside className="pane fund"><div className="skeleton" style={{ height: 260 }} /></aside></div>;
+  const { crew } = st.data;
+  const mine = me ? memberShare(crew, me.accountId) : null;
+
   return (
     <div className="room" data-tab={tab}>
-      <Rail st={st.data} me={me} onChanged={refresh} />
-      <section className="thread" aria-label="Crew chat">
+      {list}
+      <section className="pane thread" aria-label={`${crew.name} chat`}>
         <div className="thread-head">
-          <h3># {crew.name.toLowerCase().replace(/\s+/g, '-')}</h3>
-          <span className={`live ${chat.status === 'live' ? '' : 'off'}`}><span className="dot" />{chat.status === 'live' ? 'live' : chat.status}</span>
-          <span style={{ marginLeft: 'auto' }} className="faint mono">{crew.members.length} in · {crew.followers.length} following</span>
+          <CrewAvatar id={crew.id} name={crew.name} />
+          <div className="grow">
+            <h1>{crew.name}</h1>
+            <div className="sub"><span className={`live ${chat.status === 'live' ? '' : 'off'}`}><i />{chat.status === 'live' ? 'Live' : chat.status === 'connecting' ? 'Connecting' : 'Offline'}</span>{crew.members.length} members · {crew.followers.length} following</div>
+          </div>
+          <span className="avatars hide-sm">{crew.allowed.map(a => <Avatar key={a} id={a} initial />)}</span>
+          <button className="btn btn-sm btn-plum thread-tabs" onClick={() => setTab('fund')}><Ic name="chart" size={15} />{st.data.pnl.navNear.toFixed(3)} N</button>
         </div>
         <div className="messages" aria-live="polite" ref={box} onScroll={e => { const b = e.currentTarget; stuck.current = b.scrollHeight - b.scrollTop - b.clientHeight < 80; }}>
-          {chat.status === 'offline' && chat.messages.length === 0 && <Notice error>Chat is offline: the Kumi server is not running. Start it with <span className="mono">pnpm server</span>. The fund pane still reads the chain directly.</Notice>}
-          {chat.status !== 'offline' && chat.messages.length === 0 && (
-            <div className="empty"><div className="empty-art"><Art name="kumi-feature-chat" alt="A chat bubble becoming a trade card" /></div><h4>Quiet in here</h4>Say hi, or pitch the first trade with <span className="mono">/buy SOL 20%</span>.</div>
-          )}
+          {chat.status === 'offline' && chat.messages.length === 0 && <EmptyArt art={['kumi3-empty', 'kumi-feature-chat']} title="Chat is offline">The Kumi server is not running. Start it with <span className="mono">pnpm server</span>. The fund pane still reads the chain directly.</EmptyArt>}
+          {chat.status !== 'offline' && chat.messages.length === 0 && <EmptyArt art={['kumi3-empty', 'kumi-feature-chat']} title="Quiet in here" action={isMember ? <button className="btn btn-primary" onClick={() => pitch()}>Pitch the first trade</button> : undefined}>Say hi, or pitch the first trade with <span className="mono">/buy SOL 20%</span>.</EmptyArt>}
           {chat.messages.map((m, i) => <Message key={m.id} m={m} prev={chat.messages[i - 1]} me={me} st={st.data!} proposals={props.data ?? {}} onDone={refresh} />)}
         </div>
         <div className="composer">
           {chat.error && <div style={{ marginBottom: 10 }}><Notice error>{chat.error}</Notice></div>}
-          {!me ? <button className="btn btn-primary" style={{ width: '100%' }} onClick={onSignIn}>Sign in with email to talk</button>
-            : !isMember ? <Notice>You're reading as a guest. Only {crew.name} members can post; anyone can follow the crew from its public page.</Notice>
+          {!me ? <div className="guest-bar"><p><b>Read-only.</b> Sign in with email to talk, pitch trades and vote. No wallet needed.</p><button className="btn btn-primary" onClick={onSignIn}>Sign in</button></div>
+            : !isMember ? <div className="guest-bar"><p><b>You're a guest here.</b> Only {crew.name} members post. Anyone can follow the crew and mirror its trades.</p><Link to={`/crew/${crew.id}`} className="btn btn-mint">Follow</Link></div>
             : <>
-              <div className="hints">{HINTS.map(h => <button key={h} className="hint" onClick={() => setText(h)}>{h}</button>)}</div>
+              <div className="hints"><span className="lbl">Pitch a trade:</span>{HINTS.map(([h, tone]) => <button key={h} className={`hint tone-${tone}`} onClick={() => pitch(h)}>{h}</button>)}</div>
               <form className="composer-box" onSubmit={e => { e.preventDefault(); void send(text); }}>
-                <input value={text} onChange={e => setText(e.target.value)} placeholder="Message the crew, or /buy SOL 20%" aria-label="Message" maxLength={500} />
-                <button className="send" aria-label="Send">{Icon.send}</button>
+                <input ref={input} value={text} onChange={e => setText(e.target.value)} placeholder={mine && mine.shares > 0n ? 'Message the crew, or /buy SOL 20%' : 'Say hi, then chip in to get a vote'} aria-label="Message" maxLength={500} />
+                <button className="send" aria-label="Send"><Ic name="send" size={19} /></button>
               </form>
-              {config.data?.setup.liveSwaps && <div className="faint" style={{ fontSize: 12, marginTop: 8 }}>Testnet trades fill against test pools. Mainnet 1Click swaps: {config.data.setup.liveSwaps}.</div>}
+              {config.data?.setup.liveSwaps && <p className="composer-note">Testnet trades fill against test pools. Mainnet 1Click swaps: {config.data.setup.liveSwaps}.</p>}
             </>}
         </div>
       </section>
-      <FundPane st={st.data} me={me} hub={HUB} onChanged={refresh} />
+      <aside className="pane fund" aria-label="Crew fund">
+        <FundPane st={st.data} me={me} onJoin={() => (me ? setSheet('join') : onSignIn())} onQuit={() => setSheet('quit')} />
+        <CrewInfo st={st.data} me={me} onChanged={refresh} />
+      </aside>
       <nav className="tabs" aria-label="Sections">
-        {(['chat', 'fund', 'crew'] as const).map(t => <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>{t === 'chat' ? 'Chat' : t === 'fund' ? 'Fund' : 'Crew'}</button>)}
+        {([['crews', 'Crews', 'crews'], ['chat', 'Chat', 'chat'], ['fund', 'Fund', 'chart']] as const).map(([t, l, ic]) => <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}><Ic name={ic} size={19} />{l}</button>)}
       </nav>
+      {sheet === 'join' && me && <JoinSheet st={st.data} me={me} hub={HUB} onClose={() => setSheet(null)} onDone={refresh} />}
+      {sheet === 'quit' && me && mine && <QuitSheet st={st.data} me={me} hub={HUB} shares={mine.shares} onClose={() => setSheet(null)} onDone={refresh} />}
     </div>
   );
 }
 
-function Message({ m, prev, me, st, proposals, onDone }: { m: ChatMessage; prev?: ChatMessage; me: Session | null; st: import('../lib/api').CrewState; proposals: Record<number, Proposal>; onDone: () => void }) {
+/** Telegram-style crew list: colour avatar, last message, time, unread count. */
+function CrewList({ crews, marks, current, me }: { crews: Crew[]; marks: import('@kumi/sdk').Mark[]; current: number; me: Session | null }) {
+  const last = useAsync(async () => {
+    const out: Record<number, { msg?: ChatMessage; unread: number }> = {};
+    await Promise.all(crews.map(async c => {
+      try {
+        const ms = await api<ChatMessage[]>(`/api/messages?crew=${c.id}`);
+        const s = seen(c.id);
+        out[c.id] = { msg: ms[ms.length - 1], unread: c.id === current ? 0 : ms.filter(m => m.ts > s && m.account !== me?.accountId).length };
+      } catch { out[c.id] = { unread: 0 }; }
+    }));
+    return out;
+  }, [crews.map(c => c.id).join(','), current, me?.accountId], 20_000);
+  return <ul className="crew-list">
+    {crews.map(c => {
+      const l = last.data?.[c.id];
+      const preview = l?.msg ? `${l.msg.account === me?.accountId ? 'You' : shortName(l.msg.account)}: ${l.msg.kind === 'trade' ? `pitched ${l.msg.text}` : l.msg.text}` : last.loading ? 'Loading…' : `${c.members.length} members · ${c.trade_count} trades`;
+      const nav = Number(crewNav(c, marks)) / 1e24;
+      return <li key={c.id}>
+        <a href={`/app?crew=${c.id}`} className={`crew-item tone-${crewTone(c.id)}`} aria-current={c.id === current ? 'page' : undefined} onClick={e => { e.preventDefault(); navigate(`/app?crew=${c.id}`); }}>
+          <CrewAvatar id={c.id} name={c.name} />
+          <span style={{ minWidth: 0 }}><span className="n" style={{ display: 'block' }}>{c.name}</span><span className="p" style={{ display: 'block' }}>{preview}</span></span>
+          <span className="meta">
+            <span className="t">{l?.msg ? new Date(l.msg.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+            {l && l.unread > 0 ? <span className="badge" aria-label={`${l.unread} unread`}>{l.unread > 99 ? '99+' : l.unread}</span> : <span className="badge badge-ret">{nav.toFixed(2)}N</span>}
+          </span>
+        </a>
+      </li>;
+    })}
+  </ul>;
+}
+
+/** The first-run path, checked against real state: sign in → invited → chip in → pitch → vote. */
+function FirstRun({ st, me, messages, proposals, onSignIn, onJoin, onPitch, onVote }: { st: CrewState; me: Session | null; messages: ChatMessage[]; proposals: Record<number, Proposal>; onSignIn: () => void; onJoin: () => void; onPitch: () => void; onVote: () => void }) {
+  const { crew } = st;
+  const invited = !!me && crew.allowed.includes(me.accountId);
+  const shares = me ? memberShare(crew, me.accountId).shares > 0n : false;
+  const pitched = !!me && messages.some(m => m.kind === 'trade' && m.account === me.accountId);
+  const voted = !!me && Object.values(proposals).some(p => p.votes?.[me.accountId]);
+  const steps = [
+    { label: 'Sign in with email', done: !!me, act: onSignIn, cta: 'Sign in' },
+    { label: `Join ${crew.name}`, done: invited, act: undefined, cta: '' },
+    { label: 'Chip in NEAR', done: shares, act: onJoin, cta: 'Chip in' },
+    { label: 'Pitch a trade', done: pitched, act: onPitch, cta: 'Pitch /buy SOL 10%' },
+    { label: 'Vote on a trade', done: voted, act: onVote, cta: 'Find the open vote' },
+  ];
+  const now = steps.findIndex(s => !s.done);
+  const done = steps.filter(s => s.done).length;
+  if (now === -1) return null;
+  const step = steps[now];
+  return <section className="steps" aria-label="Getting started">
+    <h3>Get into the crew</h3>
+    <p>{done} of {steps.length} done · each step is a real on-chain action</p>
+    <div className="bar"><i style={{ width: `${(done / steps.length) * 100}%` }} /></div>
+    <ol>{steps.map((s, i) => <li key={s.label} className={s.done ? 'done' : i === now ? 'now' : ''}><span className="n">{s.done ? '✓' : i + 1}</span>{s.label}</li>)}</ol>
+    {now === 1 ? <p style={{ margin: '12px 0 0', color: '#eadcf0' }}>Crews are invite-only: a member adds you when the crew is made. Meanwhile you can follow {crew.name}.</p>
+      : step.act && <button className="btn btn-butter btn-block" onClick={step.act}>{step.cta} <Ic name="arrow" size={16} /></button>}
+  </section>;
+}
+
+const EVENT: [RegExp, string, string][] = [[/ragequit|left/, 'pink', 'exit'], [/follow/, 'mint', 'star'], [/joined|chipped/, 'butter', 'jar'], [/captain/, 'coral', 'key']];
+function Message({ m, prev, me, st, proposals, onDone }: { m: ChatMessage; prev?: ChatMessage; me: Session | null; st: CrewState; proposals: Record<number, Proposal>; onDone: () => void }) {
   const day = new Date(m.ts).toDateString();
   const showDay = !prev || new Date(prev.ts).toDateString() !== day;
   const time = new Date(m.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const mine = me?.accountId === m.account;
   let body;
   if (m.kind === 'system') {
-    body = <div className="sys"><Avatar id={m.account} /><b>{shortName(m.account)}</b> {m.text} {m.txs.map(t => <Tx key={t.hash} hash={t.hash} />)}</div>;
+    const [, tone, ic] = EVENT.find(([re]) => re.test(m.text)) ?? [null, 'butter', 'bolt'];
+    body = <div className={`event tone-${tone}`}><span className="ev-ic"><Ic name={ic} size={14} /></span><b>{shortName(m.account)}</b> {m.text} {m.txs.map(t => <Tx key={t.hash} hash={t.hash} />)}</div>;
   } else if (m.kind === 'trade') {
     const trade = m.trade?.tradeId !== undefined ? st.trades.find(t => t.id === m.trade!.tradeId) : undefined;
     body = <TradeCard m={m} me={me} crew={st.crew} trade={trade} proposal={m.trade?.proposalId !== undefined ? proposals[m.trade.proposalId] : undefined} policy={st.policy} assets={st.assets} hub={HUB} onDone={onDone} />;
   } else {
-    body = (
-      <div className={`msg ${mine ? 'mine' : ''}`}>
-        <Avatar id={m.account} />
-        <div>
-          <div className="msg-meta"><b>{shortName(m.account)}</b><span className="t">{time}</span>{m.sig && <span className="verified" title={`ed25519 signature by ${m.publicKey}, an access key on ${m.account}`}>{Icon.check} signed</span>}</div>
-          <div className="bubble">{m.text.startsWith('/') ? <span className="cmd">{m.text}</span> : m.text}</div>
-        </div>
+    body = <div className={`msg ${mine ? 'mine' : ''}`}>
+      <Avatar id={m.account} />
+      <div style={{ minWidth: 0 }}>
+        <div className="msg-meta"><b>{mine ? 'You' : shortName(m.account)}</b><span>{time}</span>{m.sig && <span className="verified" title={`ed25519 signature by ${m.publicKey}, an access key on ${m.account}`}><Ic name="check" size={11} />signed</span>}</div>
+        <div className="bubble">{m.text.startsWith('/') ? <span className="cmd">{m.text}</span> : m.text}</div>
       </div>
-    );
+    </div>;
   }
-  return <>{showDay && <div className="day">{new Date(m.ts).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</div>}{body}</>;
+  return <>{showDay && <div className="daysep">{new Date(m.ts).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</div>}{body}</>;
 }
 
-function Rail({ st, me, onChanged }: { st: import('../lib/api').CrewState; me: Session | null; onChanged: () => void }) {
-  const { crew } = st;
-  const open = useAsync(async () => {
-    const last = await view<number>(crew.dao, 'get_last_proposal_id');
-    const from = Math.max(0, last - 8);
-    const ps = last > 0 ? await getProposals(crew.dao, from, last - from) : [];
-    return ps.filter(p => p.status === 'InProgress' && !p.description.startsWith('Kumi trade')).reverse();
-  }, [crew.dao, st.readAt]);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const isMember = !!me && crew.allowed.includes(me.accountId);
-  const isCaptain = me && crew.captain?.account_id === me.accountId;
-
-  async function act(name: string, fn: () => Promise<unknown>) {
-    setBusy(name); setError(null);
-    try { await fn(); onChanged(); open.reload(); } catch (e) { setError(String(e instanceof Error ? e.message : e)); } finally { setBusy(null); }
-  }
-  async function proposeMe() {
-    const key = makeCaptainKey(crew.id);
-    const args = { crew_id: crew.id, captain: { account_id: me!.accountId, public_key: key.getPublicKey().toString(), max_bps: 1000, max_daily: 3, assets: st.assets.map(a => a.symbol) } };
-    await relay(me!, crew.dao, 'add_proposal', { proposal: { description: `Kumi: make ${me!.handle} captain (max 10% a trade, 3 a day)`,
-      kind: { FunctionCall: { receiver_id: HUB, actions: [{ method_name: 'set_captain', args: btoa(JSON.stringify(args)), deposit: '0', gas: '100000000000000' }] } } } });
-  }
-
-  return (
-    <aside className="rail" aria-label="Crew">
-      <div className="crew-id">
-        <span className="crew-badge">{crew.name.slice(0, 1)}</span>
-        <div style={{ minWidth: 0 }}><h2>{crew.name}</h2><a href={accountUrl(crew.dao)} target="_blank" rel="noreferrer" title="Sputnik DAO">{crew.dao}</a></div>
-      </div>
-      <div className="pills">
-        <span className="chip chip-coral">Sputnik DAO v2</span>
-        <span className="chip">{crew.slippage_bps / 100}% max slippage</span>
-        <span className="chip">fee {crew.vault_fee_bps / 100}% over HWM</span>
-      </div>
-      <div>
-        <div className="label" style={{ margin: '4px 8px 8px' }}>Members · strict majority votes</div>
-        <ul className="member-list">
-          {crew.allowed.map(a => {
-            const s = memberShare(crew, a);
-            return <li className="member" key={a}><Avatar id={a} /><div style={{ minWidth: 0 }}><div className="n">{shortName(a)}{crew.captain?.account_id === a && <span className="chip chip-butter" style={{ marginLeft: 6, height: 20 }}>captain</span>}</div><div className="sub">{s.shares > 0n ? `${(s.bps / 100).toFixed(1)}% of shares` : 'invited, no deposit'}</div></div></li>;
-          })}
-        </ul>
-      </div>
-      <div className="panel" style={{ padding: 16 }}>
-        <div className="label">Captain lane</div>
-        {crew.captain ? (
-          <p className="muted" style={{ margin: '8px 0 0', fontSize: 14 }}><b style={{ color: 'var(--ink)' }}>{shortName(crew.captain.account_id)}</b> can trade up to {crew.captain.max_bps / 100}% at once, {crew.captain.max_daily} a day, in {crew.captain.assets.join(', ')}. {crew.captain_trades_today} used today. The key can call only <span className="mono">captain_trade</span>.</p>
-        ) : <p className="faint" style={{ margin: '8px 0 0', fontSize: 14 }}>No captain. A vote can give one member a key for small instant trades.</p>}
-        {isMember && !isCaptain && <button className="btn btn-sm" style={{ marginTop: 12, width: '100%' }} disabled={!!busy} onClick={() => act('cap', proposeMe)}>{busy === 'cap' ? 'Filing…' : 'Propose me as captain'}</button>}
-      </div>
-      <div>
-        <div className="label" style={{ margin: '4px 8px 8px' }}>Open DAO votes</div>
-        {open.loading && !open.data ? <div className="skeleton" style={{ height: 60 }} /> : (open.data ?? []).length === 0 ? <p className="faint" style={{ margin: '0 8px', fontSize: 14 }}>None open. Trade votes live in the chat.</p> :
-          open.data!.map(p => (
-            <div className="panel" key={p.id} style={{ padding: 14, marginBottom: 8 }}>
-              <div style={{ fontSize: 14 }}>{p.description}</div>
-              <div className="row-between" style={{ marginTop: 10 }}><span className="faint mono" style={{ fontSize: 11 }}>#{p.id} · {Object.keys(p.votes).length} voted</span>
-                {isMember && !p.votes[me!.accountId] && <button className="btn btn-sm btn-butter" disabled={!!busy} onClick={() => act(`v${p.id}`, () => vote(me!, crew.dao, p.id, p.kind, true, crew.id))}>👍 Approve</button>}</div>
-            </div>
-          ))}
-        {error && <Notice error>{error}</Notice>}
-      </div>
-      <div style={{ marginTop: 'auto' }} className="stack">
-        <Link to={`/crew/${crew.id}`} className="btn btn-sm">Public page and follow</Link>
-        <span className="faint mono" style={{ fontSize: 11, textAlign: 'center' }}>vault {formatNear(crew.near, 3)} NEAR · receipts {crew.receipt_count}</span>
-      </div>
-    </aside>
-  );
-}
