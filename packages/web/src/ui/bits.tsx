@@ -55,6 +55,12 @@ export function Notice({ children, error }: { children: ReactNode; error?: boole
   return <div className={`notice ${error ? 'notice-error' : ''}`} role={error ? 'alert' : 'status'}>{children}</div>;
 }
 
+/** A small clay sticker that simply stays out of the way until its art file exists. */
+export function Sticker({ name, className }: { name: string; className?: string }) {
+  const [ok, setOk] = useState(true);
+  return ok ? <img className={`sticker ${className ?? ''}`} src={`/art/${name}.webp`} alt="" aria-hidden loading="lazy" onError={() => setOk(false)} /> : null;
+}
+
 /** A designed empty state with clay art. */
 export function EmptyArt({ art, title, children, action }: { art: string | string[]; title: string; children?: ReactNode; action?: ReactNode }) {
   return <div className="empty-art"><div className="img"><Art name={art} alt="" /></div><h4>{title}</h4>{children && <p>{children}</p>}{action}</div>;

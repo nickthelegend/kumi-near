@@ -1,6 +1,6 @@
 import { crewNav, formatNear, accountUrl, seasonRow } from '@kumi/sdk';
 import { EVIDENCE, HUB, readCrew, readHub, useAsync, type CrewState } from '../lib/api';
-import { Art, Avatar, CrewAvatar, Ic, Link, Notice, Tx, shortName } from '../ui/bits';
+import { Art, Avatar, CrewAvatar, Ic, Link, Notice, Sticker, Tx, shortName } from '../ui/bits';
 import { Spark } from '../ui/Fund';
 
 const LABELS: Record<string, [string, string]> = {
@@ -63,7 +63,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
       {hub.error && <div className="l-sec" style={{ paddingTop: 16 }}><Notice error>Could not read the hub {HUB} from NEAR testnet: {hub.error}</Notice></div>}
 
       <section className="l-sec" id="how">
-        <div className="l-head"><div><span className="label">How it works</span><h2>Four moves. No multisig homework.</h2></div><p>Kumi is built on what friends already do: talk, agree, chip in. The chain only shows up as receipts.</p></div>
+        <div className="l-head"><div><span className="label">How it works</span><h2>Four moves. No multisig homework. <Sticker name="kumi3-st-rocket" /></h2></div><p>Kumi is built on what friends already do: talk, agree, chip in. The chain only shows up as receipts.</p></div>
         <div className="how">{STEPS.map((s, i) => <article className={`how-card tone-${s.tone}`} key={i}>
           <div className="art"><Art name={s.art} alt="" /></div>
           <div className="in"><span className="n">0{i + 1}</span><h3>{s.title}</h3><p>{s.body}</p></div>
@@ -71,7 +71,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
       </section>
 
       <section className="l-sec" id="proof">
-        <div className="l-head"><div><span className="label">Live proof</span><h2>Read straight from NEAR testnet.</h2></div><p>Numbers come from the hub at <a className="hash" href={accountUrl(HUB)} target="_blank" rel="noreferrer">{HUB}</a>. Every step of the recorded run links to NearBlocks.</p></div>
+        <div className="l-head"><div><span className="label">Live proof</span><h2>Read straight from NEAR testnet. <Sticker name="kumi3-st-chart" /></h2></div><p>Numbers come from the hub at <a className="hash" href={accountUrl(HUB)} target="_blank" rel="noreferrer">{HUB}</a>. Every step of the recorded run links to NearBlocks.</p></div>
         <div className="proof">
           <div className="card">
             <div className="card-head"><h3>A crew right now</h3>{hub.data && <span className="chip chip-mint chip-live"><span className="dot" />read {new Date(hub.data.readAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}</div>
@@ -85,7 +85,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
       </section>
 
       <section className="l-sec" id="near">
-        <div className="l-head"><div><span className="label">The NEAR parts</span><h2>What each NEAR feature does here.</h2></div><p>Named precisely, so you can check each one in the contract or the transaction log.</p></div>
+        <div className="l-head"><div><span className="label">The NEAR parts</span><h2>What each NEAR feature does here. <Sticker name="kumi3-st-coin" /></h2></div><p>Named precisely, so you can check each one in the contract or the transaction log.</p></div>
         <div className="tech">
           {[['Sputnik DAO v2', 'One DAO per crew through sputnikv2.testnet; the members are the only voting role, and only that DAO can execute a crew trade.', 'coral'],
             ['Function-call keys', 'A vote installs a key that may call only captain_trade. The contract caps size, trades a day and assets. It cannot withdraw.', 'butter'],
@@ -104,7 +104,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
             <p>Sign in with email, chip in, and make your first call together.</p>
             <div className="l-cta"><Link to="/app" className="btn btn-primary btn-lg">Open the crew chat</Link><Link to="/leaderboard" className="btn btn-lg btn-butter">See the season</Link></div>
           </div>
-          <div className="cta-art"><Art name={['kumi3-season', 'kumi-og']} alt="Four clay friends around a table with a treasure chest" /></div>
+          <div className="cta-art"><Art eager name={['kumi3-season', 'kumi-og']} alt="Four clay friends around a table with a treasure chest" /></div>
         </div>
       </section>
 
