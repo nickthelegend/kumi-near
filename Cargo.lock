@@ -1667,6 +1667,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "kumi-testpool"
+version = "0.1.0"
+dependencies = [
+ "near-sdk",
+ "primitive-types 0.12.2",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
