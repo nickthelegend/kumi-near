@@ -153,14 +153,18 @@ export function ragequitPreview(crew: Crew, shares: bigint): { near: bigint; tok
   };
 }
 
-/** Sputnik vote tally for the crew role: approvals, rejections and the threshold (strict majority). */
+/** Sputnik vote tally for the crew role: approvals, rejections and the threshold (strict majority).
+ *  Only votes from accounts still in the role count: a member who ragequit loses their vote, and
+ *  the hub's recount ignores their earlier approval, so the card must not show it either. */
 export function tally(p: Proposal, policy: DaoPolicy): { approve: number; reject: number; needed: number; members: number } {
   const role = policy.roles.find(r => r.name === 'crew');
-  const members = role && typeof role.kind === 'object' && role.kind.Group ? role.kind.Group.length : 0;
+  const group = role && typeof role.kind === 'object' && role.kind.Group ? role.kind.Group : [];
+  const members = group.length;
   const t = policy.default_vote_policy.threshold;
   const [n, d] = Array.isArray(t) ? t : [1, 2];
-  const counts = p.vote_counts.crew ?? ['0', '0', '0'];
-  return { approve: Number(counts[0]), reject: Number(counts[1]), needed: Math.min(Math.floor(members * n / d) + 1, members), members };
+  const current = Object.entries(p.votes ?? {}).filter(([who]) => group.includes(who));
+  return { approve: current.filter(([, v]) => v === 'Approve').length, reject: current.filter(([, v]) => v === 'Reject').length,
+    needed: Math.min(Math.floor(members * n / d) + 1, members), members };
 }
 
 export const keyOf = (value: unknown) => canonical(value);
