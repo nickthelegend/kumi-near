@@ -1,0 +1,115 @@
+{
+  "network": "testnet",
+  "rpc": "https://test.rpc.fastnear.com",
+  "started_at": "2026-11-10T09:01:16.225Z",
+  "accounts": {
+    "root": "kumi-77b50457fb.testnet",
+    "hub": "hub.kumi-77b50457fb.testnet"
+  },
+  "config": {
+    "bo_ragequit_receipt": 12,
+    "hub_role_proposal": 5,
+    "check_proposal": 7
+  },
+  "transactions": [
+    {
+      "step": "redeploy_hub",
+      "hash": "4YEy8ssd6RQTWzoMzhnwVY3LojspLdMRhgs4CTMMPquA",
+      "signer": "hub.kumi-77b50457fb.testnet",
+      "receiver": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/4YEy8ssd6RQTWzoMzhnwVY3LojspLdMRhgs4CTMMPquA",
+      "note": "hub code with ragequit vote removal and the vote recount"
+    },
+    {
+      "step": "remove_bo_first_try",
+      "hash": "6orQXErkJGJwxxLNxZN7nJJnK9KsT8BcLJSNpsYuYhtK",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/6orQXErkJGJwxxLNxZN7nJJnK9KsT8BcLJSNpsYuYhtK",
+      "note": "Nov 9 DAO policy: the DAO refuses the hub, removal recorded as pending; events: member_removal_failed; receipt failure: {\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: panicked at 'ERR_PERMISSION_DENIED', sputnikdao2/src/proposals.rs:518:9\"}}}}"
+    },
+    {
+      "step": "hub_role_propose",
+      "hash": "3E7NhPjZCex3mDzNCb8VnDQt1c3qdkbZZwJEAMB4BrjQ",
+      "signer": "mika.kumi-77b50457fb.testnet",
+      "receiver": "owls-mw1n.sputnikv2.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/3E7NhPjZCex3mDzNCb8VnDQt1c3qdkbZZwJEAMB4BrjQ",
+      "note": ""
+    },
+    {
+      "step": "hub_role_vote_mika",
+      "hash": "8iURg3zNBJkLQgns3zDdfpjPCb8voPnFaZJFHYQiz6PT",
+      "signer": "mika.kumi-77b50457fb.testnet",
+      "receiver": "owls-mw1n.sputnikv2.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/8iURg3zNBJkLQgns3zDdfpjPCb8voPnFaZJFHYQiz6PT",
+      "note": ""
+    },
+    {
+      "step": "hub_role_vote_juno",
+      "hash": "2ZwuYsqPQJHBrDYr5mvh7QLv9hXx22N5BiiJNBhXXgtz",
+      "signer": "juno.kumi-77b50457fb.testnet",
+      "receiver": "owls-mw1n.sputnikv2.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/2ZwuYsqPQJHBrDYr5mvh7QLv9hXx22N5BiiJNBhXXgtz",
+      "note": ""
+    },
+    {
+      "step": "remove_bo_retry",
+      "hash": "6SHy8GDRVvhZbU1vjLudCWFoTmQEadYhe12okmMVr2ff",
+      "signer": "kumi-77b50457fb.testnet",
+      "receiver": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/6SHy8GDRVvhZbU1vjLudCWFoTmQEadYhe12okmMVr2ff",
+      "note": "hub files and approves RemoveMemberFromRole; events: member_removed"
+    },
+    {
+      "step": "check_proposal",
+      "hash": "GouzDsNG41DyG4fdgpvQwbZuw3dTR9LN9GHGiVHGvgLJ",
+      "signer": "mika.kumi-77b50457fb.testnet",
+      "receiver": "owls-mw1n.sputnikv2.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/GouzDsNG41DyG4fdgpvQwbZuw3dTR9LN9GHGiVHGvgLJ",
+      "note": ""
+    },
+    {
+      "step": "bo_vote_refused",
+      "hash": "HhYfKU5Ttr1pCrUb6sh5b1mECxL4gin9cpdkBU8uVcpJ",
+      "signer": "bo.kumi-77b50457fb.testnet",
+      "receiver": "owls-mw1n.sputnikv2.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/HhYfKU5Ttr1pCrUb6sh5b1mECxL4gin9cpdkBU8uVcpJ",
+      "note": "ex-member vote refused by the DAO; receipt failure: {\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: panicked at 'ERR_PERMISSION_DENIED', sputnikdao2/src/proposals.rs:546:9\"}}}}"
+    },
+    {
+      "step": "check_reject_mika",
+      "hash": "BCXrtubbvW75T19ToHT6t42MA5fJQhV2KJvaKuLh7JzY",
+      "signer": "mika.kumi-77b50457fb.testnet",
+      "receiver": "owls-mw1n.sputnikv2.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/BCXrtubbvW75T19ToHT6t42MA5fJQhV2KJvaKuLh7JzY",
+      "note": ""
+    },
+    {
+      "step": "check_reject_juno",
+      "hash": "J7jprqBcDvkADQPQ1if6foZjjRh6yHjjQTrR6juc87i8",
+      "signer": "juno.kumi-77b50457fb.testnet",
+      "receiver": "owls-mw1n.sputnikv2.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/J7jprqBcDvkADQPQ1if6foZjjRh6yHjjQTrR6juc87i8",
+      "note": ""
+    }
+  ],
+  "updated_at": "2026-11-10T09:02:37.460Z",
+  "state": {
+    "crew_role": [
+      "juno.kumi-77b50457fb.testnet",
+      "mika.kumi-77b50457fb.testnet"
+    ],
+    "hub_members": [
+      "mika.kumi-77b50457fb.testnet",
+      "juno.kumi-77b50457fb.testnet"
+    ],
+    "hub_role_permissions": [
+      "call:AddProposal",
+      "remove_member_from_role:AddProposal",
+      "remove_member_from_role:VoteApprove"
+    ],
+    "check_proposal_status": "Rejected",
+    "stale_voters": [],
+    "hub_code_hash": "EGMA9HvgXMkBuD838EdxPDQMYWDFvRtQUEqLdGab5dYB"
+  }
+}
