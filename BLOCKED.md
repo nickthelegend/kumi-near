@@ -19,5 +19,6 @@
 | --- | --- |
 | Second-device sign-in | Not built. The key stays in one browser, and the server refuses a second key for the same email with a clear message. |
 | Mainnet marks | Testnet marks are pool spot prices read on-chain. Pyth ended NEAR support; mainnet needs the Rhea oracle or a signed price relayer. |
+| Ragequitter keeps a DAO vote | **Fixed Nov 10** (see README, "Nov 10 fix"). A full ragequit removes the member from the DAO role in the same transaction; a failed removal is logged and listed by `get_stale_voters`, and anyone can retry with `remove_ex_member`. Trades are recounted against current shareholders. Bo's leftover vote on testnet was removed. Not covered: Sputnik tallies non-trade proposals (captain, policy) over the role, which includes invited members who have not deposited. |
 | New members after creation | The hub's `add_member` is DAO-only, and the DAO also needs an `AddMemberToRole` proposal. There is no chat `/invite` command yet. |
 | More than one crew on the season board | The board ranks every crew on the hub. Only one crew exists on testnet (see Testnet NEAR above). |

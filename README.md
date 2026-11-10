@@ -37,11 +37,11 @@ Re-check the testnet evidence (no keys needed): `pnpm verify:testnet`. It re-que
 
 | Piece | What it does |
 | --- | --- |
-| `packages/contract` (hub) | Holds every crew's vault. `create_crew` calls the **Sputnik v2 factory** (`sputnikv2.testnet`) with a policy the hub writes: the members form the only voting role, the threshold is a strict majority, the bond is 0 and the period is one day, and the hub may only *file* proposals. The crew is registered only after the hub reads back the new DAO's policy. Shares are NEP-245 token ids (`crew:<id>`, `vault:<id>`), minted at NAV and non-transferable. |
-| Voted trades | `propose_trade` stores the quote (`quote_in`, `quote_out`, sha256 of the full quote JSON) and files a FunctionCall proposal for `execute_trade`. Only the crew's DAO can call `execute_trade`. A trade executes once, so a second proposal for the same trade fails (the vote-replay test). |
+| `packages/contract` (hub) | Holds every crew's vault. `create_crew` calls the **Sputnik v2 factory** (`sputnikv2.testnet`) with a policy the hub writes: the members form the only voting role, the threshold is a strict majority, the bond is 0 and the period is one day. The hub may *file* trade proposals, and may file and approve one other kind only: `RemoveMemberFromRole`, for a member who has ragequit. The crew is registered only after the hub reads back the new DAO's policy. Shares are NEP-245 token ids (`crew:<id>`, `vault:<id>`), minted at NAV and non-transferable. |
+| Voted trades | `propose_trade` stores the quote (`quote_in`, `quote_out`, sha256 of the full quote JSON) and files a FunctionCall proposal for `execute_trade`. Only the crew's DAO can call `execute_trade`. A trade executes once, so a second proposal for the same trade fails (the vote-replay test). Before any NEAR moves, the hub re-reads the trade's DAO proposal and **recounts it**: only approvals from accounts that hold shares now count, and they must be a strict majority of the shareholders (`ERR_STALE_VOTES` otherwise, and the DAO marks the proposal Failed). |
 | Swap | Size is `bps` of what the crew holds *at execution*. Crew and follower vault go in **one combined swap**, split pro rata. `min_out` = the quoted rate × (1 − 3%). If the pool would fill worse, it refuses, and the hub restores holdings and marks the trade failed. |
 | Captain lane | A DAO vote calls `set_captain`. The hub adds a **function-call access key on itself** that may call only `captain_trade`, with a 0.5 NEAR gas allowance. The contract checks the signer key, max bps per trade, trades per UTC day and allowed assets. Revoking the captain deletes the key. |
-| Ragequit | `ragequit(crew, shares)`: the exact pro-rata NEAR and every token, and the last holder takes the dust. NEAR is paid immediately. A token payout that fails becomes `claim_token`-able. It is refused only while a swap is in flight. |
+| Ragequit | `ragequit(crew, shares)`: the exact pro-rata NEAR and every token, and the last holder takes the dust. NEAR is paid immediately. A token payout that fails becomes `claim_token`-able. It is refused only while a swap is in flight. **Leaving with all your shares ends your vote:** the hub drops you from the member list, deletes your captain key if you hold it, and files and approves a `RemoveMemberFromRole` proposal in the crew's DAO in the same transaction. If the DAO refuses, the hub logs `member_removal_failed`, keeps you in `get_stale_voters`, and anyone can retry with `remove_ex_member`; your votes never count toward a trade either way. Attach about 150 Tgas or more (the app attaches 280). |
 | Follower vault | `follow` / `unfollow`. Before every deposit or exit, the performance fee is crystallized in kind to the crew: `(pps − HWM) × supply × fee`. The HWM then moves to the post-fee price. |
 | Receipts | Every state change appends a receipt with the crew's post-state and the marks or fill amounts. The SDK's `computePnl` rebuilds the price-per-share series from receipts only, then compares the latest receipt with live state. |
 | `packages/testpool` | **Testnet only.** A NEP-141 token with a built-in NEAR constant-product pool (0.30% fee). NEAR Intents has no testnet, so testnet trades fill here. Pools were seeded at the Coinbase spot ratio at deploy time (source URLs and timestamps are in the evidence file). |
@@ -88,12 +88,22 @@ The lifecycle (`pnpm run:testnet`, through the same server code the app uses), p
 | Web app: email sign-up (sora), follow with the fee crystallized above the HWM | [sign-up](https://testnet.nearblocks.io/txns/HW4TjUhLVkr3SCsDDCe4oRHjrtLY8Z4udTjBo2Qf8WPG), [follow](https://testnet.nearblocks.io/txns/9gHRFKC1jjffp7znWDpNBBmRkjuzXxrqRTcfaDBpjjYD) |
 | Web app: bo re-joins, then ragequits from the sheet | [join](https://testnet.nearblocks.io/txns/57nXJ2xbjoLfykdLcu78fxJZbWz1MfPKsPfkPDuGiTfR), [ragequit](https://testnet.nearblocks.io/txns/GqGRJGRYpJivjgZePFpsyv4PTW5GvcQBi8G15vnjYxkb) |
 
+**Nov 10 fix: a ragequitter kept their DAO vote.** Under the Nov 9 code, bo left with zero shares but stayed in the DAO's `crew` role, so he could still approve trades with mika's and juno's money. The hub was redeployed with the fix (no state migration; the crew reads back unchanged, code hash `EGMA9HvgXMkBuD838EdxPDQMYWDFvRtQUEqLdGab5dYB`), and bo's leftover vote was removed on testnet with `scripts/fix-ragequit-votes.ts`. All 11 hashes are in [deployments/testnet-2026-11-10-ragequit-fix.json](deployments/testnet-2026-11-10-ragequit-fix.json).
+
+| Step | Transaction |
+| --- | --- |
+| Hub redeployed with the fix | [4YEy8ssd…](https://testnet.nearblocks.io/txns/4YEy8ssd6RQTWzoMzhnwVY3LojspLdMRhgs4CTMMPquA) |
+| `remove_ex_member(bo)` with his ragequit receipt: the Nov 9 DAO policy refuses the hub, so it fails loudly (`member_removal_failed`) and is kept as pending | [6orQXErk…](https://testnet.nearblocks.io/txns/6orQXErkJGJwxxLNxZN7nJJnK9KsT8BcLJSNpsYuYhtK) |
+| mika and juno vote the hub's DAO role up to `remove_member_from_role` (2 of 3, bo not needed) | [propose](https://testnet.nearblocks.io/txns/3E7NhPjZCex3mDzNCb8VnDQt1c3qdkbZZwJEAMB4BrjQ), [vote](https://testnet.nearblocks.io/txns/8iURg3zNBJkLQgns3zDdfpjPCb8voPnFaZJFHYQiz6PT), [vote + policy updated](https://testnet.nearblocks.io/txns/2ZwuYsqPQJHBrDYr5mvh7QLv9hXx22N5BiiJNBhXXgtz) |
+| Retry: the hub files and approves the removal (`member_removed`); the crew role is now mika and juno | [6SHy8GDR…](https://testnet.nearblocks.io/txns/6SHy8GDRVvhZbU1vjLudCWFoTmQEadYhe12okmMVr2ff) |
+| bo votes on an open DAO proposal and the DAO refuses him (`ERR_PERMISSION_DENIED`); mika and juno then reject that check proposal | [check proposal](https://testnet.nearblocks.io/txns/GouzDsNG41DyG4fdgpvQwbZuw3dTR9LN9GHGiVHGvgLJ), [bo refused](https://testnet.nearblocks.io/txns/HhYfKU5Ttr1pCrUb6sh5b1mECxL4gin9cpdkBU8uVcpJ), [reject](https://testnet.nearblocks.io/txns/BCXrtubbvW75T19ToHT6t42MA5fJQhV2KJvaKuLh7JzY), [reject](https://testnet.nearblocks.io/txns/J7jprqBcDvkADQPQ1if6foZjjRh6yHjjQTrR6juc87i8) |
+
 The test emails (`*@crew.kumi.test`, `*@fans.kumi.test`) use the reserved `.test` domain. Their codes came from the server's "Setup required: RESEND_API_KEY" preview path.
 
 ## Tests
 
 See [TESTING.md](TESTING.md). In short:
-- 7 sandbox tests run against the real testnet Sputnik factory and DAO code, plus 3 contract unit tests.
+- 10 sandbox tests run against the real testnet Sputnik factory and DAO code (one also runs the Nov 9 hub code and upgrades it), plus 3 contract unit tests.
 - 10 SDK tests, 2 relayer allow-list tests and 1 MCP stdio test.
 - The web build, and a headless Chrome check of every route at 1440 and 390.
 - `pnpm verify:testnet`.
@@ -105,6 +115,7 @@ See [TESTING.md](TESTING.md). In short:
 - Players' keys live in browser localStorage. Linking a second device is not built: the server says so if an email signs in from a new browser.
 - Mainnet 1Click is quote-only (`dry: true`), and live swaps need `NEAR_MAINNET_ACCOUNT`. NEAR Intents has no testnet.
 - Demo scale: a crew has at most 16 members and a hub lists at most 4 assets.
+- The vote recount covers trades. Other DAO proposals (captain, policy) are tallied by Sputnik over the `crew` role, which also holds invited members who have not deposited yet. A member who ragequits leaves that role in the same transaction; if the removal fails, it is listed by `get_stale_voters` until `remove_ex_member` succeeds.
 
 ## Team and other projects
 
