@@ -1,7 +1,8 @@
 //! Real local nearcore sandbox, nothing mocked. The Sputnik DAO factory and its default DAO code
 //! are the exact bytes deployed on NEAR testnet (`sputnikv2.testnet`, DAO v3.31), fetched and
 //! hash-checked by `scripts/fetch-sputnik.mjs`. Each crew's DAO is created by the Kumi hub
-//! through that factory, and every vote below is a real `act_proposal` on that DAO.
+//! through that factory, and every vote below is a real `act_proposal` on that DAO. The upgrade
+//! test also deploys the hub exactly as it ran on testnet on Nov 9 (archival code, hash-checked).
 use near_workspaces::network::Sandbox;
 use near_workspaces::result::ExecutionFinalResult;
 use near_workspaces::types::{AccessKeyPermission, KeyType, NearToken, SecretKey};
@@ -49,9 +50,16 @@ async fn pool(root: &Account, lp: &Account, name: &str, symbol: &str, decimals: 
     Ok(c)
 }
 
+const HUB_WASM: &str = "near/kumi_contract/kumi_contract.wasm";
+/// The hub as deployed on testnet on Nov 9 (fetched by `scripts/fetch-sputnik.mjs`).
+const NOV9_HUB_WASM: &str = "sputnik/kumi-hub-2026-11-09.wasm";
+const HUB_PERMISSIONS: [&str; 3] = ["call:AddProposal", "remove_member_from_role:AddProposal", "remove_member_from_role:VoteApprove"];
+
 /// Factory as on testnet, two pools priced like mainnet (1 SOL = 60 NEAR, 1 BTC = 40,000 NEAR),
 /// the hub, and a crew of three whose DAO the hub created through the factory.
-async fn env() -> anyhow::Result<Env> {
+async fn env() -> anyhow::Result<Env> { env_with(HUB_WASM).await }
+
+async fn env_with(hub_wasm: &str) -> anyhow::Result<Env> {
     let worker = near_workspaces::sandbox().await?;
     let root = worker.root_account()?;
     let factory = user(&root, "sputnik", 60 * ONE).await?;
@@ -70,7 +78,7 @@ async fn env() -> anyhow::Result<Env> {
     lp.call(btc.id(), "add_liquidity").args_json(json!({"token_amount": (2 * 10u128.pow(5)).to_string()})).deposit(near(80 * ONE / 100)).transact().await?.into_result()?;
 
     let hub_account = user(&root, "kumi", 30 * ONE).await?;
-    let hub = hub_account.deploy(&wasm("near/kumi_contract/kumi_contract.wasm")).await?.into_result()?;
+    let hub = hub_account.deploy(&wasm(hub_wasm)).await?.into_result()?;
     hub.call("new").args_json(json!({"owner": hub.id(), "factory": factory.id(), "dao_deposit": (56 * ONE / 10).to_string(), "assets": [
         {"symbol": "SOL", "token": sol.id(), "decimals": 9, "intents_asset": "nep141:sol.omft.near"},
         {"symbol": "BTC", "token": btc.id(), "decimals": 8, "intents_asset": "nep141:btc.omft.near"}]})).transact().await?.into_result()?;
@@ -128,6 +136,40 @@ impl Env {
             "deposit": "0", "gas": "150000000000000"}]}}}})).max_gas().transact().await?.into_result()?;
         Ok(r.json()?)
     }
+    /// The DAO's `crew` role, sorted.
+    async fn voters(&self) -> anyhow::Result<Vec<String>> {
+        let policy: Value = self.worker.view(&self.dao, "get_policy").await?.json()?;
+        let role = policy["roles"].as_array().unwrap().iter().find(|r| r["name"] == "crew").unwrap();
+        let mut g: Vec<String> = role["kind"]["Group"].as_array().unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
+        g.sort();
+        Ok(g)
+    }
+    async fn stale(&self) -> anyhow::Result<Vec<String>> {
+        Ok(self.hub.view("get_stale_voters").args_json(json!({"crew_id": 0})).await?.json()?)
+    }
+    async fn ragequit_all(&self, who: &Account) -> anyhow::Result<ExecutionFinalResult> {
+        let s = shares_of(&self.crew().await?, who);
+        Ok(who.call(self.hub.id(), "ragequit").args_json(json!({"crew_id": 0, "shares": s.to_string()})).max_gas().transact().await?)
+    }
+    /// A member files a proposal of any kind in the crew's DAO.
+    async fn dao_proposal(&self, who: &Account, description: &str, kind: Value) -> anyhow::Result<u64> {
+        Ok(who.call(&self.dao, "add_proposal").args_json(json!({"proposal": {"description": description, "kind": kind}}))
+            .max_gas().transact().await?.into_result()?.json()?)
+    }
+    /// The crew votes the hub's DAO role to `permissions` (2 of 3 approvals from `a` and `b`).
+    async fn set_hub_role(&self, a: &Account, b: &Account, permissions: &[&str]) -> anyhow::Result<()> {
+        let kind = json!({"ChangePolicyAddOrUpdateRole": {"role": {"name": "hub", "kind": {"Group": [self.hub.id()]},
+            "permissions": permissions, "vote_policy": {}}}});
+        let pid = self.dao_proposal(a, "hub role", kind).await?;
+        self.vote(a, pid).await?.into_result()?;
+        self.vote(b, pid).await?.into_result()?;
+        assert_eq!(self.proposal(pid).await?["status"], "Approved");
+        Ok(())
+    }
+    async fn remove_ex_member(&self, caller: &Account, who: &Account, seq: Option<u64>) -> anyhow::Result<ExecutionFinalResult> {
+        Ok(caller.call(self.hub.id(), "remove_ex_member").args_json(json!({"crew_id": 0, "account_id": who.id(), "ragequit_seq": seq}))
+            .max_gas().transact().await?)
+    }
     async fn balance(&self, id: &AccountId) -> anyhow::Result<u128> { Ok(self.worker.view_account(id).await?.balance.as_yoctonear()) }
     async fn ft(&self, token: &Contract, id: &AccountId) -> anyhow::Result<u128> {
         Ok(num(&token.view("ft_balance_of").args_json(json!({"account_id": id})).await?.json::<Value>()?))
@@ -145,6 +187,13 @@ fn base64_encode(bytes: &[u8]) -> String {
         }
     }
     out
+}
+
+fn logged(r: &near_workspaces::result::ExecutionResult<near_workspaces::result::Value>, needle: &str) -> bool { r.logs().iter().any(|l| l.contains(needle)) }
+fn ids(list: &[&Account]) -> Vec<String> {
+    let mut v: Vec<String> = list.iter().map(|a| a.id().to_string()).collect();
+    v.sort();
+    v
 }
 
 fn holding(list: &Value, symbol: &str) -> u128 {
@@ -333,7 +382,9 @@ async fn ragequit_during_pending_trade_is_exact_and_trade_uses_what_is_left() ->
     let bob_shares = shares_of(&e.crew().await?, &e.bob);
     let r = e.bob.call(e.hub.id(), "ragequit").args_json(json!({"crew_id": 0, "shares": bob_shares.to_string()})).max_gas().transact().await?.into_result()?;
     assert_eq!(num(&r.json::<Value>()?), 3 * ONE);
-    // Bob's earlier approval still counts in the DAO; the vote passes with cy and executes on 6 NEAR.
+    // Bob's exit removed his DAO vote: two members are left, so alice and cy (2 of 2) pass it,
+    // and it executes on the 6 NEAR left.
+    assert_eq!(e.voters().await?, ids(&[&e.alice, &e.cy]));
     e.vote(&e.cy, pid).await?.into_result()?;
     let t = e.trade(tid).await?;
     assert_eq!(t["status"], "executed");
@@ -415,5 +466,149 @@ async fn front_running_the_crew_is_bounded_by_the_attached_quote() -> anyhow::Re
     assert_eq!(after["vault_near"], before["vault_near"]);
     assert_eq!(after["busy"], false);
     assert_eq!(e.ft(&e.sol, e.hub.id()).await?, 0);
+    Ok(())
+}
+
+#[tokio::test]
+async fn ragequitter_loses_the_dao_vote_and_a_stale_approval_cannot_carry_a_trade() -> anyhow::Result<()> {
+    let e = env().await?;
+    for who in [&e.alice, &e.bob, &e.cy] { e.join(who, 2 * ONE).await?.into_result()?; }
+    // New crews: the hub's DAO role may file and approve a member removal, nothing beyond trades.
+    let policy: Value = e.worker.view(&e.dao, "get_policy").await?.json()?;
+    let hub_role = policy["roles"].as_array().unwrap().iter().find(|r| r["name"] == "hub").unwrap();
+    let mut perms: Vec<&str> = hub_role["permissions"].as_array().unwrap().iter().map(|v| v.as_str().unwrap()).collect();
+    perms.sort();
+    let mut want = HUB_PERMISSIONS.to_vec();
+    want.sort();
+    assert_eq!(perms, want);
+    // Bob is voted in as captain, then approves an open trade.
+    let key = SecretKey::from_random(KeyType::ED25519);
+    let cid = e.dao_call("set_captain", json!({"crew_id": 0, "captain": {"account_id": e.bob.id(), "public_key": key.public_key().to_string(),
+        "max_bps": 1000, "max_daily": 2, "assets": ["SOL"]}})).await?;
+    e.vote(&e.alice, cid).await?.into_result()?;
+    e.vote(&e.cy, cid).await?.into_result()?;
+    let (t1, p1) = e.propose(&e.alice, "buy", "SOL", 2000).await?;
+    e.vote(&e.bob, p1).await?.into_result()?;
+
+    // Bob ragequits everything: he leaves the member list and the DAO role, and his captain key is deleted.
+    let r = e.ragequit_all(&e.bob).await?.into_result()?;
+    assert_eq!(num(&r.json::<Value>()?), 2 * ONE);
+    assert!(r.logs().iter().any(|l| l.contains("member_removed") && l.contains(e.bob.id().as_str())), "removal confirmed: {:?}", r.logs());
+    assert!(!logged(&r, "member_removal_failed"));
+    assert_eq!(e.voters().await?, ids(&[&e.alice, &e.cy]));
+    let crew = e.crew().await?;
+    assert_eq!(crew["allowed"].as_array().unwrap().len(), 2);
+    assert!(crew["allowed"].as_array().unwrap().iter().all(|a| a != e.bob.id().as_str()));
+    assert!(crew["captain"].is_null());
+    assert!(e.stale().await?.is_empty());
+    let keys = e.worker.view_access_keys(e.hub.id()).await?;
+    assert!(keys.iter().all(|k| k.public_key.to_string() != key.public_key().to_string()), "captain key deleted");
+    let captain = Account::from_secret_key(e.hub.id().clone(), key, &e.worker);
+    let (qin, qout) = e.quote("buy", "SOL", 500).await?;
+    let ct = captain.call(e.hub.id(), "captain_trade").args_json(json!({"crew_id": 0, "side": "buy", "asset": "SOL", "bps": 500,
+        "quote_in": qin.to_string(), "quote_out": qout.to_string(), "quote_hash": QUOTE_HASH})).gas(GAS_CAPTAIN).transact().await;
+    assert!(ct.map(|r| r.is_failure()).unwrap_or(true), "the ex-captain's key is gone");
+
+    // Bob cannot vote on a new trade any more: the DAO refuses him.
+    let (t2, p2) = e.propose(&e.alice, "buy", "SOL", 1000).await?;
+    rejected(e.vote(&e.bob, p2).await?, "ERR_PERMISSION_DENIED");
+    // Quorum for the two members left: 1 of 2 is not enough, 2 of 2 executes.
+    e.vote(&e.alice, p2).await?.into_result()?;
+    assert_eq!(e.trade(t2).await?["status"], "voting");
+    e.vote(&e.cy, p2).await?.into_result()?;
+    assert_eq!(e.trade(t2).await?["status"], "executed");
+
+    // Bob's earlier approval plus alice's reach the DAO's 2 of 2, but only 1 of 2 shareholders
+    // approved: the hub's recount refuses, the DAO marks the proposal Failed, nothing moves.
+    let before = e.crew().await?;
+    let v = e.vote(&e.alice, p1).await?;
+    assert!(format!("{:?}", v.receipt_failures()).contains("ERR_STALE_VOTES"), "hub recount refused");
+    assert_eq!(e.proposal(p1).await?["status"], "Failed");
+    assert_eq!(e.trade(t1).await?["status"], "voting");
+    let after = e.crew().await?;
+    assert_eq!(after["near"], before["near"]);
+    assert_eq!(after["tokens"], before["tokens"]);
+    // An ex-member is no longer invited, and a member with shares cannot be removed this way.
+    rejected(e.join(&e.bob, ONE).await?, "ERR_NOT_INVITED");
+    rejected(e.remove_ex_member(&e.bob, &e.alice, None).await?, "ERR_STILL_HOLDS_SHARES");
+    rejected(e.remove_ex_member(&e.alice, &e.bob, None).await?, "ERR_NOT_A_MEMBER");
+    Ok(())
+}
+
+#[tokio::test]
+async fn a_failed_vote_removal_is_recorded_loudly_and_retried() -> anyhow::Result<()> {
+    let e = env().await?;
+    for who in [&e.alice, &e.bob, &e.cy] { e.join(who, 2 * ONE).await?.into_result()?; }
+    // The crew takes the hub's removal permission away (as on the Nov 9 testnet DAO).
+    e.set_hub_role(&e.alice, &e.bob, &["call:AddProposal"]).await?;
+    let r = e.ragequit_all(&e.bob).await?.into_result()?;
+    assert_eq!(num(&r.json::<Value>()?), 2 * ONE, "the payout still happens");
+    assert!(logged(&r, "member_removal_failed"), "failure is logged: {:?}", r.logs());
+    assert!(logged(&r, "retry with remove_ex_member"));
+    assert_eq!(e.stale().await?, vec![e.bob.id().to_string()]);
+    assert_eq!(e.voters().await?, ids(&[&e.alice, &e.bob, &e.cy]), "bob still sits in the DAO role");
+    // Bob votes after leaving; with alice that is 2 of 3 in the DAO, but 1 of 2 shareholders: refused.
+    let (t, p) = e.propose(&e.alice, "buy", "SOL", 2000).await?;
+    e.vote(&e.bob, p).await?.into_result()?;
+    let before = e.crew().await?;
+    e.vote(&e.alice, p).await?.into_result()?;
+    assert_eq!(e.proposal(p).await?["status"], "Failed");
+    assert_eq!(e.trade(t).await?["status"], "voting");
+    assert_eq!(e.crew().await?["near"], before["near"]);
+    // A retry while the permission is still missing fails loudly again and keeps the record.
+    let r = e.remove_ex_member(&e.cy, &e.bob, None).await?.into_result()?;
+    assert!(logged(&r, "member_removal_failed"));
+    assert_eq!(e.stale().await?, vec![e.bob.id().to_string()]);
+    // The crew restores the permission; anyone's retry removes bob.
+    e.set_hub_role(&e.alice, &e.cy, &HUB_PERMISSIONS).await?;
+    let r = e.remove_ex_member(&e.cy, &e.bob, None).await?.into_result()?;
+    assert!(logged(&r, "member_removed"), "{:?}", r.logs());
+    assert!(e.stale().await?.is_empty());
+    assert_eq!(e.voters().await?, ids(&[&e.alice, &e.cy]));
+    // With two members left, 2 of 2 executes a new trade.
+    let (t2, p2) = e.propose(&e.cy, "buy", "SOL", 1000).await?;
+    e.vote(&e.alice, p2).await?.into_result()?;
+    e.vote(&e.cy, p2).await?.into_result()?;
+    assert_eq!(e.trade(t2).await?["status"], "executed");
+    Ok(())
+}
+
+#[tokio::test]
+async fn upgrade_from_the_nov9_hub_removes_a_legacy_ragequitter() -> anyhow::Result<()> {
+    // The Nov 9 code: bob ragequits and keeps his DAO vote (the bug).
+    let e = env_with(NOV9_HUB_WASM).await?;
+    for who in [&e.alice, &e.bob, &e.cy] { e.join(who, 2 * ONE).await?.into_result()?; }
+    e.ragequit_all(&e.bob).await?.into_result()?;
+    let crew = e.crew().await?;
+    assert!(crew["allowed"].as_array().unwrap().iter().any(|a| a == e.bob.id().as_str()), "old code keeps bob as a member");
+    assert_eq!(e.voters().await?, ids(&[&e.alice, &e.bob, &e.cy]), "old code keeps bob's DAO vote");
+    // Upgrade the hub's code in place; the stored state reads back unchanged.
+    e.hub.as_account().deploy(&wasm(HUB_WASM)).await?.into_result()?;
+    let upgraded = e.crew().await?;
+    assert_eq!(upgraded["members"], crew["members"]);
+    assert_eq!(upgraded["near"], crew["near"]);
+    assert_eq!(upgraded["receipt_count"], crew["receipt_count"]);
+    // Even before the fix-up, the recount ignores bob: his vote plus alice's is refused.
+    let (t, p) = e.propose(&e.alice, "buy", "SOL", 2000).await?;
+    e.vote(&e.bob, p).await?.into_result()?;
+    e.vote(&e.alice, p).await?.into_result()?;
+    assert_eq!(e.proposal(p).await?["status"], "Failed");
+    assert_eq!(e.trade(t).await?["status"], "voting");
+    // The fix-up needs bob's ragequit receipt as proof.
+    let receipts: Vec<Value> = e.hub.view("get_receipts").args_json(json!({"crew_id": 0})).await?.json()?;
+    let seq = |kind: &str| receipts.iter().find(|r| r["kind"] == kind && r["account_id"] == e.bob.id().as_str()).unwrap()["seq"].as_u64().unwrap();
+    rejected(e.remove_ex_member(&e.cy, &e.bob, None).await?, "ERR_RAGEQUIT_RECEIPT_REQUIRED");
+    rejected(e.remove_ex_member(&e.cy, &e.bob, Some(seq("join"))).await?, "ERR_NOT_A_RAGEQUIT");
+    // The old DAO policy lacks the hub's removal permission: recorded and logged, bob leaves the member list.
+    let r = e.remove_ex_member(&e.cy, &e.bob, Some(seq("ragequit"))).await?.into_result()?;
+    assert!(logged(&r, "member_removal_failed"));
+    assert_eq!(e.stale().await?, vec![e.bob.id().to_string()]);
+    assert!(e.crew().await?["allowed"].as_array().unwrap().iter().all(|a| a != e.bob.id().as_str()));
+    // The crew grants the permission (2 of 3, bob not needed); the retry removes bob's vote.
+    e.set_hub_role(&e.alice, &e.cy, &HUB_PERMISSIONS).await?;
+    let r = e.remove_ex_member(&e.alice, &e.bob, None).await?.into_result()?;
+    assert!(logged(&r, "member_removed"), "{:?}", r.logs());
+    assert_eq!(e.voters().await?, ids(&[&e.alice, &e.cy]));
+    assert!(e.stale().await?.is_empty());
     Ok(())
 }

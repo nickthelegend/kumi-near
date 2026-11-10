@@ -11,7 +11,14 @@
 //!   crew's DAO. When the vote passes, the DAO calls `execute_trade`, once.
 //! * Captain lane: the DAO installs a function-call access key on this account that may call only
 //!   `captain_trade`; the contract enforces max size, trades per day and allowed assets.
-//! * Ragequit: burn shares for the exact pro-rata slice of every asset. No vote.
+//! * Ragequit: burn shares for the exact pro-rata slice of every asset. No vote. A full exit also
+//!   ends the member's vote: the hub drops them from the member list, deletes their captain key,
+//!   and files and approves a `RemoveMemberFromRole` proposal in the crew's DAO (the hub's DAO
+//!   role may do exactly that). If the removal fails it is recorded (`get_stale_voters`), logged
+//!   as `member_removal_failed`, and anyone can retry it with `remove_ex_member`.
+//! * Vote recount: before a voted trade executes, the hub re-reads the DAO proposal and counts only
+//!   approvals from accounts that hold shares now. They must be a strict majority of the
+//!   shareholders, so an ex-member's earlier or late vote can never carry a trade.
 //! * Follower vault: outsiders deposit; every crew trade is mirrored pro rata in the same swap;
 //!   the crew earns a performance fee above a high-water mark.
 //! * Receipts: every state change appends an on-chain receipt that the P&L engine reads.
@@ -46,6 +53,17 @@ const GAS_VIEW_RESERVES: Gas = Gas::from_tgas(5);
 const GAS_ON_MARKS: Gas = Gas::from_tgas(60);
 const GAS_FT_TRANSFER: Gas = Gas::from_tgas(10);
 const GAS_ON_PAYOUT: Gas = Gas::from_tgas(8);
+const GAS_VIEW_PROPOSAL: Gas = Gas::from_tgas(10);
+const GAS_ON_TALLY: Gas = Gas::from_tgas(60);
+const GAS_ACT_PROPOSAL: Gas = Gas::from_tgas(25);
+const GAS_ON_REMOVAL_FILED: Gas = Gas::from_tgas(55);
+const GAS_ON_REMOVAL_DONE: Gas = Gas::from_tgas(10);
+/// The crew's voting role in its DAO.
+const CREW_ROLE: &str = "crew";
+/// Raw storage prefixes (no change to the contract's Borsh state layout): ex-members whose DAO
+/// role removal is still pending, per crew; and the block at which the DAO last admitted a member.
+const STALE_PREFIX: &[u8] = b"x";
+const ADMIT_PREFIX: &[u8] = b"a";
 
 #[near(serializers = [borsh, json])]
 #[derive(Clone)]
@@ -262,7 +280,8 @@ impl Kumi {
 
     /// Creates `<slug>.<factory>` through the Sputnik v2 factory, with the crew members as the
     /// only voting role (strict majority, no bond, one-day period) and the hub allowed to file
-    /// proposals. Attach at least `dao_deposit` (the DAO's code storage).
+    /// trade proposals and to remove a member who has ragequit (it files and approves
+    /// `RemoveMemberFromRole` only). Attach at least `dao_deposit` (the DAO's code storage).
     #[payable]
     pub fn create_crew(&mut self, name: String, slug: String, members: Vec<AccountId>, fee_bps: u16) -> Promise {
         let deposit = env::attached_deposit().as_yoctonear();
@@ -281,7 +300,7 @@ impl Kumi {
                     { "name": "crew", "kind": { "Group": members },
                       "permissions": ["*:AddProposal", "*:VoteApprove", "*:VoteReject", "*:VoteRemove", "*:Finalize"],
                       "vote_policy": {} },
-                    { "name": "hub", "kind": { "Group": [hub] }, "permissions": ["call:AddProposal"], "vote_policy": {} }
+                    { "name": "hub", "kind": { "Group": [hub] }, "permissions": HUB_PERMISSIONS, "vote_policy": {} }
                 ],
                 "default_vote_policy": { "weight_kind": "RoleWeight", "quorum": "0", "threshold": [1, 2] },
                 "proposal_bond": "0",
@@ -351,12 +370,16 @@ impl Kumi {
         Some(id)
     }
 
-    /// DAO-only: admit another member (the DAO also adds them to its `crew` role).
+    /// DAO-only: admit another member (the DAO also adds them to its `crew` role). Re-admitting
+    /// an ex-member cancels their pending removal and voids older ragequit receipts as proof.
     pub fn add_member(&mut self, crew_id: u64, account_id: AccountId) {
         let crew = self.crew_mut(crew_id);
         require!(env::predecessor_account_id() == crew.dao, "ERR_DAO_ONLY");
         require!(crew.allowed.len() < MAX_MEMBERS, "ERR_MEMBERS");
-        if !crew.allowed.contains(&account_id) { crew.allowed.push(account_id); }
+        if !crew.allowed.contains(&account_id) { crew.allowed.push(account_id.clone()); }
+        env::storage_write(&admit_key(crew_id, &account_id), &env::block_height().to_le_bytes());
+        let mut stale = self.stale_voters(crew_id);
+        if stale.contains(&account_id) { stale.retain(|a| a != &account_id); self.write_stale(crew_id, &stale); }
     }
 
     /// Deposit NEAR and receive crew shares at NAV. If the crew holds tokens, the contract first
@@ -378,7 +401,10 @@ impl Kumi {
 
     /// Burn `shares` for the exact pro-rata slice of the crew's NEAR and every token. No vote.
     /// NEAR is paid at once; each token is sent with `ft_transfer` and becomes claimable if
-    /// the member is not registered on that token.
+    /// the member is not registered on that token. Burning all of one's shares is a full exit:
+    /// the account stops being a member and loses its DAO vote (see `exit_voter`). Attach about
+    /// 150 Tgas or more; with too little gas the whole ragequit reverts, so it never pays out
+    /// while leaving the vote in place unrecorded.
     pub fn ragequit(&mut self, crew_id: u64, shares: U128) -> U128 {
         let account_id = env::predecessor_account_id();
         let tokens = self.token_map();
@@ -396,7 +422,8 @@ impl Kumi {
         }
         crew.near -= near_out;
         crew.supply -= shares.0;
-        if owned == shares.0 { crew.shares.remove(&account_id); } else { crew.shares.insert(account_id.clone(), owned - shares.0); }
+        let exited = owned == shares.0;
+        if exited { crew.shares.remove(&account_id); } else { crew.shares.insert(account_id.clone(), owned - shares.0); }
         if near_out > 0 { Promise::new(account_id.clone()).transfer(NearToken::from_yoctonear(near_out)).detach(); }
         for (symbol, out) in &token_out {
             self.pay_token(&tokens, &account_id, symbol, *out);
@@ -404,8 +431,66 @@ impl Kumi {
         let (sym, tok) = token_out.first().cloned().map(|(s, t)| (Some(s), t)).unwrap_or((None, 0));
         self.push_receipt(crew_id, "ragequit", &account_id, None, 0, near_out, sym, 0, tok, shares.0, vec![]);
         emit("ragequit", json!({"crew_id": crew_id, "account_id": account_id, "shares": shares,
-            "near_out": U128(near_out), "tokens_out": token_out.iter().map(|(s, v)| (s.clone(), U128(*v))).collect::<Vec<_>>()}));
+            "near_out": U128(near_out), "tokens_out": token_out.iter().map(|(s, v)| (s.clone(), U128(*v))).collect::<Vec<_>>(), "exited": exited}));
+        if exited { self.exit_voter(crew_id, &account_id); }
         U128(near_out)
+    }
+
+    /// Anyone: (re)file the DAO role removal of a zero-share ex-member. Valid for an account whose
+    /// removal is pending (`get_stale_voters`), or, for an exit made before the hub removed votes,
+    /// for an account still listed as a member with zero shares whose ragequit receipt
+    /// `ragequit_seq` proves it left (and that the DAO has not re-admitted since).
+    pub fn remove_ex_member(&mut self, crew_id: u64, account_id: AccountId, ragequit_seq: Option<u64>) {
+        let crew = self.crew(crew_id);
+        require!(crew.shares.get(&account_id).copied().unwrap_or(0) == 0, "ERR_STILL_HOLDS_SHARES");
+        if self.stale_voters(crew_id).contains(&account_id) {
+            let dao = crew.dao.clone();
+            self.file_removal(crew_id, dao, account_id);
+            return;
+        }
+        require!(crew.allowed.contains(&account_id), "ERR_NOT_A_MEMBER");
+        let seq = ragequit_seq.unwrap_or_else(|| env::panic_str("ERR_RAGEQUIT_RECEIPT_REQUIRED"));
+        let receipt = self.receipts.get(&(crew_id, seq)).unwrap_or_else(|| env::panic_str("ERR_NO_RECEIPT"));
+        require!(receipt.kind == "ragequit" && receipt.account_id == account_id, "ERR_NOT_A_RAGEQUIT");
+        if let Some(admitted) = admitted_at(crew_id, &account_id) {
+            require!(receipt.block.0 > admitted, "ERR_READMITTED_SINCE");
+        }
+        self.exit_voter(crew_id, &account_id);
+    }
+
+    #[private]
+    pub fn on_removal_filed(&mut self, crew_id: u64, account_id: AccountId) -> PromiseOrValue<bool> {
+        let pid = env::promise_result_checked(0, 32).ok().and_then(|b| serde_json::from_slice::<u64>(&b).ok());
+        let Some(pid) = pid else {
+            self.removal_failed(crew_id, &account_id, None,
+                "the DAO refused the hub's RemoveMemberFromRole proposal (the hub's DAO role needs remove_member_from_role:AddProposal and :VoteApprove)");
+            return PromiseOrValue::Value(false);
+        };
+        let dao = self.crew(crew_id).dao.clone();
+        let act = json!({"id": pid, "action": "VoteApprove", "proposal": removal_kind(&account_id)});
+        PromiseOrValue::Promise(Promise::new(dao.clone())
+            .function_call("act_proposal", act.to_string().into_bytes(), NearToken::from_yoctonear(0), GAS_ACT_PROPOSAL)
+            .then(Promise::new(dao).function_call("get_proposal", json!({"id": pid}).to_string().into_bytes(), NearToken::from_yoctonear(0), GAS_VIEW_PROPOSAL))
+            .then(Self::ext(env::current_account_id()).with_static_gas(GAS_ON_REMOVAL_DONE).on_removal_done(crew_id, account_id, pid)))
+    }
+
+    /// The removal counts only if the DAO shows the hub's proposal as Approved (Sputnik applies a
+    /// `RemoveMemberFromRole` in the approving call).
+    #[private]
+    pub fn on_removal_done(&mut self, crew_id: u64, account_id: AccountId, dao_proposal_id: u64) -> bool {
+        let approved = env::promise_result_checked(0, 16_384).ok()
+            .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+            .map(|p| p["status"] == "Approved")
+            .unwrap_or(false);
+        if !approved {
+            self.removal_failed(crew_id, &account_id, Some(dao_proposal_id), "the hub's approval did not pass the removal proposal");
+            return false;
+        }
+        let mut stale = self.stale_voters(crew_id);
+        stale.retain(|a| a != &account_id);
+        self.write_stale(crew_id, &stale);
+        emit("member_removed", json!({"crew_id": crew_id, "account_id": account_id, "dao_proposal_id": dao_proposal_id}));
+        true
     }
 
     /// Retry a token payout that could not be delivered (e.g. the account was not registered).
@@ -466,12 +551,39 @@ impl Kumi {
     }
 
     /// Called only by the crew's DAO when the trade's proposal passes. A trade executes once:
-    /// a second proposal for the same trade (a vote replay) fails here.
+    /// a second proposal for the same trade (a vote replay) fails here. The hub then re-reads the
+    /// trade's own DAO proposal and recounts it (`on_tally`) before any NEAR moves.
     pub fn execute_trade(&mut self, crew_id: u64, trade_id: u64) -> Promise {
         let dao = self.crew(crew_id).dao.clone();
         require!(env::predecessor_account_id() == dao, "ERR_DAO_ONLY");
+        let trade = self.trades.get(&(crew_id, trade_id)).expect("ERR_TRADE");
+        require!(trade.status == TradeStatus::Voting, "ERR_TRADE_STATE");
+        let pid = trade.dao_proposal_id.unwrap_or_else(|| env::panic_str("ERR_NO_PROPOSAL"));
+        Promise::new(dao)
+            .function_call("get_proposal", json!({"id": pid}).to_string().into_bytes(), NearToken::from_yoctonear(0), GAS_VIEW_PROPOSAL)
+            .then(Self::ext(env::current_account_id()).with_static_gas(GAS_ON_TALLY).on_tally(crew_id, trade_id))
+    }
+
+    /// Only approvals from accounts that hold crew shares now count, and they must be a strict
+    /// majority of the shareholders. A member who approved and then ragequit, or a zero-share
+    /// account whose DAO role removal failed, cannot carry a trade. A refusal panics, so the DAO
+    /// marks the proposal Failed and nothing moves.
+    #[private]
+    pub fn on_tally(&mut self, crew_id: u64, trade_id: u64) -> Promise {
+        let proposal = env::promise_result_checked(0, 16_384).ok()
+            .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+            .unwrap_or_else(|| env::panic_str("ERR_PROPOSAL_READ"));
         let status = self.trades.get(&(crew_id, trade_id)).expect("ERR_TRADE").status;
         require!(status == TradeStatus::Voting, "ERR_TRADE_STATE");
+        let crew = self.crew(crew_id);
+        let votes = proposal["votes"].as_object().cloned().unwrap_or_default();
+        let holders = crew.shares.values().filter(|s| **s > 0).count();
+        let approvals = crew.shares.iter()
+            .filter(|(a, s)| **s > 0 && votes.get(a.as_str()).and_then(|v| v.as_str()) == Some("Approve"))
+            .count();
+        if approvals * 2 <= holders {
+            env::panic_str(&format!("ERR_STALE_VOTES: {approvals} of {holders} shareholders approved; a strict majority is needed"));
+        }
         self.start_swap(crew_id, trade_id)
     }
 
@@ -505,12 +617,10 @@ impl Kumi {
 
     /// DAO-only: remove the captain and delete the key.
     pub fn revoke_captain(&mut self, crew_id: u64) -> Promise {
-        let crew = self.crew_mut(crew_id);
-        require!(env::predecessor_account_id() == crew.dao, "ERR_DAO_ONLY");
-        let old = crew.captain.take().expect("ERR_NO_CAPTAIN");
-        self.captain_keys.remove(&old.public_key);
+        require!(env::predecessor_account_id() == self.crew(crew_id).dao, "ERR_DAO_ONLY");
+        let key = self.drop_captain(crew_id).unwrap_or_else(|| env::panic_str("ERR_NO_CAPTAIN"));
         emit("captain_revoked", json!({"crew_id": crew_id}));
-        Promise::new(env::current_account_id()).delete_key(old.public_key)
+        Promise::new(env::current_account_id()).delete_key(key)
     }
 
     /// Signed with the captain's function-call key on this account. Executes at once, within
@@ -701,6 +811,9 @@ impl Kumi {
     pub fn get_claimable(&self, account_id: AccountId, symbol: String) -> U128 {
         U128(self.claimable.get(&(account_id, symbol)).copied().unwrap_or(0))
     }
+    /// Ex-members who left with zero shares but whose DAO vote removal has not succeeded yet.
+    /// Their votes never count toward a trade (see `on_tally`); `remove_ex_member` retries.
+    pub fn get_stale_voters(&self, crew_id: u64) -> Vec<AccountId> { self.stale_voters(crew_id) }
 
     // NEP-245 multi-token views. Token ids: `crew:<id>` (member shares) and `vault:<id>`
     // (follower shares). Shares are non-transferable: they leave only by ragequit or unfollow.
@@ -736,6 +849,61 @@ impl Kumi {
     fn require_asset(&self, symbol: &str) { require!(self.assets.iter().any(|a| a.symbol == symbol), "ERR_UNKNOWN_ASSET"); }
     fn symbols_held(&self, tokens: &BTreeMap<String, u128>) -> Vec<String> {
         tokens.iter().filter(|(_, v)| **v > 0).map(|(k, _)| k.clone()).collect()
+    }
+
+    fn stale_voters(&self, crew_id: u64) -> Vec<AccountId> {
+        env::storage_read(&stale_key(crew_id))
+            .map(|b| near_sdk::borsh::from_slice(&b).unwrap_or_else(|_| env::panic_str("ERR_STALE_STATE")))
+            .unwrap_or_default()
+    }
+    fn write_stale(&mut self, crew_id: u64, list: &[AccountId]) {
+        if list.is_empty() { env::storage_remove(&stale_key(crew_id)); }
+        else { env::storage_write(&stale_key(crew_id), &near_sdk::borsh::to_vec(list).unwrap()); }
+    }
+
+    /// Removes the captain (if any) and its key from the index; returns the key to delete.
+    fn drop_captain(&mut self, crew_id: u64) -> Option<PublicKey> {
+        let old = self.crew_mut(crew_id).captain.take()?;
+        self.captain_keys.remove(&old.public_key);
+        Some(old.public_key)
+    }
+
+    /// A member with zero shares stops being a voter: off the member list, captain key deleted if
+    /// it is theirs, recorded as a stale voter until the DAO confirms the role removal.
+    fn exit_voter(&mut self, crew_id: u64, account_id: &AccountId) {
+        let crew = self.crew_mut(crew_id);
+        crew.allowed.retain(|a| a != account_id);
+        let dao = crew.dao.clone();
+        let is_captain = crew.captain.as_ref().is_some_and(|c| &c.account_id == account_id);
+        if is_captain {
+            let key = self.drop_captain(crew_id).unwrap();
+            emit("captain_revoked", json!({"crew_id": crew_id, "reason": "the captain ragequit"}));
+            Promise::new(env::current_account_id()).delete_key(key).detach();
+        }
+        let mut stale = self.stale_voters(crew_id);
+        if !stale.contains(account_id) { stale.push(account_id.clone()); self.write_stale(crew_id, &stale); }
+        self.file_removal(crew_id, dao, account_id.clone());
+    }
+
+    /// Files a `RemoveMemberFromRole` proposal in the crew's DAO; `on_removal_filed` approves it
+    /// with the hub's own vote (the hub's role has weight 1 of 1 for this proposal kind only).
+    fn file_removal(&self, crew_id: u64, dao: AccountId, account_id: AccountId) {
+        let proposal = json!({"proposal": {
+            "description": format!("Kumi: {account_id} ragequit and holds zero shares; the hub removes their crew vote"),
+            "kind": removal_kind(&account_id),
+        }});
+        Promise::new(dao)
+            .function_call("add_proposal", proposal.to_string().into_bytes(), NearToken::from_yoctonear(0), GAS_ADD_PROPOSAL)
+            .then(Self::ext(env::current_account_id()).with_static_gas(GAS_ON_REMOVAL_FILED).on_removal_filed(crew_id, account_id))
+            .detach();
+    }
+
+    fn removal_failed(&mut self, crew_id: u64, account_id: &AccountId, dao_proposal_id: Option<u64>, reason: &str) {
+        let mut stale = self.stale_voters(crew_id);
+        if !stale.contains(account_id) { stale.push(account_id.clone()); self.write_stale(crew_id, &stale); }
+        env::log_str(&format!("{account_id} still has a vote in crew {crew_id}'s DAO: {reason}. Their votes do not count toward trades; retry with remove_ex_member."));
+        emit("member_removal_failed", json!({"crew_id": crew_id, "account_id": account_id, "dao_proposal_id": dao_proposal_id,
+            "reason": reason, "retry": "remove_ex_member"}));
     }
 
     /// Reads `get_reserves` from every pool in `symbols` (joined promises), then `on_marks`.
@@ -916,6 +1084,24 @@ fn view_of(id: u64, c: &Crew) -> CrewView {
         followers: c.vault.shares.iter().map(|(k, v)| (k.clone(), U128(*v))).collect(),
         busy: c.busy, trade_count: c.trade_count, receipt_count: c.receipt_count,
     }
+}
+
+/// The hub's permissions in every crew DAO it creates: file trade proposals (FunctionCall to the
+/// hub), and file and approve the removal of a member who has ragequit. Nothing else.
+const HUB_PERMISSIONS: [&str; 3] = ["call:AddProposal", "remove_member_from_role:AddProposal", "remove_member_from_role:VoteApprove"];
+
+fn removal_kind(account_id: &AccountId) -> serde_json::Value {
+    json!({"RemoveMemberFromRole": {"member_id": account_id, "role": CREW_ROLE}})
+}
+
+fn stale_key(crew_id: u64) -> Vec<u8> { [STALE_PREFIX, &crew_id.to_le_bytes()].concat() }
+
+fn admit_key(crew_id: u64, account_id: &AccountId) -> Vec<u8> {
+    [ADMIT_PREFIX, &crew_id.to_le_bytes(), account_id.as_bytes()].concat()
+}
+
+fn admitted_at(crew_id: u64, account_id: &AccountId) -> Option<u64> {
+    env::storage_read(&admit_key(crew_id, account_id)).map(|b| u64::from_le_bytes(b.try_into().unwrap_or_else(|_| env::panic_str("ERR_ADMIT_STATE"))))
 }
 
 fn check_trade_args(bps: u16, quote_in: U128, quote_out: U128, quote_hash: &str) {

@@ -1,5 +1,6 @@
 // Fetches the live Sputnik DAO v2 factory code and its default DAO code from NEAR testnet,
 // checks both against on-chain SHA-256 code hashes, and writes them for the sandbox test.
+// Also fetches the Nov 9 Kumi hub code from an archival node for the upgrade test.
 import { createHash } from 'node:crypto';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 
@@ -27,6 +28,26 @@ const view = async (method, args = {}) => Buffer.from((await rpc({ request_type:
   method_name: method, args_base64: Buffer.from(JSON.stringify(args)).toString('base64') })).result);
 
 await mkdir(OUT, { recursive: true });
+
+// The hub exactly as deployed on testnet on Nov 9 (before ragequit removed DAO votes), read from an
+// archival node at a fixed block and hash-checked. The upgrade test deploys it, makes a member
+// ragequit under the old code, upgrades to the new code and removes that member's vote.
+const LEGACY_HUB = { account: 'hub.kumi-77b50457fb.testnet', block: 277045304, hash: 'EB2tb1Ttn8FWYsbt8yApk8z5cnpjdHDrMz1z9y2i9kpB' };
+const legacyPath = `${OUT}/kumi-hub-2026-11-09.wasm`;
+let legacyOk = false;
+try { legacyOk = sha(await readFile(legacyPath)) === LEGACY_HUB.hash; } catch { /* fetch below */ }
+if (!legacyOk) {
+  const ARCHIVAL = process.env.NEAR_ARCHIVAL_RPC_URL ?? 'https://archival-rpc.testnet.fastnear.com';
+  const r = await fetch(ARCHIVAL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'hub',
+    method: 'query', params: { request_type: 'view_code', account_id: LEGACY_HUB.account, block_id: LEGACY_HUB.block } }) });
+  if (!r.ok) throw new Error(`Archival RPC HTTP ${r.status}`);
+  const body = await r.json();
+  if (body.error || !body.result?.code_base64) throw new Error(`Archival RPC: ${JSON.stringify(body.error ?? body.result).slice(0, 300)}`);
+  const code = Buffer.from(body.result.code_base64, 'base64');
+  if (sha(code) !== LEGACY_HUB.hash) throw new Error('Nov 9 hub code does not match its recorded code hash');
+  await writeFile(legacyPath, code);
+  console.log(`Fetched the Nov 9 testnet hub (${code.length} bytes, ${LEGACY_HUB.hash}) at block ${LEGACY_HUB.block}.`);
+}
 const manifestPath = `${OUT}/manifest.json`;
 try {
   const cached = JSON.parse(await readFile(manifestPath, 'utf8'));
