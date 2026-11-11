@@ -156,3 +156,4 @@ See [TESTING.md](TESTING.md). In short:
 - Testnet pool tokens (tSOL, tBTC) show the real logo with a "test" badge: they are Kumi's NEP-141 test pools, not the mainnet assets.
 - Sputnik DAO and NEAR Intents have no licensed mark in that package, so the app uses neutral line glyphs with the protocol name written next to them.
 - Clay mascots and scenes (`packages/web/public/art`) were generated for Kumi.
+- The 3D object kit (`packages/web/public/art/3d`, see [docs/ART-3D.md](docs/ART-3D.md)): 3D art generated with ChatGPT.
