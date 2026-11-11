@@ -57,7 +57,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
           ['Members', hub.data ? String(members) : null, 'email sign-ups, no wallet', 'pink']].map(([k, v, s, tone]) => (
           <div className={`l-stat tone-${tone}`} key={k}>
             <div className="label">{k}</div>
-            {v === null ? <div className="skeleton" style={{ height: 34, marginTop: 8, width: '60%' }} /> : <div className="v row" style={{ gap: 8 }}>{k === 'Crew NAV' && <TokenLogo sym="NEAR" size={30} />}{v}{k === 'Crew NAV' && <small> NEAR</small>}</div>}
+            {v === null ? hub.error ? <div className="v">—</div> : <div className="skeleton" style={{ height: 34, marginTop: 8, width: '60%' }} /> : <div className="v row" style={{ gap: 8 }}>{k === 'Crew NAV' && <TokenLogo sym="NEAR" size={30} />}{v}{k === 'Crew NAV' && <small> NEAR</small>}</div>}
             <div className="s">{s}</div>
           </div>
         ))}
@@ -77,7 +77,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
         <div className="proof">
           <div className="card">
             <div className="card-head"><h3>A crew right now</h3>{hub.data && <span className="chip chip-mint chip-live"><span className="dot" />read {new Date(hub.data.readAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}</div>
-            {!hub.data || (crews.length && !top.data) ? <div className="skeleton" style={{ height: 260 }} /> : !top.data ? <p className="mini">The hub is deployed; the first crew appears here as soon as it is created.</p> : <CrewMini st={top.data} />}
+            {top.error ? <Notice error>Could not read the crew: {top.error}</Notice> : hub.error && !hub.data ? <p className="mini">Live crew data is unavailable. The recorded transactions are still linked here.</p> : !hub.data || (crews.length && !top.data) ? <div className="skeleton" style={{ height: 260 }} /> : !top.data ? <p className="mini">The hub is deployed; the first crew appears here as soon as it is created.</p> : <CrewMini st={top.data} />}
           </div>
           <div className="card">
             <div className="card-head"><h3>The recorded crew lifecycle</h3><span className="chip chip-plum">{EVIDENCE.transactions.length} transactions</span></div>

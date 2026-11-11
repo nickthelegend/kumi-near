@@ -26,7 +26,7 @@ export function Leaderboard() {
       {data.error && <Notice error>{data.error}</Notice>}
       <div className="season-hero">
         <div className="podium">
-          {!data.data ? [0, 1].map(i => <div key={i} className="skeleton" style={{ height: 86 }} />)
+          {!data.data ? data.error ? <div className="card"><p className="mini">Season data could not load. The testnet read retries automatically.</p></div> : [0, 1].map(i => <div key={i} className="skeleton" style={{ height: 86 }} />)
             : data.data.length === 0 ? <div className="card"><EmptyArt art={['kumi3-empty', 'kumi-og']} title="No crews yet this season">The first crew to trade takes the top spot.</EmptyArt></div>
             : data.data.map((r, i) => <Link to={`/crew/${r.crewId}`} className="rank-card" key={r.crewId}>
               <span className="rank-n">{String(i + 1).padStart(2, '0')}</span>

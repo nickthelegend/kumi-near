@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { formatNear, formatUnits, memberShare, seasonRow, tally, type Proposal, type Receipt, type Trade } from '@kumi/sdk';
 import { api, HUB, readCrew, readHub, readProposals, useAsync, type ChatMessage, type CrewState } from '../lib/api';
 import { useSession, type Session } from '../lib/session';
-import { Avatar, CrewAvatar, Ic, Link, Notice, Tx, mascotOf, navigate, shortName } from '../ui/bits';
+import { Avatar, CrewAvatar, EmptyArt, Ic, Link, Notice, Tx, mascotOf, navigate, shortName } from '../ui/bits';
 import { JoinSheet } from '../ui/Fund';
 import { DaoGlyph, NearMark, TokenLogo } from '../ui/logos';
 
@@ -31,7 +31,9 @@ export function Lobby({ onSignIn }: { onSignIn: () => void }) {
       </div>
     </section>
     {hub.error && !hub.data && <Notice error>Could not read the Kumi hub {HUB} on NEAR testnet: {hub.error}</Notice>}
-    {!data ? <div className="l2-grid"><div className="c3 skeleton" style={{ minHeight: 520 }} /><div className="stack"><div className="c3 skeleton" style={{ minHeight: 160 }} /><div className="c3 skeleton" style={{ minHeight: 200 }} /></div></div> : <>
+    {st.error && !data && <Notice error>Could not read the crew: {st.error}</Notice>}
+    {hub.data && crews.length === 0 ? <div className="c3"><EmptyArt art={['kumi3-empty', 'kumi-og']} title="No crews on this hub yet">The first crew needs a Sputnik DAO. See the README for the testnet setup.</EmptyArt></div>
+      : !data ? !hub.error && !st.error && <div className="l2-grid"><div className="c3 skeleton" style={{ minHeight: 520 }} /><div className="stack"><div className="c3 skeleton" style={{ minHeight: 160 }} /><div className="c3 skeleton" style={{ minHeight: 200 }} /></div></div> : <>
       <div className="l2-grid">
         <ThreadHero st={data} messages={chat.data} chatError={chat.error} me={me} />
         <div className="l2-side">
