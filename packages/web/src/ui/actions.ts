@@ -10,7 +10,18 @@ export async function relay(s: Session, receiverId: string, methodName: string, 
   // A pool refusing a fill (ERR_SLIPPAGE) is handled by the hub, which restores holdings and
   // marks the trade failed; that is an outcome, not an error.
   const handled = r.events.some(e => e.event === 'trade_failed');
-  if (r.failure && !handled) throw new Error(`On-chain failure (${r.hash.slice(0, 8)}…): ${r.failure}`);
+  if (r.failure && !handled) {
+    const reasons: [RegExp, string][] = [
+      [/ERR_MIN_DEPOSIT/, 'The minimum deposit is 0.01 testnet NEAR.'],
+      [/ERR_NOT_REGISTERED/, 'A token payout needs storage registration on your account.'],
+      [/ERR_TRADE_IN_FLIGHT/, 'A trade is settling. Wait for its receipt, then try again.'],
+      [/ERR_STALE_VOTES/, 'Membership changed after this trade was proposed. Pitch a new trade.'],
+      [/ERR_PERMISSION_DENIED|ERR_DAO_ONLY/, 'Your account cannot approve this action.'],
+      [/NotEnoughBalance|lack_balance_for_state|insufficient/i, 'Your testnet account needs more NEAR for this action.'],
+    ];
+    const message = reasons.find(([pattern]) => pattern.test(r.failure!))?.[1] ?? 'The transaction did not complete. Check its testnet receipt before trying again.';
+    throw new Error(`${message} Transaction: ${r.hash}`);
+  }
   return r;
 }
 
