@@ -107,8 +107,9 @@ img { display: block; max-width: 100%; }
 .nav-links a { display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 0 16px; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: 14px; color: var(--ink-2); }
 .nav-links a:hover { background: var(--panel-2); color: var(--ink); }
 .nav-links a[aria-current='page'] { background: var(--plum); color: #fff; }
-.nav-right { display: flex; align-items: center; gap: 10px; }
-.who { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px 0 5px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-weight: 700; font-size: 14px; }
+.nav-right { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.who { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px 0 5px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-weight: 700; font-size: 14px; min-width: 0; }
+.who-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .net-pill { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); font-family: var(--mono); font-size: 11px; color: var(--ink-2); }
 .net-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); }
 

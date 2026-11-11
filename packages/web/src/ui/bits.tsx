@@ -92,7 +92,7 @@ export function TopNav({ path, onSignIn }: { path: string; onSignIn: () => void 
           <span className="net-pill"><i />NEAR testnet</span>
           {s ? (
             <button className="who" onClick={() => { if (confirm(`Sign out ${s.accountId}? Its key lives only in this browser.`)) setSession(null); }} title={`${s.accountId} · click to sign out`}>
-              <Avatar id={s.accountId} />{s.handle}
+              <Avatar id={s.accountId} /><span className="who-label">{s.handle}</span>
             </button>
           ) : <button className="btn btn-sm btn-plum" onClick={onSignIn}>Sign in</button>}
           {path === '/' && <Link to="/app" className="btn btn-primary btn-sm">Open app</Link>}
