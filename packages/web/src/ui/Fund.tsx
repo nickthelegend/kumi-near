@@ -123,7 +123,7 @@ export function CrewInfo({ st, me, onChanged }: { st: CrewState; me: Session | n
     </div>
     <div className="card">
       <div className="card-head"><h3>Other DAO votes</h3></div>
-      {open.loading && !open.data ? <div className="skeleton" style={{ height: 60 }} /> : (open.data ?? []).length === 0 ? <p className="mini">None open. Trade votes live in the chat.</p> :
+      {open.error ? <Notice error>Could not read DAO votes: {open.error}</Notice> : open.loading && !open.data ? <div className="skeleton" style={{ height: 60 }} /> : (open.data ?? []).length === 0 ? <p className="mini">None open. Trade votes live in the chat.</p> :
         open.data!.map(p => <div key={p.id} style={{ padding: '10px 0', borderTop: '1px solid var(--line)' }}>
           <p className="mini" style={{ color: 'var(--ink)' }}>{p.description}</p>
           <div className="row-between" style={{ marginTop: 8 }}><span className="faint mono" style={{ fontSize: 11 }}>#{p.id} · {Object.keys(p.votes).length} voted</span>
