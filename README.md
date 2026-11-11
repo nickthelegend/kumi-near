@@ -4,7 +4,7 @@ Friends discuss trades in chat, but pooling money leaves one person holding the 
 
 ## Try it
 
-The demo runs locally. Use Node 22+ and pnpm 10 (the repo pins pnpm 10.29.2). The read-only path needs public NEAR testnet RPC access, with no wallet or server setup.
+The demo runs locally. Use Node 22+ and pnpm 10 (the repo pins pnpm 10.29.2). The read-only path needs public NEAR testnet RPC access, with no wallet or relayer setup. Vite preview includes a read-only testnet RPC proxy.
 
 1. From the repo root, run `pnpm install --frozen-lockfile` - see the workspace dependencies install.
 2. Run `pnpm --filter @kumi/web build`, then `pnpm --filter @kumi/web preview` - see the local preview URL, `http://127.0.0.1:5196`. Leave that terminal running.
@@ -45,7 +45,7 @@ Proposed tracks: `social` first, then `defi`. The crew uses Sputnik DAO to make 
 | Open `/app` | The lobby: a chat-thread preview, crew NAV and weekly return, player and crew cards, Pitch a trade and Follow or Join actions, receipts, recent calls and a pitch builder. |
 | Open `/room` | The **Night Owls** crew room, laid out like a chat app (`/app?crew=N` links redirect here). Left: the crew list (colour-coded avatar, last message, unread count) and a first-run path (sign in, join, chip in, pitch a trade, vote) checked against chain state. Middle: signed messages and colour-coded cards: coral trade proposals with the quote and a butter Sputnik vote band, butter joins, mint follows, pink ragequits, each with its tx link. Right: the fund (NAV, return, chart, stat tiles, your position, holdings, members' shares, captain lane). On a phone these are the Crews / Chat / Fund tabs. "Verified on-chain" means the P&L was recomputed from receipts and matches live state. |
 | With a configured relayer, click **Sign in** and verify an email | Without `RESEND_API_KEY` the sheet says "Email delivery: Setup required: RESEND_API_KEY" and shows the code. Verifying creates `<name>.<relayer>.testnet` with a key made in your browser. |
-| As a member, type `/buy BTC 10%` | A trade card appears with the testnet pool quote and a mainnet 1Click `dry: true` quote. **File to the crew DAO** creates a Sputnik proposal. **👍 Approve** from a strict majority of current shareholders executes it. New sign-ups are not automatically invited to the recorded crew. |
+| As a member, type `/buy BTC 10%` | A trade card appears with the testnet pool quote and a mainnet 1Click `dry: true` quote. **Put it to a vote** creates a Sputnik proposal. **Vote yes** from a strict majority of current shareholders executes it. New sign-ups are not automatically invited to the recorded crew. |
 | Open `/crew/0` | The public crew page: verified return, the trade list and **Follow** (a follower vault deposit). |
 | Open `/leaderboard` | This week's season, ranked by return minus half the max drawdown. |
 | Fund pane, **Ragequit** | The exact payout preview. "To any chain" shows a real 1Click dry quote and "Setup required: NEAR_MAINNET_ACCOUNT". The testnet exit pays in kind. |
