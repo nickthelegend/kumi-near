@@ -52,7 +52,7 @@ Proposed tracks: `social` first, then `defi`. The crew uses Sputnik DAO to make 
 
 Agent surface (read-only MCP over stdio): `pnpm --filter @kumi/mcp start`. The tools are `list_crews`, `crew_pnl`, `season_leaderboard`, `quote_trade` and `crew_trades`.
 
-Re-check the Nov 9 testnet evidence (no signing keys needed): first run `pnpm build:contracts`, then `pnpm verify:testnet`. The build needs Rust via rustup (pinned to 1.95.0) and `cargo-near` 0.22.0. The verifier re-queries the 46 Nov 9 hashes, compares deployed code hashes with the local Wasm build, and recomputes P&L. It does not check the separate Nov 10 fix file.
+Re-check the Nov 9 testnet evidence (no signing keys needed): first run `pnpm build:contracts`, then `pnpm verify:testnet`. The build needs Rust via rustup (pinned to 1.95.0) and `cargo-near` 0.22.0. The verifier re-queries the 46 Nov 9 hashes through the public archival testnet RPC, compares deployed code hashes with the local Wasm build, and recomputes P&L. `NEAR_ARCHIVAL_RPC_URL` can override the receipt provider. It does not check the separate Nov 10 fix file.
 
 ## How it works
 

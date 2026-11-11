@@ -7,6 +7,8 @@ import { computePnl, getAssets, getMarks, getReceipts, listCrews, rpc, txStatus,
 import { evidenceFile, loadEvidence, ROOT } from './lib.js';
 
 const e = loadEvidence();
+// Recorded transactions can outlive the ordinary public node's receipt history.
+const archivalRpc = process.env.NEAR_ARCHIVAL_RPC_URL ?? 'https://archival-rpc.testnet.near.org';
 const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const base58 = (bytes: Buffer) => { let n = BigInt('0x' + bytes.toString('hex')); let s = ''; while (n > 0n) { s = ALPHABET[Number(n % 58n)] + s; n /= 58n; } return s; };
 const codeHash = (path: string) => base58(createHash('sha256').update(readFileSync(path)).digest());
@@ -16,11 +18,11 @@ const ok = (cond: boolean, msg: string) => { console.log(`${cond ? '  ok ' : ' F
 console.log(`Evidence: ${evidenceFile()} (${e.transactions.length} transactions)`);
 for (const t of e.transactions) {
   const sender = t.signer;
-  const tx = await txStatus(t.hash, sender);
+  const tx = await txStatus(t.hash, sender, archivalRpc);
   const failure = txFailure(tx);
   const expected = /FAILED|slippage|a receipt failed/i.test(t.note ?? '') || t.step.includes('slippage');
   ok(tx.transaction.hash === t.hash && (!failure || expected), `${t.step} ${t.hash}${failure ? ' (expected failed receipt: pool refused the fill)' : ''}`);
-  await new Promise(r => setTimeout(r, 120));
+  await new Promise(r => setTimeout(r, 1000));
 }
 const built = { [e.accounts.hub]: `${ROOT}/target/near/kumi_contract/kumi_contract.wasm`, [e.accounts.sol]: `${ROOT}/target/near/kumi_testpool/kumi_testpool.wasm`, [e.accounts.btc]: `${ROOT}/target/near/kumi_testpool/kumi_testpool.wasm` };
 for (const [acct, path] of Object.entries(built)) {
