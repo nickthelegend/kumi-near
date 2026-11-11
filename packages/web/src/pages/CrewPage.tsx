@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { accountUrl, formatNear, formatUnits, parseNear, vaultNav, type Trade } from '@kumi/sdk';
 import { HUB, readCrew, useAsync, type CrewState } from '../lib/api';
 import { useSession, type Session } from '../lib/session';
-import { relay } from '../ui/actions';
+import { relay, unfollow } from '../ui/actions';
 import { Art, Avatar, CrewAvatar, Ic, Link, Notice, shortName, Tx } from '../ui/bits';
 import { Spark } from '../ui/Fund';
 import { TokenLogo } from '../ui/logos';
@@ -71,7 +71,7 @@ function FollowPanel({ st, me, onSignIn, onDone }: { st: CrewState; me: Session 
   const mine = me ? BigInt(crew.followers.find(f => f[0] === me.accountId)?.[1] ?? '0') : 0n;
   const pps = supply > 0n ? Number(nav * 10_000n / supply) / 10_000 : 1;
   async function act(name: string, fn: () => Promise<{ hash: string }>) {
-    setBusy(name); setError(null);
+    setBusy(name); setError(null); setHash(null);
     try { setHash((await fn()).hash); onDone(); } catch (e) { setError(String(e instanceof Error ? e.message : e)); } finally { setBusy(null); }
   }
   return (
@@ -92,7 +92,7 @@ function FollowPanel({ st, me, onSignIn, onDone }: { st: CrewState; me: Session 
             {mine > 0n && <Notice>You hold {(Number(mine * 10_000n / supply) / 100).toFixed(2)}% of the vault, worth about {(pps * Number(mine) / 1e24).toFixed(4)} NEAR.</Notice>}
             <div className="row"><input className="input mono" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} aria-label="Amount in NEAR" style={{ flex: 1 }} />
               <button className="btn btn-mint" disabled={!!busy} onClick={() => act('f', () => relay(me, HUB, 'follow', { crew_id: crew.id }, parseNear(amount), { crewId: crew.id, label: 'follow' }))}>{busy === 'f' ? 'Following…' : 'Follow'}</button></div>
-            {mine > 0n && <button className="btn" disabled={!!busy} onClick={() => act('u', () => relay(me, HUB, 'unfollow', { crew_id: crew.id, shares: mine.toString() }))}>{busy === 'u' ? 'Exiting…' : 'Exit the vault, exact share'}</button>}
+            {mine > 0n && <button className="btn" disabled={!!busy} onClick={() => act('u', () => unfollow(me, HUB, crew, mine, st.assets))}>{busy === 'u' ? 'Exiting…' : 'Exit the vault, exact share'}</button>}
           </>
         )}
         {error && <Notice error>{error}</Notice>}

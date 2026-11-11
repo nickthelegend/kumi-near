@@ -22,10 +22,19 @@ export const vote = (s: Session, dao: string, id: number, kind: unknown, approve
   relay(s, dao, 'act_proposal', { id, action: approve ? 'VoteApprove' : 'VoteReject', proposal: kind }, 0n, { crewId, messageId, label: `${approve ? '👍' : '👎'} ${s.handle}` });
 
 /** Registers the player on every token the payout includes, then ragequits. */
-export async function ragequit(s: Session, hub: string, crew: { id: number }, shares: bigint, tokens: { symbol: string; token: string }[]) {
+async function registerPayout(s: Session, tokens: { token: string }[]) {
   for (const t of tokens) {
     if (!await storageBalance(t.token, s.accountId)) await relay(s, t.token, 'storage_deposit', {}, 1_250_000_000_000_000_000_000n);
   }
+}
+
+export async function unfollow(s: Session, hub: string, crew: { id: number; vault_tokens: [string, string][] }, shares: bigint, assets: { symbol: string; token: string }[]) {
+  await registerPayout(s, assets.filter(a => crew.vault_tokens.some(([symbol, amount]) => symbol === a.symbol && BigInt(amount) > 0n)));
+  return relay(s, hub, 'unfollow', { crew_id: crew.id, shares: shares.toString() }, 0n, { crewId: crew.id, label: 'unfollow' });
+}
+
+export async function ragequit(s: Session, hub: string, crew: { id: number }, shares: bigint, tokens: { symbol: string; token: string }[]) {
+  await registerPayout(s, tokens);
   return relay(s, hub, 'ragequit', { crew_id: crew.id, shares: shares.toString() }, 0n, { crewId: crew.id, label: 'ragequit' });
 }
 
