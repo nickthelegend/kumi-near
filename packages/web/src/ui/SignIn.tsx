@@ -63,7 +63,7 @@ export function SignIn({ onClose }: { onClose: () => void }) {
             )}
             <input className="input mono" inputMode="numeric" pattern="\d{6}" maxLength={6} required value={code} onChange={e => setCode(e.target.value)} placeholder="000000" autoFocus aria-label="Code" style={{ fontSize: 22, letterSpacing: '0.3em', textAlign: 'center' }} />
             {error && <Notice error>{error}</Notice>}
-            <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? 'Creating your account on NEAR…' : 'Verify and create my account'}</button>
+            <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? start.existing ? 'Signing in…' : 'Creating your account on NEAR…' : start.existing ? 'Verify and sign in' : 'Verify and create my account'}</button>
             <button type="button" className="btn btn-ghost" onClick={() => setStep('email')}>Use a different email</button>
           </form>
         )}

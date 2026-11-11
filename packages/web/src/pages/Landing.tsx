@@ -15,7 +15,7 @@ const LABELS: Record<string, [string, string]> = {
 const STEPS: { tone: string; art: string[]; title: React.ReactNode; body: string }[] = [
   { tone: 'butter', art: ['kumi3-pool', 'kumi-feature-vote'], title: 'Chip into one jar', body: 'Everyone deposits and gets crew shares at the live NAV. The jar is your crew\'s own Sputnik DAO plus a vault only that DAO can trade.' },
   { tone: 'coral', art: ['kumi3-vote', 'kumi-feature-chat'], title: <>Say <code>/buy SOL 20%</code></>, body: 'Your message becomes a trade card with a live quote and a DAO proposal. Friends vote with a tap; a strict majority executes it, once.' },
-  { tone: 'pink', art: ['kumi3-leave', 'kumi-og'], title: 'Leave whenever, exactly', body: 'Ragequit any time for your precise slice of every asset. No vote, no permission, no waiting on the group.' },
+  { tone: 'pink', art: ['kumi3-leave', 'kumi-og'], title: 'Leave whenever, exactly', body: 'Ragequit for your precise slice of every asset once any in-flight swap has settled. No group vote or permission needed.' },
   { tone: 'mint', art: ['kumi3-season', 'kumi-hero'], title: 'Climb the season', body: 'Every crew is ranked weekly on return minus half its drawdown, recomputed from on-chain receipts. Nobody can fake gains.' },
 ];
 

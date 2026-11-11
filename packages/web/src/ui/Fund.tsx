@@ -152,7 +152,7 @@ export function JoinSheet({ st, me, hub, onClose, onDone }: { st: CrewState; me:
         catch (x) { setError(String(x instanceof Error ? x.message : x)); } finally { setBusy(false); }
       }}>
         <div className="sheet-art"><Art name={['kumi3-pool', 'kumi-feature-vote']} alt="Hands dropping coins into a jar" eager /></div>
-        <div><h3>Chip into {st.crew.name}</h3><p className="sub">You get crew shares at the live NAV, {st.pnl.pps.toFixed(4)} NEAR a share, and a vote on every trade. Leave any time with your exact slice.</p></div>
+        <div><h3>Chip into {st.crew.name}</h3><p className="sub">You get crew shares at the live NAV, {st.pnl.pps.toFixed(4)} NEAR a share, and a vote on every trade. Leave with your exact slice when no swap is settling.</p></div>
         <label className="field"><span className="label">Amount (testnet NEAR)</span><span className="logo-select"><span className="ls-logo"><TokenLogo sym="NEAR" size={26} /></span><input className="input mono" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} /></span></label>
         <Notice>New players get a small testnet NEAR gift to try this. Deposits from any chain go through 1Click on mainnet: {LIVE_SWAP_SETUP}.</Notice>
         {error && <Notice error>{error}</Notice>}
