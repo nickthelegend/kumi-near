@@ -12,7 +12,7 @@ The demo runs locally. Use Node 22+ and pnpm 10 (the repo pins pnpm 10.29.2). Th
 4. Open `http://127.0.0.1:5196/crew/0` - see the Night Owls treasury, trades and return recomputed from on-chain receipts.
 5. Open `http://127.0.0.1:5196/leaderboard` - see the crew ranked by return minus half its maximum drawdown.
 
-The lobby at `/app` and fund pane at `/room` also read chain state. Chat history, sign-in and transactions need `pnpm server` in a second terminal, configured with a funded testnet relayer as described in `.env.example`. Without that setup, chat is offline and sign-in/actions are unavailable. A fresh sign-up cannot trade for Night Owls without an invitation. See [BLOCKED.md](BLOCKED.md) for setup limits. Public RPC may rate-limit; the web app retries reads.
+The lobby at `/app` and fund pane at `/room` also read chain state. Chat history, sign-in and transactions need `pnpm run server` in a second terminal, configured with a funded testnet relayer as described in `.env.example`. Without that setup, chat is offline and sign-in/actions are unavailable. A fresh sign-up cannot trade for Night Owls without an invitation. See [BLOCKED.md](BLOCKED.md) for setup limits. Public RPC may rate-limit; the web app retries reads.
 
 ## Live on NEAR testnet
 

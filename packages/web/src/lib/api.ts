@@ -24,12 +24,13 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
   try {
     r = await fetch(path, body === undefined ? undefined : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   } catch {
-    throw new Error('The Kumi server is not reachable. Start it with: pnpm server');
+    throw new Error('The Kumi server is not reachable. Start it with: pnpm run server');
   }
   const text = await r.text();
   let parsed: unknown = null;
-  try { parsed = JSON.parse(text); } catch { /* not json */ }
-  if (!r.ok) throw new Error((parsed as { error?: string })?.error ?? (r.status === 502 || r.status === 504 ? 'The Kumi server is not running. Start it with: pnpm server' : `HTTP ${r.status}`));
+  let validJson = true;
+  try { parsed = JSON.parse(text); } catch { validJson = false; }
+  if (!r.ok || !validJson) throw new Error((parsed as { error?: string })?.error ?? (r.status >= 500 ? 'The Kumi server is not running. Start it with: pnpm run server' : r.ok ? 'The Kumi server returned an invalid response. Start it with: pnpm run server' : `HTTP ${r.status}`));
   return parsed as T;
 }
 
@@ -116,7 +117,7 @@ export function useChat(crewId: number | null) {
     return () => { stop = true; clearTimeout(retry); ws.current?.close(); };
   }, [crewId]);
   const send = useCallback((payload: unknown) => {
-    if (ws.current?.readyState !== WebSocket.OPEN) { setError('Chat is offline. Start the Kumi server with: pnpm server'); return false; }
+    if (ws.current?.readyState !== WebSocket.OPEN) { setError('Chat is offline. Start the Kumi server with: pnpm run server'); return false; }
     setError(null);
     ws.current.send(JSON.stringify(payload));
     return true;

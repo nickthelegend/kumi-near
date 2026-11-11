@@ -93,7 +93,7 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
           <button className="btn btn-sm btn-plum thread-tabs" onClick={() => setTab('fund')}><Ic name="chart" size={15} />{st.data.pnl.navNear.toFixed(3)} N</button>
         </div>
         <div className="messages" aria-live="polite" ref={box} onScroll={e => { const b = e.currentTarget; stuck.current = b.scrollHeight - b.scrollTop - b.clientHeight < 80; }}>
-          {chat.status === 'offline' && chat.messages.length === 0 && <EmptyArt art={['kumi3-empty', 'kumi-feature-chat']} title="Chat is offline">The Kumi server is not running. Start it with <span className="mono">pnpm server</span>. The fund pane still reads the chain directly.</EmptyArt>}
+          {chat.status === 'offline' && chat.messages.length === 0 && <EmptyArt art={['kumi3-empty', 'kumi-feature-chat']} title="Chat is offline">The Kumi server is not running. Start it with <span className="mono">pnpm run server</span>. The fund pane still reads the chain directly.</EmptyArt>}
           {chat.status !== 'offline' && chat.messages.length === 0 && <EmptyArt art={['kumi3-empty', 'kumi-feature-chat']} title="Quiet in here" action={isMember ? <button className="btn btn-primary" onClick={() => pitch()}>Pitch the first trade</button> : undefined}>Say hi, or pitch the first trade with <span className="mono">/buy SOL 20%</span>.</EmptyArt>}
           {chat.messages.map((m, i) => <Message key={m.id} m={m} prev={chat.messages[i - 1]} me={me} st={st.data!} proposals={props.data ?? {}} onDone={refresh} />)}
         </div>
