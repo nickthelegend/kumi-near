@@ -40,7 +40,7 @@ export function SignIn({ onClose }: { onClose: () => void }) {
             <label className="field"><span className="label">Email</span>
               <input className="input" type="email" required autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoFocus /></label>
             <label className="field"><span className="label">Name in the chat</span>
-              <input className="input" required minLength={2} maxLength={20} pattern="[A-Za-z0-9-]+" value={handle} onChange={e => setHandle(e.target.value)} placeholder="mika" />
+              <input className="input" required minLength={2} maxLength={20} pattern="([A-Za-z0-9]|-)+" value={handle} onChange={e => setHandle(e.target.value)} placeholder="mika" />
               <span className="faint" style={{ fontSize: 13 }}>Letters, digits and dashes. It becomes your account name.</span></label>
             {error && <Notice error>{error}</Notice>}
             <button className="btn btn-primary btn-lg" disabled={busy}>{busy ? 'Sending…' : 'Send my code'}</button>
