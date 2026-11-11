@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { formatNear, formatUnits, memberShare, seasonRow, tally, type Proposal, type Receipt, type Trade } from '@kumi/sdk';
 import { api, HUB, readCrew, readHub, readProposals, useAsync, type ChatMessage, type CrewState } from '../lib/api';
 import { useSession, type Session } from '../lib/session';
-import { Avatar, CrewAvatar, EmptyArt, Ic, Link, Notice, Tx, mascotOf, navigate, shortName } from '../ui/bits';
+import { Avatar, CrewAvatar, EmptyArt, Ic, Link, MiniEmpty, Notice, Tx, mascotOf, navigate, shortName } from '../ui/bits';
 import { JoinSheet } from '../ui/Fund';
 import { DaoGlyph, NearMark, TokenLogo } from '../ui/logos';
 
@@ -61,7 +61,7 @@ export function Lobby({ onSignIn }: { onSignIn: () => void }) {
         <PitchBuilder st={data} me={me} onSignIn={onSignIn} />
         <section className="c3 calls2">
           <div className="sec-head"><div><span className="k">ON-CHAIN · SPUTNIK DAO</span><h2>Recent calls</h2></div><Link to={`/room?crew=${data.crew.id}`} className="text-link">Open the chat <Ic name="arrow" size={15} /></Link></div>
-          {data.trades.length === 0 ? <p className="mini">No calls yet. Pitch the first trade in the crew chat.</p>
+          {data.trades.length === 0 ? <MiniEmpty obj="rocket">No calls yet. Pitch the first trade in the crew chat.</MiniEmpty>
             : <div className="calls">{[...data.trades].reverse().slice(0, 5).map((t, i) => <CallRow key={t.id} t={t} st={data} odd={i % 2 === 1} />)}</div>}
         </section>
       </div>

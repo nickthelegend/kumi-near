@@ -1,8 +1,9 @@
 import { crewNav, formatNear, accountUrl, seasonRow } from '@kumi/sdk';
 import { EVIDENCE, HUB, readCrew, readHub, useAsync, type CrewState } from '../lib/api';
-import { Art, Avatar, CrewAvatar, Ic, Link, Notice, Sticker, Tx, shortName } from '../ui/bits';
+import { Art, Avatar, CrewAvatar, Ic, Link, MiniEmpty, Notice, Obj, Sticker, Tx, shortName, type ObjName } from '../ui/bits';
 import { Spark } from '../ui/Fund';
 import { DaoGlyph, IntentsGlyph, NearMark, TokenLogo } from '../ui/logos';
+const OBJS: Record<string, [ObjName, string]> = { 'Sputnik DAO v2': ['vote', 'A ballot going into a ballot box'], 'Function-call keys': ['captain', "A captain's hat"], 'NEP-366 meta transactions': ['chat', 'A smiling chat bubble'], 'NEAR Intents (1Click)': ['rocket', 'A rocket taking off'], 'Sub-accounts': ['jar', 'A piggy fund jar'], 'NEP-245 + NEP-141': ['shield', 'A shield with a padlock'] };
 const MARKS: Record<string, React.ReactNode> = { 'Sputnik DAO v2': <DaoGlyph size={20} />, 'Function-call keys': <NearMark size={20} />, 'NEP-366 meta transactions': <NearMark size={20} />, 'NEAR Intents (1Click)': <span className="row" style={{ gap: 2 }}><IntentsGlyph size={20} /><TokenLogo sym="SOL" size={22} /><TokenLogo sym="BTC" size={22} /><TokenLogo sym="ETH" size={22} /><TokenLogo sym="USDC" size={22} /><TokenLogo sym="ZEC" size={22} /></span>, 'Sub-accounts': <NearMark size={20} />, 'NEP-245 + NEP-141': <span className="row" style={{ gap: 2 }}><TokenLogo sym="SOL" size={22} test /><TokenLogo sym="BTC" size={22} test /></span> };
 
 const LABELS: Record<string, [string, string]> = {
@@ -12,11 +13,11 @@ const LABELS: Record<string, [string, string]> = {
   deploy_hub: ['Hub contract deployed', 'mint'], liquidity_tsol: ['Test SOL pool seeded at spot', 'mint'],
 };
 
-const STEPS: { tone: string; art: string[]; title: React.ReactNode; body: string }[] = [
-  { tone: 'butter', art: ['kumi3-pool', 'kumi-feature-vote'], title: 'Chip into one jar', body: 'Everyone deposits and gets crew shares at the live NAV. The jar is your crew\'s own Sputnik DAO plus a vault only that DAO can trade.' },
-  { tone: 'coral', art: ['kumi3-vote', 'kumi-feature-chat'], title: <>Say <code>/buy SOL 20%</code></>, body: 'Your message becomes a trade card with a live quote and a DAO proposal. Friends vote with a tap; a strict majority executes it, once.' },
-  { tone: 'pink', art: ['kumi3-leave', 'kumi-og'], title: 'Leave whenever, exactly', body: 'Ragequit for your precise slice of every asset once any in-flight swap has settled. No group vote or permission needed.' },
-  { tone: 'mint', art: ['kumi3-season', 'kumi-hero'], title: 'Climb the season', body: 'Every crew is ranked weekly on return minus half its drawdown, recomputed from on-chain receipts. Nobody can fake gains.' },
+const STEPS: { tone: string; art: string[]; obj: ObjName; objAlt: string; title: React.ReactNode; body: string }[] = [
+  { tone: 'butter', art: ['kumi3-pool', 'kumi-feature-vote'], obj: 'jar', objAlt: 'A coral piggy fund jar with a coin dropping into its lid', title: 'Chip into one jar', body: 'Everyone deposits and gets crew shares at the live NAV. The jar is your crew\'s own Sputnik DAO plus a vault only that DAO can trade.' },
+  { tone: 'coral', art: ['kumi3-vote', 'kumi-feature-chat'], obj: 'vote', objAlt: 'A hand dropping a checked ballot into a ballot box', title: <>Say <code>/buy SOL 20%</code></>, body: 'Your message becomes a trade card with a live quote and a DAO proposal. Friends vote with a tap; a strict majority executes it, once.' },
+  { tone: 'pink', art: ['kumi3-leave', 'kumi-og'], obj: 'door', objAlt: 'A smiling exit door swung half open', title: 'Leave whenever, exactly', body: 'Ragequit for your precise slice of every asset once any in-flight swap has settled. No group vote or permission needed.' },
+  { tone: 'mint', art: ['kumi3-season', 'kumi-hero'], obj: 'crown', objAlt: 'A smiling coral crown', title: 'Climb the season', body: 'Every crew is ranked weekly on return minus half its drawdown, recomputed from on-chain receipts. Nobody can fake gains.' },
 ];
 
 export function Landing({ onSignIn }: { onSignIn: () => void }) {
@@ -68,7 +69,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
         <div className="l-head"><div><span className="label">How it works</span><h2>Four moves. No multisig homework. <Sticker name="kumi3-st-rocket" /></h2></div><p>Kumi is built on what friends already do: talk, agree, chip in. The chain only shows up as receipts.</p></div>
         <div className="how">{STEPS.map((s, i) => <article className={`how-card tone-${s.tone}`} key={i}>
           <div className="art"><Art name={s.art} alt="" /></div>
-          <div className="in"><span className="n">0{i + 1}</span><h3>{s.title}</h3><p>{s.body}</p></div>
+          <div className="in"><div className="how-top"><span className="n">0{i + 1}</span><Obj name={s.obj} size={52} alt={s.objAlt} /></div><h3>{s.title}</h3><p>{s.body}</p></div>
         </article>)}</div>
       </section>
 
@@ -77,7 +78,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
         <div className="proof">
           <div className="card">
             <div className="card-head"><h3>A crew right now</h3>{hub.data && <span className="chip chip-mint chip-live"><span className="dot" />read {new Date(hub.data.readAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}</div>
-            {top.error ? <Notice error>Could not read the crew: {top.error}</Notice> : hub.error && !hub.data ? <p className="mini">Live crew data is unavailable. The recorded transactions are still linked here.</p> : !hub.data || (crews.length && !top.data) ? <div className="skeleton" style={{ height: 260 }} /> : !top.data ? <p className="mini">The hub is deployed; the first crew appears here as soon as it is created.</p> : <CrewMini st={top.data} />}
+            {top.error ? <Notice error>Could not read the crew: {top.error}</Notice> : hub.error && !hub.data ? <p className="mini">Live crew data is unavailable. The recorded transactions are still linked here.</p> : !hub.data || (crews.length && !top.data) ? <div className="skeleton" style={{ height: 260 }} /> : !top.data ? <MiniEmpty obj="empty">The hub is deployed; the first crew appears here as soon as it is created.</MiniEmpty> : <CrewMini st={top.data} />}
           </div>
           <div className="card">
             <div className="card-head"><h3>The recorded crew lifecycle</h3><span className="chip chip-plum">{EVIDENCE.transactions.length} transactions</span></div>
@@ -95,7 +96,7 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
             ['NEAR Intents (1Click)', 'Every trade card carries a real mainnet dry quote for the real asset. Live swaps need a funded NEAR_MAINNET_ACCOUNT, and say so.', 'pink'],
             ['Sub-accounts', 'Each player is a named sub-account of the relayer, created at sign-up. The hub and test pools are sub-accounts too.', 'butter'],
             ['NEP-245 + NEP-141', 'Crew and follower shares are NEP-245 ids, non-transferable. Testnet trades settle against NEP-141 test pools, labelled as such.', 'mint']].map(([h, p, tone]) =>
-            <div className={`tech-item tone-${tone}`} key={h}><h4 className="row" style={{ gap: 8 }}>{MARKS[h]}{h}</h4><p>{p}</p></div>)}
+            <div className={`tech-item tone-${tone}`} key={h}><Obj name={OBJS[h][0]} size={48} alt={OBJS[h][1]} /><h4 className="row" style={{ gap: 8 }}>{MARKS[h]}{h}</h4><p>{p}</p></div>)}
         </div>
       </section>
 

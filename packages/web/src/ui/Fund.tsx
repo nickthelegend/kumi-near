@@ -3,7 +3,7 @@ import { accountUrl, dryQuote, formatNear, formatUnits, getProposals, getTokens,
 import { HUB, useAsync, type CrewState } from '../lib/api';
 import { makeCaptainKey, type Session } from '../lib/session';
 import { ragequit, relay, vote } from './actions';
-import { Art, Avatar, Ic, Link, Notice, Tx, memberHue, shortName } from './bits';
+import { Art, Avatar, Done, Ic, Link, MiniEmpty, Notice, Obj, Tx, memberHue, shortName } from './bits';
 import { ChainLogo, TokenLogo } from './logos';
 
 export function Spark({ pnl, height, light }: { pnl: Pnl; height?: number; light?: boolean }) {
@@ -61,13 +61,13 @@ export function FundPane({ st, me, onJoin, onQuit }: { st: CrewState; me: Sessio
 
     <div className="card">
       <div className="card-head"><h3>Your position</h3>{mine && mine.shares > 0n && <span className="chip chip-coral">{(mine.bps / 100).toFixed(2)}% of the crew</span>}</div>
-      {!me ? <p className="mini">Sign in to see your share, vote and chip in.</p>
+      {!me ? <MiniEmpty obj="jar">Sign in to see your share, vote and chip in.</MiniEmpty>
         : mine && mine.shares > 0n ? <div className="stack" style={{ gap: 12 }}>
           <div className="row-between"><span className="muted">Worth now</span><b className="mono" style={{ fontSize: 18 }}>{(pnl.navNear * mine.bps / 10_000).toFixed(4)} NEAR</b></div>
           <div className="row" style={{ gap: 8 }}><button className="btn btn-primary" style={{ flex: 1 }} onClick={onJoin}><Ic name="plus" size={16} />Chip in more</button><button className="btn btn-pink" style={{ flex: 1 }} onClick={onQuit}><Ic name="exit" size={16} />Ragequit</button></div>
         </div>
         : invited ? <div className="stack" style={{ gap: 10 }}><p className="mini">You're invited. <b>Chip in</b> to get shares and a vote.</p><button className="btn btn-primary btn-block" onClick={onJoin}><Ic name="jar" size={16} />Chip in to {crew.name}</button></div>
-        : <p className="mini">Only invited members hold shares. Anyone can <Link to={`/crew/${crew.id}`}><b>follow {crew.name}</b></Link> and mirror its trades.</p>}
+        : <MiniEmpty obj="jar">Only invited members hold shares. Anyone can <Link to={`/crew/${crew.id}`}><b>follow {crew.name}</b></Link> and mirror its trades.</MiniEmpty>}
     </div>
 
     <div className="card">
@@ -116,14 +116,14 @@ export function CrewInfo({ st, me, onChanged }: { st: CrewState; me: Session | n
       <p className="mini" style={{ marginTop: 6, fontSize: 13 }}>Sputnik DAO <a className="hash" href={accountUrl(crew.dao)} target="_blank" rel="noreferrer">{crew.dao}</a> · {crew.slippage_bps / 100}% max slippage</p>
     </div>
     <div className="card" style={{ background: 'var(--butter-soft)', borderColor: 'transparent' }}>
-      <div className="card-head"><h3>Captain lane</h3><Ic name="key" /></div>
+      <div className="card-head"><h3>Captain lane</h3><Obj name="captain" size={48} alt="A captain's hat" /></div>
       {crew.captain ? <p className="mini"><b>{shortName(crew.captain.account_id)}</b> can trade up to <b>{crew.captain.max_bps / 100}%</b> at once, {crew.captain.max_daily} a day, in {crew.captain.assets.join(', ')}, with no vote. {crew.captain_trades_today} used today. The key can only call <span className="mono">captain_trade</span>.</p>
         : <p className="mini">No captain yet. A vote can give one member a key for small instant trades.</p>}
       {isMember && !isCaptain && <button className="btn btn-sm btn-block" style={{ marginTop: 12 }} disabled={!!busy} onClick={() => act('cap', proposeMe)}>{busy === 'cap' ? 'Filing…' : 'Propose me as captain'}</button>}
     </div>
     <div className="card">
       <div className="card-head"><h3>Other DAO votes</h3></div>
-      {open.error ? <Notice error>Could not read DAO votes: {open.error}</Notice> : open.loading && !open.data ? <div className="skeleton" style={{ height: 60 }} /> : (open.data ?? []).length === 0 ? <p className="mini">None open. Trade votes live in the chat.</p> :
+      {open.error ? <Notice error>Could not read DAO votes: {open.error}</Notice> : open.loading && !open.data ? <div className="skeleton" style={{ height: 60 }} /> : (open.data ?? []).length === 0 ? <MiniEmpty obj="vote">None open. Trade votes live in the chat.</MiniEmpty> :
         open.data!.map(p => <div key={p.id} style={{ padding: '10px 0', borderTop: '1px solid var(--line)' }}>
           <p className="mini" style={{ color: 'var(--ink)' }}>{p.description}</p>
           <div className="row-between" style={{ marginTop: 8 }}><span className="faint mono" style={{ fontSize: 11 }}>#{p.id} · {Object.keys(p.votes).length} voted</span>
@@ -156,7 +156,7 @@ export function JoinSheet({ st, me, hub, onClose, onDone }: { st: CrewState; me:
         <label className="field"><span className="label">Amount (testnet NEAR)</span><span className="logo-select"><span className="ls-logo"><TokenLogo sym="NEAR" size={26} /></span><input className="input mono" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} /></span></label>
         <Notice>New players get a small testnet NEAR gift to try this. Deposits from any chain go through 1Click on mainnet: {LIVE_SWAP_SETUP}.</Notice>
         {error && <Notice error>{error}</Notice>}
-        {hash ? <><div className="row">Joined in <Tx hash={hash} /></div><button type="button" className="btn btn-plum btn-lg" onClick={onClose}>Back to the chat</button></>
+        {hash ? <><Done>Joined in <Tx hash={hash} /></Done><button type="button" className="btn btn-plum btn-lg" onClick={onClose}>Back to the chat</button></>
           : <><button className="btn btn-primary btn-lg" disabled={busy}>{busy ? 'Signing and relaying…' : `Chip in ${amount} NEAR`}</button><button type="button" className="btn btn-ghost" onClick={onClose}>Not now</button></>}
       </form>
     </div>
@@ -198,7 +198,7 @@ export function QuitSheet({ st, me, hub, shares, onClose, onDone }: { st: CrewSt
           )}
         </div>}
         {error && <Notice error>{error}</Notice>}
-        {hash ? <><div className="row">Exited in <Tx hash={hash} /></div><button className="btn btn-plum btn-lg" onClick={onClose}>Done</button></> : (
+        {hash ? <><Done obj="door">Exited in <Tx hash={hash} /></Done><button className="btn btn-plum btn-lg" onClick={onClose}>Done</button></> : (
           <><button className="btn btn-primary btn-lg" style={{ background: 'var(--pink-ink)', boxShadow: 'none' }} disabled={busy} onClick={async () => {
             setBusy(true); setError(null);
             try {

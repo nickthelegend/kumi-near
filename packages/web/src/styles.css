@@ -733,6 +733,30 @@ h1, h2, h3, h4, .brand, .trade-title b, .big, .v, .bal3 b, .boxes3 b { font-fami
   .trade-title b { font-size: 19px; }
   .quote .v { font-size: 14px; }
 }
+/* ---------- 3D object kit (public/art/3d): one object per card, gentle float ---------- */
+.obj { flex: none; display: block; object-fit: contain; animation: obj-float 5.6s ease-in-out infinite; will-change: transform; }
+.obj-still { animation: none; }
+@keyframes obj-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.how-card:nth-child(2n) .obj, .tech-item:nth-child(2n) .obj, .rule:nth-child(2n) .obj { animation-delay: -2.1s; }
+.how-card:nth-child(3n) .obj, .tech-item:nth-child(3n) .obj, .rule:nth-child(3n) .obj { animation-delay: -3.7s; }
+.how-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px; }
+.how-top + h3 { margin-top: 6px; }
+.tech-item, .rule { position: relative; }
+.tech-item .obj, .rule .obj { position: absolute; top: 14px; right: 14px; }
+.tech-item h4 { padding-right: 60px; }
+.rule .label, .rule h4 { padding-right: 70px; }
+.inline-obj { display: inline-block; vertical-align: -.12em; margin-left: .15em; width: 1.05em; height: 1.05em; }
+.head-obj { display: flex; align-items: center; gap: 12px; }
+.mini-empty { display: flex; align-items: center; gap: 14px; padding: 4px 0; }
+.mini-empty .mini { flex: 1; min-width: 0; }
+.done-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 700; }
+.notice-obj { display: flex; align-items: flex-start; gap: 10px; }
+.notice-obj > div { flex: 1; min-width: 0; padding-top: 5px; }
+.card-head .obj { margin: -8px -4px -8px 0; }
+@media (max-width: 520px) {
+  .rule .label, .rule h4 { padding-right: 62px; }
+  .rule .obj { width: 52px; height: 52px; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

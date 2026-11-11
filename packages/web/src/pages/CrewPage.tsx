@@ -3,7 +3,7 @@ import { accountUrl, formatNear, formatUnits, parseNear, vaultNav, type Trade } 
 import { HUB, readCrew, useAsync, type CrewState } from '../lib/api';
 import { useSession, type Session } from '../lib/session';
 import { relay, unfollow } from '../ui/actions';
-import { Art, Avatar, CrewAvatar, Ic, Link, Notice, shortName, Tx } from '../ui/bits';
+import { Art, Avatar, CrewAvatar, Done, Ic, Link, Notice, shortName, Tx } from '../ui/bits';
 import { Spark } from '../ui/Fund';
 import { TokenLogo } from '../ui/logos';
 
@@ -100,7 +100,7 @@ function FollowPanel({ st, me, onSignIn, onDone }: { st: CrewState; me: Session 
           </>
         )}
         {error && <Notice error>{error}</Notice>}
-        {hash && <div className="row" style={{ fontSize: 14 }}>Done in <Tx hash={hash} /></div>}
+        {hash && <Done>Done in <Tx hash={hash} /></Done>}
       </div>
     </aside>
   );

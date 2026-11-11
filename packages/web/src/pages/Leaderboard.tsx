@@ -1,6 +1,6 @@
 import { rankSeason, seasonRow, seasonStart } from '@kumi/sdk';
 import { readCrew, readHub, useAsync } from '../lib/api';
-import { Art, CrewAvatar, EmptyArt, Ic, Link, Notice } from '../ui/bits';
+import { Art, CrewAvatar, EmptyArt, Ic, Link, Notice, Obj } from '../ui/bits';
 import { TokenLogo } from '../ui/logos';
 
 export function Leaderboard() {
@@ -19,7 +19,7 @@ export function Leaderboard() {
   return (
     <main className="page">
       <div className="page-head">
-        <div><span className="chip chip-butter"><Ic name="trophy" size={13} />Season {week} · {fmt(start)} to {fmt(end)} UTC</span><h1>The crew season</h1>
+        <div><span className="chip chip-butter"><Ic name="trophy" size={13} />Season {week} · {fmt(start)} to {fmt(end)} UTC</span><h1>The crew season<Obj name="crown" size={56} className="inline-obj" alt="A smiling crown" /></h1>
           <p>Ranked by return minus half the max drawdown, both recomputed from each crew's on-chain receipts. A crew can't edit its own numbers.</p></div>
         <div className="tile tone-coral" style={{ minWidth: 200 }}><div className="label">Season ends in</div><div className="v">{Math.floor(left / 86_400_000)}d {Math.floor((left % 86_400_000) / 3_600_000)}h</div></div>
       </div>
@@ -45,9 +45,9 @@ export function Leaderboard() {
         <div className="season-art"><Art name={['kumi3-season', 'kumi-og']} alt="Clay friends celebrating around a trophy of coins" /></div>
       </div>
       <div className="rules">
-        <div className="rule tone-mint"><span className="label">Window</span><h4>Monday to Sunday, UTC</h4><p>Season return compares price per share now with the last receipt before Monday 00:00 UTC.</p></div>
-        <div className="rule tone-butter"><span className="label">Score</span><h4>Return − ½ × max drawdown</h4><p>A crew that got lucky on one wild swing ranks below one that climbed steadily.</p></div>
-        <div className="rule tone-pink"><span className="label">Proof</span><h4>Recomputed, not reported</h4><p>Every point comes from the hub's receipts. "Verified" means the latest receipt equals the crew's live on-chain state.</p></div>
+        <div className="rule tone-mint"><Obj name="hourglass" size={60} alt="An hourglass" /><span className="label">Window</span><h4>Monday to Sunday, UTC</h4><p>Season return compares price per share now with the last receipt before Monday 00:00 UTC.</p></div>
+        <div className="rule tone-butter"><Obj name="coins" size={60} alt="A stack of coins" /><span className="label">Score</span><h4>Return − ½ × max drawdown</h4><p>A crew that got lucky on one wild swing ranks below one that climbed steadily.</p></div>
+        <div className="rule tone-pink"><Obj name="shield" size={60} alt="A shield with a padlock" /><span className="label">Proof</span><h4>Recomputed, not reported</h4><p>Every point comes from the hub's receipts. "Verified" means the latest receipt equals the crew's live on-chain state.</p></div>
       </div>
     </main>
   );

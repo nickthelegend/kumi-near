@@ -57,7 +57,24 @@ export function Acct({ id }: { id: string }) {
 }
 
 export function Notice({ children, error }: { children: ReactNode; error?: boolean }) {
-  return <div className={`notice ${error ? 'notice-error' : ''}`} role={error ? 'alert' : 'status'}>{children}</div>;
+  if (error) return <div className="notice notice-error notice-obj" role="alert"><Obj name="warning" size={34} still /><div>{children}</div></div>;
+  return <div className="notice" role="status">{children}</div>;
+}
+
+export type ObjName = 'captain' | 'chat' | 'coins' | 'crown' | 'door' | 'empty' | 'hourglass' | 'jar' | 'mark' | 'rocket' | 'shield' | 'success' | 'vote' | 'warning';
+/** One object from the 3D kit (public/art/3d): fixed size, gentle float unless `still` or reduced motion. */
+export function Obj({ name, size = 64, alt, className, still }: { name: ObjName; size?: number; alt?: string; className?: string; still?: boolean }) {
+  return <img className={`obj ${still ? 'obj-still' : ''} ${className ?? ''}`} src={`/art/3d/kumi-3d-${name}.webp`} width={size} height={size} alt={alt ?? ''} aria-hidden={alt ? undefined : true} loading="lazy" decoding="async" />;
+}
+
+/** A small empty state inside a side-panel card: one object and a line of text. */
+export function MiniEmpty({ obj, children }: { obj: ObjName; children: ReactNode }) {
+  return <div className="mini-empty"><Obj name={obj} size={56} /><p className="mini">{children}</p></div>;
+}
+
+/** A finished on-chain action: the success object and the transaction. */
+export function Done({ obj = 'success', children }: { obj?: ObjName; children: ReactNode }) {
+  return <div className="done-row" role="status"><Obj name={obj} size={44} />{children}</div>;
 }
 
 /** A small clay sticker that simply stays out of the way until its art file exists. */
