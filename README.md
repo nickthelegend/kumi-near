@@ -1,37 +1,58 @@
-# Kumi (組, "crew"): your group chat is a fund
+# Kumi: pool money with friends and vote on trades from a group chat.
 
-Kumi lets a group of friends pool money in one crew treasury and trade it from their group chat. Typing `/buy SOL 20%` in the chat turns into a trade card with a live quote and a vote in the crew's own **Sputnik DAO**. When a strict majority approves, the DAO executes the trade, once. A captain can hold a **function-call key** for small instant trades within limits the contract enforces. Any member can **ragequit** at any time with their exact share, with no vote needed. Returns are recomputed only from on-chain receipts, and outsiders can **follow** a crew through a vault that mirrors its trades and pays the crew a performance fee above a high-water mark. Players sign in with email; their browser key signs **NEP-366 meta transactions** and Kumi's relayer pays the gas.
+Friends discuss trades in chat, but pooling money leaves one person holding the funds and tracking everyone's share. The group needs shared trade decisions, a record everyone can check, and a way for each member to leave with their share.
 
-Inspired by Alpha Group Trading (a Colosseum Frontier 2026 top-25 winner on Solana). This NEAR version is DAO-native: one Sputnik DAO per crew, and NEAR Intents quotes for the real assets.
+## Try it
 
-Tracks: `social` (primary), `defi` (secondary). The social track asks to build what communities do with Sputnik DAO, not to rebuild the multisig. A crew's DAO here is the group's trading desk.
+The demo runs locally. Use Node 22+ and pnpm 10 (the repo pins pnpm 10.29.2). The read-only path needs public NEAR testnet RPC access, with no wallet or server setup.
 
-## Try it (do X, see Y)
+1. From the repo root, run `pnpm install --frozen-lockfile` - see the workspace dependencies install.
+2. Run `pnpm --filter @kumi/web build`, then `pnpm --filter @kumi/web preview` - see the local preview URL, `http://127.0.0.1:5196`. Leave that terminal running.
+3. Open `http://127.0.0.1:5196/` - see hub totals and recorded transactions linked to NearBlocks.
+4. Open `http://127.0.0.1:5196/crew/0` - see the Night Owls treasury, trades and return recomputed from on-chain receipts.
+5. Open `http://127.0.0.1:5196/leaderboard` - see the crew ranked by return minus half its maximum drawdown.
 
-Requirements: Node 22+ (tested on 26), pnpm 10, Rust via rustup (the repo pins 1.95.0), `cargo-near` 0.22.0.
+The lobby at `/app` and fund pane at `/room` also read chain state. Chat history, sign-in and transactions need `pnpm server` in a second terminal, configured with a funded testnet relayer as described in `.env.example`. Without that setup, chat is offline and sign-in/actions are unavailable. A fresh sign-up cannot trade for Night Owls without an invitation. See [BLOCKED.md](BLOCKED.md) for setup limits. Public RPC may rate-limit; the web app retries reads.
 
-```sh
-pnpm install
-pnpm --filter @kumi/web build && pnpm --filter @kumi/web preview   # http://127.0.0.1:5196
-pnpm server                                                        # chat, sign-in and relayer on 127.0.0.1:15196
-```
+## Live on NEAR testnet
 
-Without `.env`, the web app reads the recorded testnet deployment straight from NEAR RPC. The landing page and crew pages work with no server, while the chat and the actions need `pnpm server` with a funded relayer (see `.env.example`).
+| Contract | Account |
+| --- | --- |
+| Hub | [hub.kumi-77b50457fb.testnet](https://testnet.nearblocks.io/address/hub.kumi-77b50457fb.testnet) |
+| Night Owls Sputnik DAO | [owls-mw1n.sputnikv2.testnet](https://testnet.nearblocks.io/address/owls-mw1n.sputnikv2.testnet) |
+| Test SOL pool | [tsol.kumi-77b50457fb.testnet](https://testnet.nearblocks.io/address/tsol.kumi-77b50457fb.testnet) |
+| Test BTC pool | [tbtc.kumi-77b50457fb.testnet](https://testnet.nearblocks.io/address/tbtc.kumi-77b50457fb.testnet) |
+
+Recorded highlights (exact links from the deployment files):
+
+- [Crew created through the Sputnik factory](https://testnet.nearblocks.io/txns/2SjeG2N36HGTPfvkD4nAdPtwiEf3HUn2jVDrSEzRw7EX).
+- [DAO vote executes a SOL trade](https://testnet.nearblocks.io/txns/HMn7NfmLU5rMFCPBsCMU2AZTsPKCGbGQRCoUFvkULXfs).
+- [Follower deposits into the mirrored vault](https://testnet.nearblocks.io/txns/ASyquPcwfeVgLqtFgrPTXGubzevgvbiJrscma3J5ce1D).
+- [Captain trades with a function-call key](https://testnet.nearblocks.io/txns/5W1dsz5EsxjhmsvG8BPw4rp3vzC8ps9f8eRbqNf5qvmH).
+- [Ex-member removed from the DAO after the ragequit fix](https://testnet.nearblocks.io/txns/6SHy8GDRVvhZbU1vjLudCWFoTmQEadYhe12okmMVr2ff).
+
+Testnet trades use Kumi's labelled tSOL/tBTC pools. NEAR Intents 1Click supplies mainnet dry quotes only; live mainnet swaps and private trading are not enabled. The hub still has its deployer's full-access key. Full evidence and limits appear below.
+
+## Product and local interaction guide
+
+Kumi gives each crew a Sputnik DAO. Chat commands become quoted trade proposals. A captain can trade within contract limits using a function-call key. Members can exit with their share when no swap is in flight. Followers can mirror the crew through a vault that charges fees above a high-water mark. Browser keys sign NEP-366 meta transactions; the relayer pays gas.
+
+Proposed tracks: `social` first, then `defi`. The crew uses Sputnik DAO to make shared trading decisions.
 
 | Do | See |
 | --- | --- |
 | Open `/` | Live hub numbers (crews, NAV, trades, members) and the recorded lifecycle with NearBlocks links. |
-| Open `/app` | The lobby: your crew's hero card (NAV, this week, Open the crew chat), Pitch a trade and Join a crew cards, your player card (stake, share, pitched), the crew record tiles, recent calls, and a pitch builder that hands a real command to the chat. |
+| Open `/app` | The lobby: a chat-thread preview, crew NAV and weekly return, player and crew cards, Pitch a trade and Follow or Join actions, receipts, recent calls and a pitch builder. |
 | Open `/room` | The **Night Owls** crew room, laid out like a chat app (`/app?crew=N` links redirect here). Left: the crew list (colour-coded avatar, last message, unread count) and a first-run path (sign in, join, chip in, pitch a trade, vote) checked against chain state. Middle: signed messages and colour-coded cards: coral trade proposals with the quote and a butter Sputnik vote band, butter joins, mint follows, pink ragequits, each with its tx link. Right: the fund (NAV, return, chart, stat tiles, your position, holdings, members' shares, captain lane). On a phone these are the Crews / Chat / Fund tabs. "Verified on-chain" means the P&L was recomputed from receipts and matches live state. |
-| Click **Sign in**, enter any email | Without `RESEND_API_KEY` the sheet says "Email delivery: Setup required: RESEND_API_KEY" and shows the code. Verifying creates `<name>.<relayer>.testnet` with a key made in your browser. |
-| As a member, type `/buy BTC 10%` | A trade card appears with the testnet pool quote and a mainnet 1Click `dry: true` quote. **File to the crew DAO** creates a Sputnik proposal. **👍 Approve** from 2 of 3 members executes it. |
+| With a configured relayer, click **Sign in** and verify an email | Without `RESEND_API_KEY` the sheet says "Email delivery: Setup required: RESEND_API_KEY" and shows the code. Verifying creates `<name>.<relayer>.testnet` with a key made in your browser. |
+| As a member, type `/buy BTC 10%` | A trade card appears with the testnet pool quote and a mainnet 1Click `dry: true` quote. **File to the crew DAO** creates a Sputnik proposal. **👍 Approve** from a strict majority of current shareholders executes it. New sign-ups are not automatically invited to the recorded crew. |
 | Open `/crew/0` | The public crew page: verified return, the trade list and **Follow** (a follower vault deposit). |
 | Open `/leaderboard` | This week's season, ranked by return minus half the max drawdown. |
 | Fund pane, **Ragequit** | The exact payout preview. "To any chain" shows a real 1Click dry quote and "Setup required: NEAR_MAINNET_ACCOUNT". The testnet exit pays in kind. |
 
 Agent surface (read-only MCP over stdio): `pnpm --filter @kumi/mcp start`. The tools are `list_crews`, `crew_pnl`, `season_leaderboard`, `quote_trade` and `crew_trades`.
 
-Re-check the testnet evidence (no keys needed): `pnpm verify:testnet`. It re-queries all 46 hashes, compares the deployed code hashes with the local build, and recomputes P&L.
+Re-check the Nov 9 testnet evidence (no signing keys needed): first run `pnpm build:contracts`, then `pnpm verify:testnet`. The build needs Rust via rustup (pinned to 1.95.0) and `cargo-near` 0.22.0. The verifier re-queries the 46 Nov 9 hashes, compares deployed code hashes with the local Wasm build, and recomputes P&L. It does not check the separate Nov 10 fix file.
 
 ## How it works
 
@@ -88,7 +109,7 @@ The lifecycle (`pnpm run:testnet`, through the same server code the app uses), p
 | Web app: email sign-up (sora), follow with the fee crystallized above the HWM | [sign-up](https://testnet.nearblocks.io/txns/HW4TjUhLVkr3SCsDDCe4oRHjrtLY8Z4udTjBo2Qf8WPG), [follow](https://testnet.nearblocks.io/txns/9gHRFKC1jjffp7znWDpNBBmRkjuzXxrqRTcfaDBpjjYD) |
 | Web app: bo re-joins, then ragequits from the sheet | [join](https://testnet.nearblocks.io/txns/57nXJ2xbjoLfykdLcu78fxJZbWz1MfPKsPfkPDuGiTfR), [ragequit](https://testnet.nearblocks.io/txns/GqGRJGRYpJivjgZePFpsyv4PTW5GvcQBi8G15vnjYxkb) |
 
-**Nov 10 fix: a ragequitter kept their DAO vote.** Under the Nov 9 code, bo left with zero shares but stayed in the DAO's `crew` role, so he could still approve trades with mika's and juno's money. The hub was redeployed with the fix (no state migration; the crew reads back unchanged, code hash `EGMA9HvgXMkBuD838EdxPDQMYWDFvRtQUEqLdGab5dYB`), and bo's leftover vote was removed on testnet with `scripts/fix-ragequit-votes.ts`. All 11 hashes are in [deployments/testnet-2026-11-10-ragequit-fix.json](deployments/testnet-2026-11-10-ragequit-fix.json).
+**Nov 10 fix: a ragequitter kept their DAO vote.** Under the Nov 9 code, bo left with zero shares but stayed in the DAO's `crew` role, so he could still approve trades with mika's and juno's money. The hub was redeployed with the fix (no state migration; the crew reads back unchanged, code hash `EGMA9HvgXMkBuD838EdxPDQMYWDFvRtQUEqLdGab5dYB`), and bo's leftover vote was removed on testnet with `scripts/fix-ragequit-votes.ts`. All 10 hashes are in [deployments/testnet-2026-11-10-ragequit-fix.json](deployments/testnet-2026-11-10-ragequit-fix.json).
 
 | Step | Transaction |
 | --- | --- |
@@ -105,7 +126,7 @@ The test emails (`*@crew.kumi.test`, `*@fans.kumi.test`) use the reserved `.test
 See [TESTING.md](TESTING.md). In short:
 - 10 sandbox tests run against the real testnet Sputnik factory and DAO code (one also runs the Nov 9 hub code and upgrades it), plus 3 contract unit tests.
 - 10 SDK tests, 2 relayer allow-list tests and 1 MCP stdio test.
-- The web build, and a headless Chrome check of every route at 1440 and 390.
+- The web build, and a recorded headless Chrome check of four routes at 1440 and 390 (see TESTING.md).
 - `pnpm verify:testnet`.
 
 ## Trust boundary and gaps
@@ -117,13 +138,17 @@ See [TESTING.md](TESTING.md). In short:
 - Demo scale: a crew has at most 16 members and a hub lists at most 4 assets.
 - The vote recount covers trades. Other DAO proposals (captain, policy) are tallied by Sputnik over the `crew` role, which also holds invited members who have not deposited yet. A member who ragequits leaves that role in the same transaction; if the removal fails, it is listed by `get_stale_voters` until `remove_ex_member` succeeds.
 
-## Team and other projects
+## Hackathon disclosures
 
-Lead: <TBD by Nick>
+- **Event:** Built for NEAR HACKATHON 2026 (Nov 1-14).
+- **Prior work before Nov 1, 2026:** No Kumi code is recorded before that date in this repo's non-shallow git history. The first commit is `1de3186d737183ff2f9174f515a954c31f3fed0b`, dated Nov 9, adding the MIT license and gitignore. LICENSE credits Nivesh Gajengi (2026); there is no NOTICE file. The README previously credited Alpha Group Trading on Solana as concept inspiration. This repo does not establish its authorship or any shared code, so it is not claimed as Kumi hackathon work. No sibling repo or former Kumi name is identified in the existing README.
+- **Built in the window:** The Nov 9 commits add the monorepo, an initial single-crew prototype, then the per-crew Sputnik hub, test pools, SDK, relayer, chat, web app, read-only MCP tools, tests and testnet deployment. Nov 10 adds the ragequit vote-removal fix and its testnet evidence. [REPORT.md](REPORT.md) distinguishes the earlier Nov 9 prototype from the implementation that replaced it. That prototype was also built in the window. Only NEAR work in the window is claimed for judging; external libraries and the earlier Solana concept are dependencies or inspiration. This disclosure uses Nov 1 as the conservative baseline cutoff; the [current official Q-001](https://nearhackathon.com/HACKATHON.md) allows work from the Oct 19 announcement.
+- **AI-assisted code:** Built with AI coding agents (Claude Code, Codex) under human direction; all code reviewed and tested by the team.
+- **Other projects by the same team in this hackathon:**
 
-Other NEAR Hackathon project by the same person: <TBD by Nick>. The rules allow one person at most two independent projects, and each must disclose the other.
+  Lead: <TBD by Nick>
 
-MIT. Copyright (c) 2026 Nivesh Gajengi.
+- **License:** MIT. See [LICENSE](LICENSE). Copyright (c) 2026 Nivesh Gajengi.
 
 ## Credits
 

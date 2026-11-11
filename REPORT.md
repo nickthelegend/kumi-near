@@ -1,4 +1,4 @@
-# Kumi build report (Nov 9 2026)
+# Kumi build report (updated Nov 10 2026)
 
 ## What was built
 - **Hub contract** (`packages/contract`, Rust, near-sdk 5.30.0-rc.1). It has:
@@ -31,8 +31,12 @@
   - a new sign-up and follow, which crystallized a real HWM fee;
   - a re-join and a ragequit.
 - 46 hashes are in `deployments/testnet-2026-11-09.json`. `pnpm verify:testnet` re-checks them all, compares the deployed code hashes with the local build, and confirms the P&L recomputed from receipts equals live state.
+- The Nov 10 ragequit vote-removal fix is deployed. Its 10 transactions are recorded separately in `deployments/testnet-2026-11-10-ragequit-fix.json`: redeploy, the first refused removal, DAO permission update, successful retry, and an ex-member's refused vote. The default verifier checks the Nov 9 file only. See README for the fix details and TESTING.md for the recorded 26-test run.
 
-## What changed from the stopped Codex run
+## Earlier Nov 9 prototype
+
+This was an earlier implementation within the hackathon window, not a pre-Nov 1 baseline. Git records the scaffold and initial contract on Nov 9 (`4caf25e`, `018c465`), followed by the replacement hub (`9ae9cb2`).
+
 - Kept: the monorepo scaffold, the toolchain pins, the SDK's 1Click and RPC helpers (reworked), and the MCP package shape.
 - Replaced: the single-crew contract. It had no DAO creation, recorded "authorization" without trading, and had no follower vault, fee or receipts.
 
