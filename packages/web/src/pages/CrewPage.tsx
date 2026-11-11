@@ -91,7 +91,11 @@ function FollowPanel({ st, me, onSignIn, onDone }: { st: CrewState; me: Session 
           <>
             {mine > 0n && <Notice>You hold {(Number(mine * 10_000n / supply) / 100).toFixed(2)}% of the vault, worth about {(pps * Number(mine) / 1e24).toFixed(4)} NEAR.</Notice>}
             <div className="row"><input className="input mono" inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} aria-label="Amount in NEAR" style={{ flex: 1 }} />
-              <button className="btn btn-mint" disabled={!!busy} onClick={() => act('f', () => relay(me, HUB, 'follow', { crew_id: crew.id }, parseNear(amount), { crewId: crew.id, label: 'follow' }))}>{busy === 'f' ? 'Following…' : 'Follow'}</button></div>
+              <button className="btn btn-mint" disabled={!!busy} onClick={() => act('f', async () => {
+                const deposit = parseNear(amount);
+                if (deposit < 10n ** 22n) throw new Error('The minimum deposit is 0.01 testnet NEAR.');
+                return relay(me, HUB, 'follow', { crew_id: crew.id }, deposit, { crewId: crew.id, label: 'follow' });
+              })}>{busy === 'f' ? 'Following…' : 'Follow'}</button></div>
             {mine > 0n && <button className="btn" disabled={!!busy} onClick={() => act('u', () => unfollow(me, HUB, crew, mine, st.assets))}>{busy === 'u' ? 'Exiting…' : 'Exit the vault, exact share'}</button>}
           </>
         )}

@@ -144,7 +144,11 @@ export function JoinSheet({ st, me, hub, onClose, onDone }: { st: CrewState; me:
     <div className="scrim" onClick={e => e.target === e.currentTarget && onClose()}>
       <form className="sheet" role="dialog" aria-modal="true" aria-label={`Chip into ${st.crew.name}`} onSubmit={async e => {
         e.preventDefault(); setBusy(true); setError(null);
-        try { const r = await relay(me, hub, 'join', { crew_id: st.crew.id }, parseNear(amount), { crewId: st.crew.id, label: 'join' }); setHash(r.hash); onDone(); }
+        try {
+          const deposit = parseNear(amount);
+          if (deposit < 10n ** 22n) throw new Error('The minimum deposit is 0.01 testnet NEAR.');
+          const r = await relay(me, hub, 'join', { crew_id: st.crew.id }, deposit, { crewId: st.crew.id, label: 'join' }); setHash(r.hash); onDone();
+        }
         catch (x) { setError(String(x instanceof Error ? x.message : x)); } finally { setBusy(false); }
       }}>
         <div className="sheet-art"><Art name={['kumi3-pool', 'kumi-feature-vote']} alt="Hands dropping coins into a jar" eager /></div>
