@@ -72,7 +72,7 @@ export function SignIn({ onClose }: { onClose: () => void }) {
             <h3 id="signin-title">You're in</h3>
             <p className="sub" style={{ margin: 0 }}>Your account <Acct id={made.accountId} /> lives on NEAR testnet. Its key stays in this browser.</p>
             {made.createdTx && <div className="row faint" style={{ fontSize: 14 }}>Created in <Tx hash={made.createdTx} /></div>}
-            <button className="btn btn-primary btn-lg" onClick={onClose}>Go to the crew chat</button>
+            <button className="btn btn-primary btn-lg" onClick={() => { onClose(); navigate('/room'); }}>Go to the crew chat</button>
           </div>
         )}
       </div>
