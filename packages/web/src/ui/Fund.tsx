@@ -76,7 +76,7 @@ export function FundPane({ st, me, onJoin, onQuit }: { st: CrewState; me: Sessio
       {rows.map(r => <div className="holding" key={r.sym}>
         <TokenLogo sym={r.sym} size={38} test={r.sym !== 'NEAR'} />
         <div style={{ minWidth: 0 }}><div className="n">{r.sym === 'NEAR' ? 'NEAR' : `t${r.sym}`} <span className="faint mono" style={{ fontSize: 11 }}>{share(r.v).toFixed(1)}%</span></div><div className="s">{r.sub}</div></div>
-        <div className="amt">{r.sym === 'NEAR' ? formatNear(r.amount, 4) : formatUnits(r.amount, assets.find(a => a.symbol === r.sym)?.decimals ?? 0, 6)}<div>{formatNear(r.v, 4)} N</div></div>
+        <div className="amt">{r.sym === 'NEAR' ? formatNear(r.amount, 4) : formatUnits(r.amount, assets.find(a => a.symbol === r.sym)?.decimals ?? 0, Math.min(assets.find(a => a.symbol === r.sym)?.decimals ?? 0, 8))}<div>{formatNear(r.v, 4)} N</div></div>
       </div>)}
     </div>
   </>;
