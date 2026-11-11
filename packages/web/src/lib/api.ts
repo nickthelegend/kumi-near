@@ -72,6 +72,7 @@ export async function readHub(hub = HUB, rpc = rpcUrl()): Promise<HubState> {
 
 export type CrewState = { crew: Crew; trades: Trade[]; receipts: Receipt[]; pnl: Pnl; assets: Asset[]; marks: Mark[]; policy: DaoPolicy; readAt: number };
 export async function readCrew(crewId: number, hub = HUB): Promise<CrewState> {
+  if (!Number.isSafeInteger(crewId) || crewId < 0) throw new Error('Choose a valid crew from the lobby.');
   const crew = await getCrew(hub, crewId);
   if (!crew) throw new Error(`Crew ${crewId} does not exist on ${hub}`);
   const [trades, receipts, assets, policy] = await Promise.all([getTrades(hub, crew), getReceipts(hub, crew), getAssets(hub), getPolicy(crew.dao)]);
