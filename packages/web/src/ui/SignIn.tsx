@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { api } from '../lib/api';
-import { newKey, setSession } from '../lib/session';
-import { Acct, Art, Notice, Tx } from './bits';
+import { keyPair, newKey, savedSession, setSession } from '../lib/session';
+import { Acct, Art, navigate, Notice, Tx } from './bits';
 
-type Start = { delivery: 'email' | 'setup-required'; setup?: string; previewCode?: string; existing: boolean };
+type Start = { delivery: 'email' | 'setup-required'; setup?: string; previewCode?: string; existing: boolean; accountId?: string };
 
 /** Email sign-in. The relayer creates `<name>.<relayer>` keyed to a key made in this browser. */
 export function SignIn({ onClose }: { onClose: () => void }) {
@@ -15,7 +15,7 @@ export function SignIn({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [made, setMade] = useState<{ accountId: string; createdTx?: string } | null>(null);
-  const [key] = useState(() => newKey());
+  const [key, setKey] = useState(() => newKey());
 
   async function go(fn: () => Promise<void>) {
     setBusy(true); setError(null);
@@ -27,7 +27,12 @@ export function SignIn({ onClose }: { onClose: () => void }) {
       <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="signin-title">
         <div className="sheet-art"><Art name={['kumi3-hero', 'kumi-og']} alt="Clay friends cheering around a jar of coins" eager /></div>
         {step === 'email' && (
-          <form className="stack" onSubmit={e => { e.preventDefault(); void go(async () => { setStart(await api<Start>('/api/auth/start', { email })); setStep('code'); }); }}>
+          <form className="stack" onSubmit={e => { e.preventDefault(); void go(async () => {
+            const result = await api<Start>('/api/auth/start', { email });
+            const saved = result.accountId ? savedSession(result.accountId) : null;
+            setKey(saved ? keyPair(saved) : newKey());
+            setStart(result); setStep('code');
+          }); }}>
             <div>
               <h3 id="signin-title">Join with your email</h3>
               <p className="sub">No wallet, no seed phrase. Kumi makes you a NEAR account and pays your gas.</p>
@@ -43,8 +48,8 @@ export function SignIn({ onClose }: { onClose: () => void }) {
         )}
         {step === 'code' && start && (
           <form className="stack" onSubmit={e => { e.preventDefault(); void go(async () => {
-            const r = await api<{ accountId: string; createdTx?: string }>('/api/auth/verify', { email, code, handle, publicKey: key.getPublicKey().toString() });
-            setSession({ accountId: r.accountId, handle, key: key.toString() });
+            const r = await api<{ accountId: string; handle: string; createdTx?: string }>('/api/auth/verify', { email, code, handle, publicKey: key.getPublicKey().toString() });
+            setSession({ accountId: r.accountId, handle: r.handle, key: key.toString() });
             setMade(r); setStep('done');
           }); }}>
             <div>

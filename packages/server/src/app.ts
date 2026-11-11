@@ -142,9 +142,9 @@ export function createApp(cfg: AppConfig) {
       const h = hashEmail(email);
       pending.set(h, { codeHash: createHash('sha256').update(code).digest('hex'), expires: Date.now() + 600_000, tries: 0 });
       const existing = cfg.store.players()[h];
-      if (cfg.resendKey) { await sendEmail(email, code); return { delivery: 'email', existing: Boolean(existing) }; }
+      if (cfg.resendKey) { await sendEmail(email, code); return { delivery: 'email', existing: Boolean(existing), accountId: existing?.accountId }; }
       // No email provider configured: say so, and show the code in this testnet preview.
-      return { delivery: 'setup-required', setup: 'Setup required: RESEND_API_KEY', previewCode: code, existing: Boolean(existing) };
+      return { delivery: 'setup-required', setup: 'Setup required: RESEND_API_KEY', previewCode: code, existing: Boolean(existing), accountId: existing?.accountId };
     },
     'POST /api/auth/verify': async (b) => {
       const email = String(b.email ?? '').trim().toLowerCase();

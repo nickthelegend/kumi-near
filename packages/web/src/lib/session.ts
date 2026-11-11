@@ -5,6 +5,7 @@ import { useSyncExternalStore } from 'react';
 
 export type Session = { accountId: string; handle: string; key: string };
 const KEY = 'kumi:session:v1';
+const SAVED = 'kumi:accounts:v1';
 const CAPTAIN = (crewId: number) => `kumi:captain:v1:${crewId}`;
 
 const listeners = new Set<() => void>();
@@ -16,9 +17,25 @@ function read(): Session | null {
   return cached ?? null;
 }
 export function setSession(s: Session | null) {
+  // Signing out hides the session; it must not destroy the account's only key.
+  const keep = s ?? read();
+  if (keep) {
+    try {
+      const accounts = JSON.parse(localStorage.getItem(SAVED) ?? '{}');
+      accounts[keep.accountId] = keep;
+      localStorage.setItem(SAVED, JSON.stringify(accounts));
+    } catch { /* storage unavailable */ }
+  }
   cached = s;
   try { s ? localStorage.setItem(KEY, JSON.stringify(s)) : localStorage.removeItem(KEY); } catch { /* private mode */ }
   listeners.forEach(l => l());
+}
+export function savedSession(accountId: string): Session | null {
+  try {
+    const active = read();
+    if (active?.accountId === accountId) return active;
+    return JSON.parse(localStorage.getItem(SAVED) ?? '{}')[accountId] ?? null;
+  } catch { return null; }
 }
 export function useSession(): Session | null {
   return useSyncExternalStore(cb => { listeners.add(cb); return () => listeners.delete(cb); }, read, () => null);
