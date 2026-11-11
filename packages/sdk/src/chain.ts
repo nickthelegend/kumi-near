@@ -28,9 +28,9 @@ export async function rpc<T>(method: string, params: unknown, url = rpcUrl()): P
     for (let attempt = 0; attempt < 3; attempt++) {
       used = u;
       try {
-        response = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'kumi', method, params }) });
+        response = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'kumi', method, params }), signal: AbortSignal.timeout(12000) });
       } catch { response = undefined; }
-      if (response && response.status !== 429 && response.status < 500 && response.status !== 404) break outer;
+      if (response && response.status !== 429 && response.status !== 408 && response.status < 500 && response.status !== 404) break outer;
       if (response && (response.status === 502 || response.status === 404) && u.includes('/api/rpc')) break;
       await new Promise(r => setTimeout(r, 600 * 2 ** attempt));
     }
