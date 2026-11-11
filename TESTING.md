@@ -1,5 +1,13 @@
 # Testing record
 
+## Nov 11 full-flow QA
+
+The production web build and server typecheck pass. The current JavaScript suites pass **15 tests**: SDK 11 (including HTTP 408 provider fallback), server 3 (including returning-browser identity), and MCP 1. `pnpm verify:testnet` passes against all 46 Nov 9 hashes via the public archival testnet RPC, all 3 deployed code hashes, live DAO policy and receipt-derived P&L.
+
+Headless Chrome (`channel: 'chrome'`, shared `withChromeLock`) checked every route and the sign-in, deposit, follow/exit, voted trade, captain trade and full ragequit flows at **1440 and 375**. Empty/error states were injected separately. Final focused checks have no unexpected browser errors or horizontal overflow. See [FLOW-QA.md](FLOW-QA.md) for screenshot links, limitations and the transaction ledger. QA used **0.1173362357592225 testnet NEAR** in fees plus gross deposits. No Rust contract source changed; the previous sandbox result below remains the Nov 10 record.
+
+## Nov 10 full test record
+
 Last full run: 2026-11-10, on this machine. **26 tests passed, 0 failed, 0 skipped**, plus the web build and the testnet evidence check (`pnpm verify:testnet`, re-run after the hub redeploy: all checks passed). The headless Chrome route check below is from Nov 9; the Nov 10 change touched no UI code.
 
 | Suite | Command | Count | What it checks |
