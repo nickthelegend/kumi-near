@@ -1,6 +1,6 @@
 {
   "network": "testnet",
-  "status": "running",
+  "status": "complete",
   "started_at": "2026-11-12T12:08:51.387Z",
   "total_cap_yocto": "300000000000000000000000",
   "transactions": [
@@ -199,5 +199,37 @@
       "width": 375,
       "overflow": 0
     }
-  ]
+  ],
+  "summary": {
+    "result": "partial",
+    "transactions": 12,
+    "gas_yocto": "16976220218969600000000",
+    "gross_allocations_yocto": "266740182144323800000014",
+    "total_yocto": "283716402363293400000014",
+    "remaining_cap_yocto": "16283597636706599999986",
+    "full_run_spent_yocto": "59784677158837800000000",
+    "full_run_status": "BLOCKED",
+    "fresh_member_retained": true,
+    "fresh_follower_retained": true,
+    "pending_trade_id": 9,
+    "pending_dao_proposal_id": 18
+  },
+  "verification": {
+    "receipt_check": "PASS",
+    "receipts": 12,
+    "exact_fees_checked": true,
+    "deployed_code_hash_checked": true,
+    "full_access_key_present": true,
+    "crew_count": 1,
+    "read_only_browser_states": 14,
+    "read_only_widths": [
+      1440,
+      375
+    ],
+    "read_only_errors": [],
+    "javascript_tests_passed": 18,
+    "rust_tests_passed": 16,
+    "scripts_typecheck": "PASS"
+  },
+  "completed_at": "2026-11-12T12:30:06.691557+00:00"
 }
