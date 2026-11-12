@@ -612,3 +612,60 @@ async fn upgrade_from_the_nov9_hub_removes_a_legacy_ragequitter() -> anyhow::Res
     assert!(e.stale().await?.is_empty());
     Ok(())
 }
+
+#[tokio::test]
+async fn invite_happy_path_requires_both_proposals_then_new_member_can_join() -> anyhow::Result<()> {
+    let e = env().await?;
+    for who in [&e.alice, &e.bob, &e.cy] { e.join(who, ONE).await?.into_result()?; }
+    let dee = user(&e.root, "dee", 10 * ONE).await?;
+    let role = e.dao_proposal(&e.alice, "Invite dee", json!({"AddMemberToRole": {"member_id": dee.id(), "role": "crew"}})).await?;
+    let r = e.alice.call(e.hub.id(), "propose_invite").args_json(json!({"crew_id": 0, "account_id": dee.id(), "role_proposal_id": role})).max_gas().transact().await?.into_result()?;
+    let gate = r.json::<Option<u64>>()?.expect("admission proposal filed");
+    rejected(e.join(&dee, ONE / 100).await?, "ERR_NOT_INVITED");
+    e.vote(&e.alice, role).await?.into_result()?;
+    e.vote(&e.bob, role).await?.into_result()?;
+    assert!(e.voters().await?.contains(&dee.id().to_string()));
+    rejected(e.join(&dee, ONE / 100).await?, "ERR_NOT_INVITED");
+    for who in [&e.alice, &e.bob, &e.cy] { e.vote(who, gate).await?.into_result()?; }
+    assert_eq!(e.proposal(gate).await?["status"], "Approved");
+    e.join(&dee, ONE / 100).await?.into_result()?;
+    assert!(shares_of(&e.crew().await?, &dee) > 0);
+    let invites: Value = e.hub.view("get_invites").args_json(json!({"crew_id": 0})).await?.json()?;
+    assert_eq!(invites[0]["status"], "admitted");
+    assert_eq!(invites[0]["role_proposal_id"], role);
+    assert_eq!(invites[0]["dao_proposal_id"], gate);
+    // A second DAO proposal cannot replay a completed admission.
+    let replay = e.dao_call("add_member", json!({"crew_id": 0, "account_id": dee.id(), "invite_id": 0})).await?;
+    for who in [&e.alice, &e.bob, &e.cy] { let _ = e.vote(who, replay).await?; }
+    assert_eq!(e.proposal(replay).await?["status"], "Failed");
+    Ok(())
+}
+
+#[tokio::test]
+async fn invite_non_member_and_unfunded_invitee_cannot_propose() -> anyhow::Result<()> {
+    let e = env().await?;
+    e.join(&e.alice, ONE).await?.into_result()?;
+    let outsider = user(&e.root, "outsider", 10 * ONE).await?;
+    for who in [&outsider, &e.cy] {
+        rejected(who.call(e.hub.id(), "propose_invite").args_json(json!({"crew_id": 0, "account_id": "new.test.near", "role_proposal_id": 0})).max_gas().transact().await?, "ERR_NOT_SHAREHOLDER");
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn invite_recounts_current_shareholders_even_if_native_dao_votes_pass() -> anyhow::Result<()> {
+    let e = env().await?;
+    e.join(&e.alice, ONE).await?.into_result()?;
+    e.join(&e.bob, ONE).await?.into_result()?;
+    let dee = user(&e.root, "dee", 10 * ONE).await?;
+    let role = e.dao_proposal(&e.alice, "Invite dee", json!({"AddMemberToRole": {"member_id": dee.id(), "role": "crew"}})).await?;
+    let r = e.alice.call(e.hub.id(), "propose_invite").args_json(json!({"crew_id": 0, "account_id": dee.id(), "role_proposal_id": role})).max_gas().transact().await?.into_result()?;
+    let gate = r.json::<Option<u64>>()?.unwrap();
+    e.vote(&e.alice, role).await?.into_result()?;
+    e.vote(&e.cy, role).await?.into_result()?;
+    for who in [&e.alice, &e.cy, &dee] { let _ = e.vote(who, gate).await?; }
+    assert_eq!(e.proposal(gate).await?["status"], "Failed");
+    assert!(!e.crew().await?["allowed"].as_array().unwrap().iter().any(|a| a.as_str() == Some(dee.id().as_str())));
+    rejected(e.join(&dee, ONE / 100).await?, "ERR_NOT_INVITED");
+    Ok(())
+}

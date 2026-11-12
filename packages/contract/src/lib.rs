@@ -370,16 +370,103 @@ impl Kumi {
         Some(id)
     }
 
-    /// DAO-only: admit another member (the DAO also adds them to its `crew` role). Re-admitting
-    /// an ex-member cancels their pending removal and voids older ragequit receipts as proof.
-    pub fn add_member(&mut self, crew_id: u64, account_id: AccountId) {
-        let crew = self.crew_mut(crew_id);
-        require!(env::predecessor_account_id() == crew.dao, "ERR_DAO_ONLY");
+    /// A shareholder binds a native Sputnik role proposal to a hub admission proposal.
+    /// No member is admitted until both proposals have a current-shareholder majority.
+    pub fn propose_invite(&mut self, crew_id: u64, account_id: AccountId, role_proposal_id: u64) -> Promise {
+        let proposer = env::predecessor_account_id();
+        let crew = self.crew(crew_id);
+        require!(crew.shares.get(&proposer).copied().unwrap_or(0) > 0, "ERR_NOT_SHAREHOLDER");
+        require!(!crew.allowed.contains(&account_id), "ERR_ALREADY_MEMBER");
         require!(crew.allowed.len() < MAX_MEMBERS, "ERR_MEMBERS");
-        if !crew.allowed.contains(&account_id) { crew.allowed.push(account_id.clone()); }
-        env::storage_write(&admit_key(crew_id, &account_id), &env::block_height().to_le_bytes());
+        Promise::new(crew.dao.clone())
+            .function_call("get_proposal", json!({"id": role_proposal_id}).to_string().into_bytes(), NearToken::from_yoctonear(0), GAS_VIEW_PROPOSAL)
+            .then(Self::ext(env::current_account_id()).with_static_gas(Gas::from_tgas(75))
+                .on_invite_checked(crew_id, account_id, proposer, role_proposal_id))
+    }
+
+    #[private]
+    pub fn on_invite_checked(&mut self, crew_id: u64, account_id: AccountId, proposer: AccountId, role_proposal_id: u64) -> Promise {
+        let role = promise_json(0);
+        require!(role["kind"] == invitation_role(&account_id), "ERR_INVITE_ROLE");
+        require!(role["proposer"].as_str() == Some(proposer.as_str()), "ERR_INVITE_PROPOSER");
+        require!(role["status"] == "InProgress" || role["status"] == "Approved", "ERR_INVITE_ROLE_STATE");
+        let crew = self.crew(crew_id);
+        require!(crew.shares.get(&proposer).copied().unwrap_or(0) > 0, "ERR_NOT_SHAREHOLDER");
+        require!(!crew.allowed.contains(&account_id), "ERR_ALREADY_MEMBER");
+        let dao = crew.dao.clone();
+        let id = invite_count(crew_id);
+        env::storage_write(&invite_count_key(crew_id), &(id + 1).to_le_bytes());
+        write_invite(crew_id, &Invite { id, proposer, account_id: account_id.clone(), role_proposal_id,
+            dao_proposal_id: None, status: "filing".to_string(), created_at: U64(env::block_timestamp()) });
+        let args = Base64VecU8::from(json!({"crew_id": crew_id, "account_id": account_id, "invite_id": id}).to_string().into_bytes());
+        let proposal = json!({"proposal": {"description": format!("Kumi invite #{id}: {account_id}"),
+            "kind": {"FunctionCall": {"receiver_id": env::current_account_id(), "actions": [{
+                "method_name": "add_member", "args": args, "deposit": "0", "gas": "120000000000000"
+            }]}}}});
+        Promise::new(dao)
+            .function_call("add_proposal", proposal.to_string().into_bytes(), NearToken::from_yoctonear(0), GAS_ADD_PROPOSAL)
+            .then(Self::ext(env::current_account_id()).with_static_gas(GAS_ON_PROPOSAL).on_invite_added(crew_id, id))
+    }
+
+    #[private]
+    pub fn on_invite_added(&mut self, crew_id: u64, invite_id: u64) -> Option<u64> {
+        let mut invite = read_invite(crew_id, invite_id);
+        let pid = env::promise_result_checked(0, 32).ok().and_then(|b| serde_json::from_slice::<u64>(&b).ok());
+        invite.dao_proposal_id = pid;
+        invite.status = if pid.is_some() { "voting" } else { "failed" }.to_string();
+        write_invite(crew_id, &invite);
+        emit("invite_proposed", json!({"crew_id": crew_id, "invite_id": invite_id,
+            "account_id": invite.account_id, "role_proposal_id": invite.role_proposal_id, "dao_proposal_id": pid}));
+        pid
+    }
+
+    /// DAO-only admission. The stored invitation binds both proposal IDs and the target;
+    /// the hub recounts both votes and confirms the role before changing its member list.
+    pub fn add_member(&mut self, crew_id: u64, account_id: AccountId, invite_id: Option<u64>) -> Promise {
+        let dao = self.crew(crew_id).dao.clone();
+        require!(env::predecessor_account_id() == dao, "ERR_DAO_ONLY");
+        let id = invite_id.unwrap_or_else(|| env::panic_str("ERR_INVITE_REQUIRED"));
+        let invite = read_invite(crew_id, id);
+        require!(invite.account_id == account_id && invite.status == "voting", "ERR_INVITE_STATE");
+        let pid = invite.dao_proposal_id.unwrap_or_else(|| env::panic_str("ERR_NO_PROPOSAL"));
+        Promise::new(dao.clone()).function_call("get_proposal", json!({"id": pid}).to_string().into_bytes(), NearToken::from_yoctonear(0), GAS_VIEW_PROPOSAL)
+            .and(Promise::new(dao.clone()).function_call("get_proposal", json!({"id": invite.role_proposal_id}).to_string().into_bytes(), NearToken::from_yoctonear(0), GAS_VIEW_PROPOSAL))
+            .and(Promise::new(dao).function_call("get_policy", b"{}".to_vec(), NearToken::from_yoctonear(0), GAS_VIEW_POLICY))
+            .then(Self::ext(env::current_account_id()).with_static_gas(Gas::from_tgas(60)).on_invite_tallied(crew_id, id))
+    }
+
+    #[private]
+    pub fn on_invite_tallied(&mut self, crew_id: u64, invite_id: u64) -> bool {
+        let gate = promise_json(0);
+        let role = promise_json(1);
+        let policy = promise_json(2);
+        let mut invite = read_invite(crew_id, invite_id);
+        require!(invite.status == "voting", "ERR_INVITE_STATE");
+        require!(role["kind"] == invitation_role(&invite.account_id) && role["status"] == "Approved", "ERR_INVITE_ROLE_STATE");
+        let crew = self.crew(crew_id);
+        require_shareholder_majority(&crew, &gate);
+        require_shareholder_majority(&crew, &role);
+        let role_has_member = policy["roles"].as_array().is_some_and(|roles| roles.iter().any(|r|
+            r["name"] == CREW_ROLE && r["kind"]["Group"].as_array().is_some_and(|g| g.iter().any(|a| a.as_str() == Some(invite.account_id.as_str())))));
+        require!(role_has_member, "ERR_INVITE_ROLE_MISSING");
+        let crew = self.crew_mut(crew_id);
+        require!(crew.allowed.len() < MAX_MEMBERS, "ERR_MEMBERS");
+        require!(!crew.allowed.contains(&invite.account_id), "ERR_ALREADY_MEMBER");
+        crew.allowed.push(invite.account_id.clone());
+        env::storage_write(&admit_key(crew_id, &invite.account_id), &env::block_height().to_le_bytes());
         let mut stale = self.stale_voters(crew_id);
-        if stale.contains(&account_id) { stale.retain(|a| a != &account_id); self.write_stale(crew_id, &stale); }
+        stale.retain(|a| a != &invite.account_id);
+        self.write_stale(crew_id, &stale);
+        invite.status = "admitted".to_string();
+        write_invite(crew_id, &invite);
+        emit("member_added", json!({"crew_id": crew_id, "invite_id": invite_id, "account_id": invite.account_id}));
+        true
+    }
+
+    pub fn get_invites(&self, crew_id: u64, from: Option<u64>, limit: Option<u64>) -> Vec<Invite> {
+        let start = from.unwrap_or(0);
+        let end = (start + limit.unwrap_or(50).min(100)).min(invite_count(crew_id));
+        (start..end).map(|id| read_invite(crew_id, id)).collect()
     }
 
     /// Deposit NEAR and receive crew shares at NAV. If the crew holds tokens, the contract first
@@ -576,14 +663,7 @@ impl Kumi {
         let status = self.trades.get(&(crew_id, trade_id)).expect("ERR_TRADE").status;
         require!(status == TradeStatus::Voting, "ERR_TRADE_STATE");
         let crew = self.crew(crew_id);
-        let votes = proposal["votes"].as_object().cloned().unwrap_or_default();
-        let holders = crew.shares.values().filter(|s| **s > 0).count();
-        let approvals = crew.shares.iter()
-            .filter(|(a, s)| **s > 0 && votes.get(a.as_str()).and_then(|v| v.as_str()) == Some("Approve"))
-            .count();
-        if approvals * 2 <= holders {
-            env::panic_str(&format!("ERR_STALE_VOTES: {approvals} of {holders} shareholders approved; a strict majority is needed"));
-        }
+        require_shareholder_majority(&crew, &proposal);
         self.start_swap(crew_id, trade_id)
     }
 
@@ -1092,6 +1172,37 @@ const HUB_PERMISSIONS: [&str; 3] = ["call:AddProposal", "remove_member_from_role
 
 fn removal_kind(account_id: &AccountId) -> serde_json::Value {
     json!({"RemoveMemberFromRole": {"member_id": account_id, "role": CREW_ROLE}})
+}
+
+#[near(serializers = [json])]
+#[derive(Clone)]
+pub struct Invite {
+    pub id: u64, pub proposer: AccountId, pub account_id: AccountId, pub role_proposal_id: u64,
+    pub dao_proposal_id: Option<u64>, pub status: String, pub created_at: U64,
+}
+fn invitation_role(account: &AccountId) -> serde_json::Value {
+    json!({"AddMemberToRole": {"member_id": account, "role": CREW_ROLE}})
+}
+fn invite_count_key(crew: u64) -> Vec<u8> { [b"invite-count:".as_slice(), &crew.to_le_bytes()].concat() }
+fn invite_key(crew: u64, id: u64) -> Vec<u8> { [b"invite:".as_slice(), &crew.to_le_bytes(), &id.to_le_bytes()].concat() }
+fn invite_count(crew: u64) -> u64 {
+    env::storage_read(&invite_count_key(crew)).map(|b| u64::from_le_bytes(b.try_into().expect("ERR_INVITE_STATE"))).unwrap_or(0)
+}
+fn read_invite(crew: u64, id: u64) -> Invite {
+    serde_json::from_slice(&env::storage_read(&invite_key(crew, id)).expect("ERR_INVITE")).expect("ERR_INVITE_STATE")
+}
+fn write_invite(crew: u64, invite: &Invite) {
+    env::storage_write(&invite_key(crew, invite.id), &serde_json::to_vec(invite).expect("ERR_INVITE_STATE"));
+}
+fn promise_json(index: u64) -> serde_json::Value {
+    env::promise_result_checked(index, 32_768).ok().and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or_else(|| env::panic_str("ERR_PROPOSAL_READ"))
+}
+fn require_shareholder_majority(crew: &Crew, proposal: &serde_json::Value) {
+    let votes = proposal["votes"].as_object().cloned().unwrap_or_default();
+    let holders = crew.shares.values().filter(|s| **s > 0).count();
+    let approvals = crew.shares.iter().filter(|(a, s)| **s > 0 && votes.get(a.as_str()).and_then(|v| v.as_str()) == Some("Approve")).count();
+    require!(approvals * 2 > holders, format!("ERR_STALE_VOTES: {approvals} of {holders} shareholders approved; a strict majority is needed"));
 }
 
 fn stale_key(crew_id: u64) -> Vec<u8> { [STALE_PREFIX, &crew_id.to_le_bytes()].concat() }
