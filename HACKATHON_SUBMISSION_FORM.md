@@ -19,6 +19,10 @@ Idea character count: **699** (text only; allowed: 20-2000).
 
 Before submitting, Nick fills the remaining fields and replaces the README's other-projects placeholder with the actual independent project names required by Q-015. The repo must be public with LICENSE. The local-only demo needs a video attached to the X post (Q-012). Re-read the live rules before submission. If using the API, generate `requestId` once at submission time and reuse it on retries; it is transport metadata, not a human form field. Keep the eventual personal-data payload out of git.
 
+## Risks and disclosures
+
+Q-002/Q-015: Kumi also has an [Avalanche edition](https://kumi-avax-web.vercel.app), built on Nov 12, 2026. This NEAR submission claims only the NEAR-specific code built in the hackathon window.
+
 ## X post draft
 
 The human posts this (209 characters; limit 280):
