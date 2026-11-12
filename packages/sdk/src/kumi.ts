@@ -168,3 +168,20 @@ export function tally(p: Proposal, policy: DaoPolicy): { approve: number; reject
 }
 
 export const keyOf = (value: unknown) => canonical(value);
+
+export type Invite = { id: number; proposer: string; account_id: string; role_proposal_id: number; dao_proposal_id: number | null; status: 'filing' | 'voting' | 'admitted' | 'failed'; created_at: string };
+export const getInvites = (hub: string, crewId: number, rpc = rpcUrl()) => view<Invite[]>(hub, 'get_invites', { crew_id: crewId }, rpc);
+
+export function parseInviteCommand(text: string): string | null {
+  const match = text.trim().match(/^\/invite\s+(\S+)\s*$/);
+  const account = match?.[1];
+  return account && account.length <= 64 && /^[a-z0-9]+(?:[-_][a-z0-9]+)*(?:\.[a-z0-9]+(?:[-_][a-z0-9]+)*)*\.testnet$/.test(account) ? account : null;
+}
+
+/** This is the hub's authorization tally, independent of unfunded native DAO role members. */
+export function shareholderTally(p: Proposal, crew: Crew) {
+  const holders = crew.members.filter(([, shares]) => BigInt(shares) > 0n).map(([account]) => account);
+  const votes = Object.entries(p.votes ?? {}).filter(([account]) => holders.includes(account));
+  return { approve: votes.filter(([, v]) => v === 'Approve').length, reject: votes.filter(([, v]) => v === 'Reject').length,
+    needed: Math.floor(holders.length / 2) + 1, members: holders.length };
+}

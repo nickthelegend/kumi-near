@@ -6,9 +6,10 @@ import type { TradeQuote } from '@kumi/sdk';
 export type TxLink = { label: string; hash: string; account: string; at: number };
 export type ChatMessage = {
   id: string; crewId: number; account: string; ts: number; text: string;
-  kind: 'text' | 'trade' | 'system';
+  kind: 'text' | 'trade' | 'invite' | 'system';
   /** ed25519 signature (base64) over the canonical chat payload, by `publicKey`. */
   sig?: string; publicKey?: string;
+  invite?: { accountId: string; roleProposalId?: number; proposalId?: number; inviteId?: number };
   trade?: { side: 'buy' | 'sell'; asset: string; bps: number; lane: 'vote' | 'captain'; quote: TradeQuote; tradeId?: number; proposalId?: number; error?: string };
   txs: TxLink[];
 };

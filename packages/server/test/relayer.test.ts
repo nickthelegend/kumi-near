@@ -32,7 +32,16 @@ describe('relayer allow-list', () => {
     expect(await reason(signed(player, ctx.hub, 'join', { crew_id: 0 }, 2n * 10n ** 24n))).toMatch(/cap/);
     expect(await reason(signed(player, ctx.hub, 'add_asset', {}))).toMatch(/not relayed/);
     expect(await reason(signed(player, ev.accounts.dao, 'act_proposal', { id: 0, action: 'RemoveProposal' }))).toMatch(/approve and reject/);
-    expect(await reason(signed(player, ev.accounts.dao, 'add_proposal', { proposal: { kind: { Transfer: { receiver_id: player, amount: '1' } } } }))).toMatch(/captain and member/);
+    expect(await reason(signed(player, ev.accounts.dao, 'add_proposal', { proposal: { kind: { Transfer: { receiver_id: player, amount: '1' } } } }))).toMatch(/captain and crew invite/);
     expect(await reason(Promise.resolve('bm90IGEgZGVsZWdhdGU='))).toMatch(/Not a NEP-366/);
   }, 30_000);
 });
+
+it('limits invitation role proposals to current shareholders and the crew role', async () => {
+  const role = (name = 'crew') => ({ proposal: { kind: { AddMemberToRole: { member_id: 'fresh.testnet', role: name } } } });
+  expect((await checkDelegate(await signed(player, ev.accounts.dao, 'add_proposal', role()), ctx)).ok).toBe(true);
+  expect((await checkDelegate(await signed(`outsider.${ctx.relayerId}`, ev.accounts.dao, 'add_proposal', role()), ctx)).ok).toBe(false);
+  expect((await checkDelegate(await signed(player, ev.accounts.dao, 'add_proposal', role('council')), ctx)).ok).toBe(false);
+  expect((await checkDelegate(await signed(player, ctx.hub, 'propose_invite', { crew_id: 0, account_id: 'fresh.testnet', role_proposal_id: 0 }), ctx)).ok).toBe(true);
+  expect((await checkDelegate(await signed(player, ctx.hub, 'add_member', { crew_id: 0, account_id: 'fresh.testnet' }), ctx)).ok).toBe(false);
+}, 30_000);

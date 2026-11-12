@@ -1,16 +1,17 @@
 // Calls to the Kumi server (sign-in, relayer, chat) and live chain reads through the SDK.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  computePnl, getAssets, getCrew, getMarks, getPolicy, getProposals, getReceipts, getTrades, listCrews, rpcUrl,
-  type Asset, type Crew, type DaoPolicy, type Mark, type Pnl, type Proposal, type Receipt, type Trade,
+  computePnl, getInvites, getAssets, getCrew, getMarks, getPolicy, getProposals, getReceipts, getTrades, listCrews, rpcUrl,
+  type Invite, type Asset, type Crew, type DaoPolicy, type Mark, type Pnl, type Proposal, type Receipt, type Trade,
 } from '@kumi/sdk';
 import evidence from '../../../../deployments/testnet-2026-11-09.json';
 
 export type Config = { hub: string; relayer: string; rpc: string; giftNear: number; setup: { email: string | null; liveSwaps: string | null; confidential: string | null } };
 export type TxLink = { label: string; hash: string; account: string; at: number };
 export type ChatMessage = {
-  id: string; crewId: number; account: string; ts: number; text: string; kind: 'text' | 'trade' | 'system';
+  id: string; crewId: number; account: string; ts: number; text: string; kind: 'text' | 'trade' | 'invite' | 'system';
   sig?: string; publicKey?: string; txs: TxLink[];
+  invite?: { accountId: string; roleProposalId?: number; proposalId?: number; inviteId?: number };
   trade?: { side: 'buy' | 'sell'; asset: string; bps: number; lane: 'vote' | 'captain'; quote?: import('@kumi/sdk').TradeQuote; tradeId?: number; proposalId?: number; error?: string };
 };
 export type RelayResult = { hash: string; failure: string | null; events: { event: string; data: Record<string, unknown> }[]; value: string | null };
@@ -73,14 +74,14 @@ export async function readHub(hub = HUB, rpc = rpcUrl()): Promise<HubState> {
   return { hub, assets, crews, marks: await getMarks(assets, rpc), readAt: Date.now() };
 }
 
-export type CrewState = { crew: Crew; trades: Trade[]; receipts: Receipt[]; pnl: Pnl; assets: Asset[]; marks: Mark[]; policy: DaoPolicy; readAt: number };
+export type CrewState = { crew: Crew; invites: Invite[]; trades: Trade[]; receipts: Receipt[]; pnl: Pnl; assets: Asset[]; marks: Mark[]; policy: DaoPolicy; readAt: number };
 export async function readCrew(crewId: number, hub = HUB): Promise<CrewState> {
   if (!Number.isSafeInteger(crewId) || crewId < 0) throw new Error('Choose a valid crew from the lobby.');
   const crew = await getCrew(hub, crewId);
   if (!crew) throw new Error(`Crew ${crewId} does not exist on ${hub}`);
-  const [trades, receipts, assets, policy] = await Promise.all([getTrades(hub, crew), getReceipts(hub, crew), getAssets(hub), getPolicy(crew.dao)]);
+  const [trades, receipts, assets, policy, invites] = await Promise.all([getTrades(hub, crew), getReceipts(hub, crew), getAssets(hub), getPolicy(crew.dao), getInvites(hub, crewId)]);
   const marks = await getMarks(assets);
-  return { crew, trades, receipts, pnl: computePnl(receipts, crew, marks), assets, marks, policy, readAt: Date.now() };
+  return { crew, invites, trades, receipts, pnl: computePnl(receipts, crew, marks), assets, marks, policy, readAt: Date.now() };
 }
 
 export async function readProposals(dao: string, ids: number[]): Promise<Record<number, Proposal>> {

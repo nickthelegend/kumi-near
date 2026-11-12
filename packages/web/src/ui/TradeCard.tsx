@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatNear, formatUnits, tally, type Asset, type Crew, type DaoPolicy, type Proposal, type Trade } from '@kumi/sdk';
+import { formatNear, formatUnits, shareholderTally, type Asset, type Crew, type DaoPolicy, type Proposal, type Trade } from '@kumi/sdk';
 import type { ChatMessage } from '../lib/api';
 import { captainKey, type Session } from '../lib/session';
 import { captainTrade, fileTrade, vote } from './actions';
@@ -19,9 +19,9 @@ export function TradeCard({ m, me, crew, trade, proposal, policy, assets, hub, o
   const q = t.quote;
   const asset = assets.find(a => a.symbol === t.asset);
   const mine = me?.accountId === m.account;
-  const isMember = !!me && crew.allowed.includes(me.accountId);
+  const isMember = !!me && crew.members.some(([a, n]) => a === me.accountId && BigInt(n) > 0n);
   const status = proposal?.status === 'Expired' ? 'expired' : trade?.status ?? (q ? 'draft' : 'failed');
-  const votes = proposal ? tally(proposal, policy) : null;
+  const votes = proposal ? shareholderTally(proposal, crew) : null;
   const myVote = me && proposal?.votes?.[me.accountId];
   const canVote = isMember && proposal?.status === 'InProgress' && !myVote;
   const canFile = mine && t.lane === 'vote' && q && t.proposalId === undefined && !t.error;

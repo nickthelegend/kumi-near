@@ -4,7 +4,7 @@ import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
 import {
-  getAssets, getCrew, parseTradeCommand, rpc as rpcCall, quoteTrade, txStatus, txFailure, kumiEvents, verifyChat, viewAccessKey, formatNear, LIVE_SWAP_SETUP, TESTNET_RPC,
+  getAssets, getCrew, parseInviteCommand, accountExists, view, parseTradeCommand, rpc as rpcCall, quoteTrade, txStatus, txFailure, kumiEvents, verifyChat, viewAccessKey, formatNear, LIVE_SWAP_SETUP, TESTNET_RPC,
 } from '@kumi/sdk';
 import { Relayer, RelayRefused, ONE_NEAR } from './relayer.js';
 import { Store, type ChatMessage } from './store.js';
@@ -63,8 +63,16 @@ export function createApp(cfg: AppConfig) {
     const crew = await getCrew(cfg.hub, crewId, rpc);
     if (!crew) throw new Error(`No crew ${crewId}`);
     if (!crew.allowed.includes(account)) throw new Error('Only crew members can post here');
+    const invitee = parseInviteCommand(text);
+    if (/^\/invite(?:\s|$)/i.test(text)) {
+      if (!invitee) throw new HttpError(400, 'Use /invite account.testnet');
+      if (!crew.members.some(([a, shares]) => a === account && BigInt(shares) > 0n)) throw new HttpError(403, 'Only current shareholders can invite');
+      if (crew.allowed.includes(invitee)) throw new HttpError(400, 'That account is already invited');
+      if (!await accountExists(invitee, rpc)) throw new HttpError(400, 'That NEAR testnet account does not exist');
+    }
     const msg: ChatMessage = { id: randomBytes(8).toString('hex'), crewId, account, ts, text, sig, publicKey, kind: 'text', txs: [] };
     upsert(crewId, msg, true);
+    if (invitee) upsert(crewId, { id: randomBytes(8).toString('hex'), crewId, account, ts: Date.now(), text, kind: 'invite', invite: { accountId: invitee }, txs: [] }, true);
     const captainLane = /^\/captain\s+/i.test(text);
     const cmd = parseTradeCommand(captainLane ? text.replace(/^\/captain\s+/i, '/') : text);
     if (cmd) {
@@ -181,7 +189,7 @@ export function createApp(cfg: AppConfig) {
         throw e;
       });
       const crewId = b.crewId === undefined ? null : Number(b.crewId);
-      if (crewId !== null && Number.isInteger(crewId)) linkResult(crewId, String(b.messageId ?? ''), String(b.label ?? result.methods.join('+')), result);
+      if (crewId !== null && Number.isInteger(crewId)) await linkResult(crewId, String(b.messageId ?? ''), String(b.label ?? result.methods.join('+')), result);
       return result;
     },
     /** Records a captain trade the captain's browser sent with its function-call key. */
@@ -191,12 +199,12 @@ export function createApp(cfg: AppConfig) {
       if (tx.transaction.signer_id !== cfg.hub || tx.transaction.receiver_id !== cfg.hub) throw new HttpError(400, 'Not a captain-key transaction on the hub');
       const failure = txFailure(tx);
       const result = { hash, sender: cfg.hub, receiver: cfg.hub, methods: ['captain_trade'], failure, events: kumiEvents(tx), value: null };
-      linkResult(crewId, String(b.messageId ?? ''), 'captain trade', result);
+      await linkResult(crewId, String(b.messageId ?? ''), 'captain trade', result);
       return result;
     },
   };
 
-  function linkResult(crewId: number, messageId: string, label: string, r: Awaited<ReturnType<Relayer['relay']>>) {
+  async function linkResult(crewId: number, messageId: string, label: string, r: Awaited<ReturnType<Relayer['relay']>>) {
     const list = cfg.store.messages(crewId);
     const card = list.find(m => m.id === messageId);
     const who = r.sender;
@@ -205,6 +213,18 @@ export function createApp(cfg: AppConfig) {
     if (card) {
       const refused = r.events.some(e => e.event === 'trade_failed');
       card.txs.push({ label: r.failure && !refused ? `${label} (failed)` : label, hash: r.hash, account: who, at: Date.now() });
+      if (card.invite && !r.failure && r.methods.includes('add_proposal') && r.receiver !== cfg.hub) {
+        const id = Number(r.value);
+        if (!Number.isSafeInteger(id) || id < 0 || r.value === null) throw new Error('Missing invitation role proposal receipt');
+        const proposal = await view<{ proposer: string; kind: unknown }>(r.receiver, 'get_proposal', { id }, rpc);
+        if (proposal.proposer !== card.account || r.sender !== card.account || JSON.stringify(proposal.kind) !== JSON.stringify({ AddMemberToRole: { member_id: card.invite.accountId, role: 'crew' } })) throw new Error('Invitation role proposal does not match this card');
+        card.invite.roleProposalId = id;
+      }
+      const invitation = r.events.find(e => e.event === 'invite_proposed');
+      if (card.invite && invitation && String(invitation.data.account_id) === card.invite.accountId) {
+        card.invite.inviteId = Number(invitation.data.invite_id);
+        card.invite.proposalId = invitation.data.dao_proposal_id === null ? undefined : Number(invitation.data.dao_proposal_id);
+      }
       if (proposed) { card.trade!.tradeId = Number(proposed.data.trade_id); card.trade!.proposalId = Number(proposed.data.dao_proposal_id); }
       if (executed && card.trade) {
         card.trade.tradeId ??= Number(executed.data.trade_id);
@@ -213,6 +233,7 @@ export function createApp(cfg: AppConfig) {
       upsert(crewId, card, false);
     }
     for (const e of r.events) {
+      if (e.event === 'member_added') system(crewId, String(e.data.account_id), 'invited by a shareholder majority', [{ label: 'admitted', hash: r.hash, account: who, at: Date.now() }]);
       if (e.event === 'join') system(crewId, who, `joined the crew`, [{ label: 'join', hash: r.hash, account: who, at: Date.now() }]);
       if (e.event === 'ragequit') system(crewId, who, `ragequit with their exact share`, [{ label: 'ragequit', hash: r.hash, account: who, at: Date.now() }]);
       if (e.event === 'follow') system(crewId, who, `started following the crew`, [{ label: 'follow', hash: r.hash, account: who, at: Date.now() }]);

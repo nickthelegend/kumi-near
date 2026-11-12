@@ -5,7 +5,7 @@ import { api, type RelayResult } from '../lib/api';
 import { captainKey, delegate, type Session } from '../lib/session';
 
 export async function relay(s: Session, receiverId: string, methodName: string, args: Record<string, unknown>, deposit = 0n, link?: { crewId: number; messageId?: string; label?: string }) {
-  const d = await delegate(s, receiverId, [{ methodName, args, deposit, gas: 280n * TGAS }]);
+  const d = await delegate(s, receiverId, [{ methodName, args, deposit, gas: (methodName === 'act_proposal' ? 190n : methodName === 'ragequit' || methodName === 'unfollow' ? 155n : 100n) * TGAS }]);
   const r = await api<RelayResult>('/api/relay', { delegate: d, ...(link ?? {}) });
   // A pool refusing a fill (ERR_SLIPPAGE) is handled by the hub, which restores holdings and
   // marks the trade failed; that is an outcome, not an error.
@@ -60,4 +60,15 @@ export async function captainTrade(hub: string, crewId: number, messageId: strin
     args: { crew_id: crewId, side: q.side, asset: q.asset, bps: q.bps, quote_in: q.amount_in, quote_out: q.pool.amount_out, quote_hash: q.hash } });
   const hash = (out as unknown as { transaction: { hash: string } }).transaction.hash;
   return api<RelayResult>('/api/record', { crewId, messageId, hash });
+}
+
+
+/** The native DAO role and the hub admission gate are deliberately separate receipts. */
+export async function fileInvite(s: Session, hub: string, crew: { id: number; dao: string }, messageId: string, accountId: string, roleId?: number) {
+  if (roleId === undefined) {
+    const result = await relay(s, crew.dao, 'add_proposal', { proposal: { description: `Kumi invite role: ${accountId}`, kind: { AddMemberToRole: { member_id: accountId, role: 'crew' } } } }, 0n, { crewId: crew.id, messageId, label: 'invitation role filed' });
+    if (result.value === null || !Number.isSafeInteger(Number(result.value))) throw new Error('Missing DAO role proposal receipt');
+    roleId = Number(result.value);
+  }
+  return relay(s, hub, 'propose_invite', { crew_id: crew.id, account_id: accountId, role_proposal_id: roleId }, 0n, { crewId: crew.id, messageId, label: 'invitation gate filed' });
 }

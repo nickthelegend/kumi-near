@@ -4,6 +4,7 @@ import { api, HUB, readCrew, readHub, readProposals, useAsync, useChat, useConfi
 import { signedChat, useSession, type Session } from '../lib/session';
 import { Art, Avatar, CrewAvatar, EmptyArt, Ic, Link, Notice, crewTone, navigate, shortName, Tx } from '../ui/bits';
 import { CrewInfo, FundPane, JoinSheet, QuitSheet } from '../ui/Fund';
+import { InviteCard } from '../ui/InviteCard';
 import { TradeCard } from '../ui/TradeCard';
 import { TokenLogo } from '../ui/logos';
 
@@ -36,7 +37,7 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
   const online = !!config.data;
   const chat = useChat(crewId, online);
   useEffect(() => { if (!config.loading && !online) setTab('fund'); }, [online, config.data === undefined]);
-  const cardIds = [...new Set([...chat.messages.filter(m => m.kind === 'trade' && m.trade?.proposalId !== undefined).map(m => m.trade!.proposalId!), ...(!online ? (st.data?.trades ?? []).flatMap(t => t.dao_proposal_id === null ? [] : [t.dao_proposal_id]) : [])])];
+  const cardIds = [...new Set([...chat.messages.filter(m => m.kind === 'trade' && m.trade?.proposalId !== undefined).map(m => m.trade!.proposalId!), ...chat.messages.flatMap(m => m.invite ? [m.invite.roleProposalId, m.invite.proposalId].filter((id): id is number => id !== undefined) : []), ...(st.data?.invites ?? []).flatMap(i => [i.role_proposal_id, i.dao_proposal_id].filter((id): id is number => id !== null)), ...(!online ? (st.data?.trades ?? []).flatMap(t => t.dao_proposal_id === null ? [] : [t.dao_proposal_id]) : [])])];
   const props = useAsync(() => st.data ? readProposals(st.data.crew.dao, cardIds) : Promise.resolve({} as Record<number, Proposal>), [st.data?.crew.dao, cardIds.join(','), st.data?.readAt]);
   const [text, setText] = useState(() => new URLSearchParams(location.search).get('pitch') ?? '');
   const box = useRef<HTMLDivElement>(null);
@@ -97,6 +98,7 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
           <button className="btn btn-sm btn-plum thread-tabs" onClick={() => setTab('fund')}><Ic name="chart" size={15} />{st.data.pnl.navNear.toFixed(3)} N</button>
         </div>
         <div className="messages" aria-live="polite" ref={box} onScroll={e => { const b = e.currentTarget; stuck.current = b.scrollHeight - b.scrollTop - b.clientHeight < 80; }}>
+          {!online && st.data.invites.map(i => <InviteCard key={`invite-${i.id}`} m={{ id: `chain-invite-${i.id}`, crewId, account: i.proposer, ts: Number(BigInt(i.created_at) / 1_000_000n), text: '', kind: 'invite', txs: [], invite: { accountId: i.account_id, roleProposalId: i.role_proposal_id, proposalId: i.dao_proposal_id ?? undefined, inviteId: i.id } }} me={null} st={st.data!} proposals={props.data ?? {}} hub={HUB} onDone={refresh} />)}
           {!online && st.data.trades.slice(-8).reverse().map(t => <TradeCard key={t.id} m={{ id: `chain-${t.id}`, crewId, account: t.proposer, ts: Number(BigInt(t.created_at) / 1_000_000n), text: '', kind: 'trade', txs: [], trade: { side: t.side, asset: t.asset, bps: t.bps, lane: t.kind === 'captain' ? 'captain' : 'vote', tradeId: t.id, proposalId: t.dao_proposal_id ?? undefined } }} me={null} crew={st.data!.crew} trade={t} proposal={props.data?.[t.dao_proposal_id ?? -1]} policy={st.data!.policy} assets={st.data!.assets} hub={HUB} onDone={refresh} />)}
           {online && chat.status !== 'offline' && chat.messages.length === 0 && <EmptyArt art={['kumi3-empty', 'kumi-feature-chat']} title="Quiet in here" action={isMember ? <button className="btn btn-primary" onClick={() => pitch()}>Pitch the first trade</button> : undefined}>Say hi, or pitch the first trade with <span className="mono">/buy SOL 20%</span>.</EmptyArt>}
           {chat.messages.map((m, i) => <Message key={m.id} m={m} prev={chat.messages[i - 1]} me={me} st={st.data!} proposals={props.data ?? {}} onDone={refresh} />)}
@@ -185,7 +187,7 @@ function FirstRun({ st, me, messages, proposals, onSignIn, onJoin, onPitch, onVo
     <p>{done} of {steps.length} done · each step is a real on-chain action</p>
     <div className="bar"><i style={{ width: `${(done / steps.length) * 100}%` }} /></div>
     <ol>{steps.map((s, i) => <li key={s.label} className={s.done ? 'done' : i === now ? 'now' : ''}><span className="n">{s.done ? '✓' : i + 1}</span>{s.label}</li>)}</ol>
-    {now === 1 ? <p style={{ margin: '12px 0 0', color: '#eadcf0' }}>Crews are invite-only: a member adds you when the crew is made. Meanwhile you can follow {crew.name}.</p>
+    {now === 1 ? <p style={{ margin: '12px 0 0', color: '#eadcf0' }}>Crews are invite-only: ask a shareholder to post /invite with your testnet account. A majority must approve before you chip in. Meanwhile you can follow {crew.name}.</p>
       : step.act && <button className="btn btn-butter btn-block" onClick={step.act}>{step.cta} <Ic name="arrow" size={16} /></button>}
   </section>;
 }
@@ -200,6 +202,8 @@ function Message({ m, prev, me, st, proposals, onDone }: { m: ChatMessage; prev?
   if (m.kind === 'system') {
     const [, tone, ic] = EVENT.find(([re]) => re.test(m.text)) ?? [null, 'butter', 'bolt'];
     body = <div className={`event tone-${tone}`}><span className="ev-ic"><Ic name={ic} size={14} /></span><b>{shortName(m.account)}</b> {m.text} {m.txs.map(t => <Tx key={t.hash} hash={t.hash} />)}</div>;
+  } else if (m.kind === 'invite') {
+    body = <InviteCard m={m} me={me} st={st} proposals={proposals} hub={HUB} onDone={onDone} />;
   } else if (m.kind === 'trade') {
     const trade = m.trade?.tradeId !== undefined ? st.trades.find(t => t.id === m.trade!.tradeId) : undefined;
     body = <TradeCard m={m} me={me} crew={st.crew} trade={trade} proposal={m.trade?.proposalId !== undefined ? proposals[m.trade.proposalId] : undefined} policy={st.policy} assets={st.assets} hub={HUB} onDone={onDone} />;

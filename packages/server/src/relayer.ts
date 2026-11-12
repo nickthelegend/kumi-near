@@ -85,16 +85,21 @@ export async function checkDelegate(b64: string, ctx: { relayerId: string; hub: 
   const tokens = new Set((await getAssets(ctx.hub, ctx.rpc)).map(a => a.token));
   for (const c of summary.calls) {
     if (summary.receiverId === ctx.hub) {
-      if (!['join', 'propose_trade', 'ragequit', 'follow', 'unfollow', 'claim_token', 'crystallize_fee', 'create_crew'].includes(c.methodName)) return { ok: false, reason: `hub.${c.methodName} is not relayed` };
+      if (!['join', 'propose_invite', 'propose_trade', 'ragequit', 'follow', 'unfollow', 'claim_token', 'crystallize_fee', 'create_crew'].includes(c.methodName)) return { ok: false, reason: `hub.${c.methodName} is not relayed` };
       if (c.deposit > (c.methodName === 'create_crew' ? DAO_DEPOSIT_CAP : MAX_DEPOSIT)) return { ok: false, reason: 'Deposit above the relayer cap' };
     } else if (daos.has(summary.receiverId)) {
       if (c.methodName === 'act_proposal') {
         const action = (c.args as { action?: string })?.action;
         if (action !== 'VoteApprove' && action !== 'VoteReject') return { ok: false, reason: 'Only approve and reject votes are relayed' };
       } else if (c.methodName === 'add_proposal') {
-        const kind = (c.args as { proposal?: { kind?: { FunctionCall?: { receiver_id?: string; actions?: { method_name: string }[] } } } })?.proposal?.kind?.FunctionCall;
-        if (!kind || kind.receiver_id !== ctx.hub || !kind.actions?.every(a => ['set_captain', 'revoke_captain', 'add_member'].includes(a.method_name))) {
-          return { ok: false, reason: 'Only captain and member proposals to the hub are relayed' };
+        const kind = (c.args as { proposal?: { kind?: Record<string, unknown> } })?.proposal?.kind;
+        const role = kind?.AddMemberToRole as { member_id?: string; role?: string } | undefined;
+        const crew = crews.find(c => c.dao === summary.receiverId)!;
+        if (role) {
+          if (Object.keys(kind!).length !== 1 || role.role !== 'crew' || !role.member_id || role.member_id.length > 64 || !/^[a-z0-9]+(?:[-_][a-z0-9]+)*(?:\.[a-z0-9]+(?:[-_][a-z0-9]+)*)*\.testnet$/.test(role.member_id) || !crew.members.some(([a, n]) => a === summary.senderId && BigInt(n) > 0n)) return { ok: false, reason: 'Only current shareholders can propose a testnet crew invite' };
+        } else {
+          const call = kind?.FunctionCall as { receiver_id?: string; actions?: { method_name: string }[] } | undefined;
+          if (!call || call.receiver_id !== ctx.hub || !call.actions?.length || !call.actions.every(a => ['set_captain', 'revoke_captain'].includes(a.method_name))) return { ok: false, reason: 'Only captain and crew invite proposals are relayed' };
         }
       } else return { ok: false, reason: `DAO method ${c.methodName} is not relayed` };
       if (c.deposit > 0n) return { ok: false, reason: 'DAO calls carry no deposit' };

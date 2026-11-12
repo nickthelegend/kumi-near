@@ -101,3 +101,16 @@ Screenshots were captured locally during QA and are not committed.
 - Every displayed fund number comes from these view calls: hub `list_crews` / `get_crew` (allowed accounts, shares, supply, holdings, vault, captain limits and daily usage); `get_assets` (token decimals); pool `get_reserves` (NAV marks); hub `get_receipts` (verified return and drawdown); DAO `get_last_proposal_id`, `get_proposals`, `get_policy` (recent/open proposals, statuses, votes and native thresholds); hub `get_trades` (recent trade cards). Per-member ragequit amounts use floor(holding × member shares / total shares), exactly as the contract does, with the final holder receiving remaining dust.
 - PASS: 16 Rust tests, including sandbox invitation admission, non-member rejection and current-shareholder recount. SDK: 13 tests. Compact hub artifact: 432626 bytes. Existing crew state layout is unchanged.
 - PENDING: testnet invitation UI proof and full browser run. No R3 testnet writes have been made at this checkpoint. Historical Nov 11 limits above describe that earlier run.
+
+
+## Judging R3 — invitations (Nov 12)
+
+Screenshots were captured locally during QA and are not committed.
+
+- FIXED: `/invite account.testnet` creates a card using the existing trade-card components and styles. Only a current shareholder can file it. Both the native `AddMemberToRole` and bound hub `add_member` proposal must pass the hub's current-shareholder recount.
+- PASS: fresh account `qamwdiemgn.kumi-77b50457fb.testnet` was created through browser email sign-in, followed, then was invited by Mika and approved by Mika and Juno. Sputnik proposals #16 and #17 both reached Approved; hub invitation #0 reached admitted.
+- PASS: the fresh member chipped in the minimum 0.01 testnet NEAR and received `8294737022888653143370` shares. `get_crew` confirms the new position. Hub `get_invites` and DAO `get_proposal` supply the invitation status and vote counts.
+- Role filing: `9aqGLHmx2DQVj4Ufo8uSPfx4fpKeZKGU48QVLiMfLiwG`; hub gate filing: `97fx6A24dBy7yjG2SHtBBfR8VgyaaDSvSTTqccjsCjwq`; final admission: `8jqdM6oNeJhKuL2kbffUB11vsdqnFGwuHpzdhzywX4jc`; chip-in: `BznsdFreDnzMBiv4pE9pu6hA53QMWxThyvc1b2P2GEoU`. All hashes, both members' intermediate votes and cumulative costs are in `deployments/r3-2026-11-12.json`.
+- Before: `before-offline-1440.png`, `before-offline-375.png`. After: `r3-invite-draft-1440.png`, `r3-invite-draft-375.png`, `r3-invite-admitted-1440.png`, `r3-invite-admitted-375.png`, `r3-chip-in-receipt-1440.png`, `r3-chip-in-receipt-375.png`, `r3-member-board-1440.png`, `r3-member-board-375.png`.
+- PASS: three new sandbox tests cover complete admission and join, outsider/unfunded invite rejection, and native DAO approvals that fail the current-shareholder recount. All 16 Rust tests pass. SDK: 13; server: 4, including relayer restrictions on invitation roles and outsiders. Production web and server typechecks pass.
+- Historical Nov 11 statements about a missing invite command are superseded by this R3 result. No second crew or account-key deletion was performed.
