@@ -32,9 +32,11 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
   const [tab, setTab] = useState<Tab>('chat');
   const [sheet, setSheet] = useState<'join' | 'quit' | null>(null);
   const st = useAsync(() => readCrew(crewId), [crewId], 15_000);
-  const chat = useChat(crewId);
   const config = useConfig();
-  const cardIds = chat.messages.filter(m => m.kind === 'trade' && m.trade?.proposalId !== undefined).map(m => m.trade!.proposalId!);
+  const online = !!config.data;
+  const chat = useChat(crewId, online);
+  useEffect(() => { if (!config.loading && !online) setTab('fund'); }, [online, config.data === undefined]);
+  const cardIds = [...new Set([...chat.messages.filter(m => m.kind === 'trade' && m.trade?.proposalId !== undefined).map(m => m.trade!.proposalId!), ...(!online ? (st.data?.trades ?? []).flatMap(t => t.dao_proposal_id === null ? [] : [t.dao_proposal_id]) : [])])];
   const props = useAsync(() => st.data ? readProposals(st.data.crew.dao, cardIds) : Promise.resolve({} as Record<number, Proposal>), [st.data?.crew.dao, cardIds.join(','), st.data?.readAt]);
   const [text, setText] = useState(() => new URLSearchParams(location.search).get('pitch') ?? '');
   const box = useRef<HTMLDivElement>(null);
@@ -46,6 +48,7 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
 
   const refresh = () => { st.reload(); props.reload(); };
   const isMember = !!me && !!st.data && st.data.crew.allowed.includes(me.accountId);
+  const offlineNote = <p className="mini">Chat and actions need <span className="mono">pnpm run server</span>.</p>;
   const pitch = (t = '/buy SOL 10%') => { setTab('chat'); setText(t); requestAnimationFrame(() => input.current?.focus()); };
   const toVote = () => { setTab('chat'); requestAnimationFrame(() => document.querySelector('[data-vote="open"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })); };
 
@@ -60,9 +63,10 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
       <div className="row-between"><h2>Crews</h2><Link to="/leaderboard" className="chip chip-butter"><Ic name="trophy" size={13} />Season</Link></div>
       <label className="search"><Ic name="search" size={16} /><span className="sr">Search crews</span><input placeholder={`Search ${crews.length} ${crews.length === 1 ? 'crew' : 'crews'}`} disabled title="Search arrives when the hub lists more crews" /></label>
     </div>
-    <CrewList crews={crews} marks={marks} current={crewId} me={me} />
+    <CrewList crews={crews} marks={marks} current={crewId} me={me} online={online} />
     <div className="list-foot">
-      {st.data && <FirstRun st={st.data} me={me} messages={chat.messages} proposals={props.data ?? {}} onSignIn={onSignIn} onJoin={() => setSheet('join')} onPitch={() => pitch()} onVote={toVote} />}
+      {!online && tab === 'crews' && offlineNote}
+      {st.data && online && <FirstRun st={st.data} me={me} messages={chat.messages} proposals={props.data ?? {}} onSignIn={onSignIn} onJoin={() => setSheet('join')} onPitch={() => pitch()} onVote={toVote} />}
       <Link to="/leaderboard" className="season-mini"><Art name={['kumi3-season', 'kumi-og']} alt="" /><span><b>This week's season</b><small>Return minus half the drawdown, from receipts. See the board →</small></span></Link>
       <section className="legend" aria-label="What the colours mean"><h3>Reading the chat</h3><ul>
         <li className="tone-coral"><i /><span><b>Coral</b> trade proposals</span></li>
@@ -93,13 +97,13 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
           <button className="btn btn-sm btn-plum thread-tabs" onClick={() => setTab('fund')}><Ic name="chart" size={15} />{st.data.pnl.navNear.toFixed(3)} N</button>
         </div>
         <div className="messages" aria-live="polite" ref={box} onScroll={e => { const b = e.currentTarget; stuck.current = b.scrollHeight - b.scrollTop - b.clientHeight < 80; }}>
-          {chat.status === 'offline' && chat.messages.length === 0 && <EmptyArt art={['kumi3-empty', 'kumi-feature-chat']} title="Chat is offline">The Kumi server is not running. Start it with <span className="mono">pnpm run server</span>. The fund pane still reads the chain directly.</EmptyArt>}
-          {chat.status !== 'offline' && chat.messages.length === 0 && <EmptyArt art={['kumi3-empty', 'kumi-feature-chat']} title="Quiet in here" action={isMember ? <button className="btn btn-primary" onClick={() => pitch()}>Pitch the first trade</button> : undefined}>Say hi, or pitch the first trade with <span className="mono">/buy SOL 20%</span>.</EmptyArt>}
+          {!online && st.data.trades.slice(-8).reverse().map(t => <TradeCard key={t.id} m={{ id: `chain-${t.id}`, crewId, account: t.proposer, ts: Number(BigInt(t.created_at) / 1_000_000n), text: '', kind: 'trade', txs: [], trade: { side: t.side, asset: t.asset, bps: t.bps, lane: t.kind === 'captain' ? 'captain' : 'vote', tradeId: t.id, proposalId: t.dao_proposal_id ?? undefined } }} me={null} crew={st.data!.crew} trade={t} proposal={props.data?.[t.dao_proposal_id ?? -1]} policy={st.data!.policy} assets={st.data!.assets} hub={HUB} onDone={refresh} />)}
+          {online && chat.status !== 'offline' && chat.messages.length === 0 && <EmptyArt art={['kumi3-empty', 'kumi-feature-chat']} title="Quiet in here" action={isMember ? <button className="btn btn-primary" onClick={() => pitch()}>Pitch the first trade</button> : undefined}>Say hi, or pitch the first trade with <span className="mono">/buy SOL 20%</span>.</EmptyArt>}
           {chat.messages.map((m, i) => <Message key={m.id} m={m} prev={chat.messages[i - 1]} me={me} st={st.data!} proposals={props.data ?? {}} onDone={refresh} />)}
         </div>
         <div className="composer">
           {chat.error && <div style={{ marginBottom: 10 }}><Notice error>{chat.error}</Notice></div>}
-          {!me ? <div className="guest-bar"><p><b>Read-only.</b> Sign in with email to talk, pitch trades and vote. No wallet needed.</p><button className="btn btn-primary" onClick={onSignIn}>Sign in</button></div>
+          {!online ? tab === 'chat' && offlineNote : !me ? <div className="guest-bar"><p><b>Read-only.</b> Sign in with email to talk, pitch trades and vote. No wallet needed.</p><button className="btn btn-primary" onClick={onSignIn}>Sign in</button></div>
             : !isMember ? <div className="guest-bar"><p><b>You're a guest here.</b> Only {crew.name} members post. Anyone can follow the crew and mirror its trades.</p><Link to={`/crew/${crew.id}`} className="btn btn-mint">Follow</Link></div>
             : <>
               <div className="hints"><span className="lbl">Pitch a trade:</span>{HINTS.map(([h, tone]) => <button key={h} className={`hint tone-${tone}`} onClick={() => pitch(h)}>{h}</button>)}</div>
@@ -112,8 +116,9 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
         </div>
       </section>
       <aside className="pane fund" aria-label="Crew fund">
-        <FundPane st={st.data} me={me} onJoin={() => (me ? setSheet('join') : onSignIn())} onQuit={() => setSheet('quit')} />
-        <CrewInfo st={st.data} me={me} onChanged={refresh} />
+        {!online && tab === 'fund' && offlineNote}
+        <FundPane st={st.data} me={online ? me : null} onJoin={() => (me ? setSheet('join') : onSignIn())} onQuit={() => setSheet('quit')} />
+        <CrewInfo st={st.data} me={online ? me : null} onChanged={refresh} />
       </aside>
       <nav className="tabs" aria-label="Sections">
         {([['crews', 'Crews', 'crews'], ['chat', 'Chat', 'chat'], ['fund', 'Fund', 'chart']] as const).map(([t, l, ic]) => <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}><Ic name={ic} size={19} />{l}</button>)}
@@ -125,9 +130,10 @@ function CrewRoom({ crewId, crews, marks, me, onSignIn }: { crewId: number; crew
 }
 
 /** Telegram-style crew list: colour avatar, last message, time, unread count. */
-function CrewList({ crews, marks, current, me }: { crews: Crew[]; marks: import('@kumi/sdk').Mark[]; current: number; me: Session | null }) {
+function CrewList({ crews, marks, current, me, online }: { crews: Crew[]; marks: import('@kumi/sdk').Mark[]; current: number; me: Session | null; online: boolean }) {
   const last = useAsync(async () => {
     const out: Record<number, { msg?: ChatMessage; unread: number }> = {};
+    if (!online) return out;
     await Promise.all(crews.map(async c => {
       try {
         const ms = await api<ChatMessage[]>(`/api/messages?crew=${c.id}`);
@@ -136,7 +142,7 @@ function CrewList({ crews, marks, current, me }: { crews: Crew[]; marks: import(
       } catch { out[c.id] = { unread: 0 }; }
     }));
     return out;
-  }, [crews.map(c => c.id).join(','), current, me?.accountId], 20_000);
+  }, [crews.map(c => c.id).join(','), current, me?.accountId, online], 20_000);
   return <ul className="crew-list">
     {crews.map(c => {
       const l = last.data?.[c.id];

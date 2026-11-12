@@ -3,7 +3,7 @@ import type { Plugin } from 'vite';
 
 // Keep the documented read-only preview usable without a funded relayer. Browser reads
 // stay same-origin even when the public RPC omits CORS headers or rate-limits a burst.
-export function testnetReadProxy(): Plugin {
+export function testnetReadProxy(serverUrl: string): Plugin {
   const allowed = new Set(['query', 'block', 'status', 'EXPERIMENTAL_tx_status', 'tx']);
   const cache = new Map<string, { at: number; value: unknown }>();
   const inflight = new Map<string, Promise<unknown>>();
@@ -54,7 +54,21 @@ export function testnetReadProxy(): Plugin {
   }
   return {
     name: 'kumi-testnet-read-proxy',
-    configureServer(server) { server.middlewares.use('/api/rpc', (req, res) => { void handle(req, res); }); },
-    configurePreviewServer(server) { server.middlewares.use('/api/rpc', (req, res) => { void handle(req, res); }); },
+    configureServer(server) { install(server.middlewares); },
+    configurePreviewServer(server) { install(server.middlewares); },
   };
+  function install(middlewares: { use: (path: string, handler: (req: IncomingMessage, res: ServerResponse) => void) => unknown }) {
+    middlewares.use('/api/rpc', (req, res) => { void handle(req, res); });
+    middlewares.use('/api/availability', (_req, res) => {
+      void (async () => {
+        let config: unknown = null;
+        try {
+          const response = await fetch(`${serverUrl}/api/config`, { signal: AbortSignal.timeout(1500) });
+          if (response.ok) config = await response.json();
+        } catch { /* A stopped backend is a supported read-only mode. */ }
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ online: config !== null, config }));
+      })();
+    });
+  }
 }

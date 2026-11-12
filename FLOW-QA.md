@@ -89,3 +89,15 @@ Evidence directory: `kumi`.
 - Public RPC outages remain an external dependency. [NEAR's provider list](https://docs.near.org/api/rpc/providers) identifies the public archival testnet endpoint now used for historical receipts. Current browser reads use the same-origin preview proxy with bounded provider waits.
 
 All QA processes started here are shut down at completion. No push, force operation, mainnet transaction or `.loom/` edit was performed. The production build, 15 JS/SDK/server/MCP tests, server typecheck, browser checks and historical testnet verifier passed. Rust contract source was unchanged and its earlier sandbox suite was not rerun.
+
+
+## Judging R3 — offline room (Nov 12)
+
+Screenshots were captured locally during QA and are not committed.
+
+- FIXED: the server-free room shows the live crew fund using the existing components. Chat and actions have one setup sentence. No websocket or chat-history request is made while the backend is absent.
+- PASS: `pnpm test:e2e --read-only` executed 14 browser states at 1440 and 375: landing, lobby, room, member list, proposal list, crew detail and season. Zero writes, credentials, browser console errors or horizontal overflow.
+- Before: `before-offline-1440.png`, `before-offline-375.png`. After: `r3-read-only-room-1440.png`, `r3-read-only-room-375.png`; member/proposal detail: `r3-read-only-room-members-1440.png`, `r3-read-only-room-members-375.png`, `r3-read-only-room-proposals-1440.png`, `r3-read-only-room-proposals-375.png`.
+- Every displayed fund number comes from these view calls: hub `list_crews` / `get_crew` (allowed accounts, shares, supply, holdings, vault, captain limits and daily usage); `get_assets` (token decimals); pool `get_reserves` (NAV marks); hub `get_receipts` (verified return and drawdown); DAO `get_last_proposal_id`, `get_proposals`, `get_policy` (recent/open proposals, statuses, votes and native thresholds); hub `get_trades` (recent trade cards). Per-member ragequit amounts use floor(holding × member shares / total shares), exactly as the contract does, with the final holder receiving remaining dust.
+- PASS: 16 Rust tests, including sandbox invitation admission, non-member rejection and current-shareholder recount. SDK: 13 tests. Compact hub artifact: 432626 bytes. Existing crew state layout is unchanged.
+- PENDING: testnet invitation UI proof and full browser run. No R3 testnet writes have been made at this checkpoint. Historical Nov 11 limits above describe that earlier run.

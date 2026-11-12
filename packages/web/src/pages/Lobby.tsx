@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { formatNear, formatUnits, memberShare, seasonRow, tally, type Proposal, type Receipt, type Trade } from '@kumi/sdk';
-import { api, HUB, readCrew, readHub, readProposals, useAsync, type ChatMessage, type CrewState } from '../lib/api';
+import { api, HUB, readCrew, readHub, readProposals, useAsync, useConfig, type ChatMessage, type CrewState } from '../lib/api';
 import { useSession, type Session } from '../lib/session';
 import { Avatar, CrewAvatar, EmptyArt, Ic, Link, MiniEmpty, Notice, Tx, mascotOf, navigate, shortName } from '../ui/bits';
 import { JoinSheet } from '../ui/Fund';
@@ -10,11 +10,12 @@ const sign = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)}%`;
 
 export function Lobby({ onSignIn }: { onSignIn: () => void }) {
   const me = useSession();
+  const config = useConfig();
   const hub = useAsync(() => readHub(), [], 60_000);
   const crews = hub.data?.crews ?? [];
   const crewId = (me ? crews.find(c => c.allowed.includes(me.accountId))?.id : undefined) ?? crews[0]?.id ?? null;
   const st = useAsync(() => crewId === null ? Promise.resolve(null) : readCrew(crewId), [crewId], 20_000);
-  const chat = useAsync(() => crewId === null ? Promise.resolve([] as ChatMessage[]) : api<ChatMessage[]>(`/api/messages?crew=${crewId}`), [crewId], 15_000);
+  const chat = useAsync(() => crewId === null || !config.data ? Promise.resolve([] as ChatMessage[]) : api<ChatMessage[]>(`/api/messages?crew=${crewId}`), [crewId, !!config.data], 15_000);
   const [sheet, setSheet] = useState(false);
   const data = st.data;
   const week = data ? seasonRow(data.crew, data.pnl).returnPct : null;

@@ -36,3 +36,10 @@ Sandbox tests (each assertion is a real transaction or view on the sandbox chain
 10. `upgrade_from_the_nov9_hub_removes_a_legacy_ragequitter`: deploys the hub bytes that ran on testnet on Nov 9; bob ragequits and keeps his DAO vote (the bug, reproduced). The new code is deployed over it and the state reads back unchanged. The recount already ignores bob's vote. `remove_ex_member` needs his ragequit receipt (none, or a join receipt, is refused); under the old DAO policy it fails loudly and is kept as pending; after the crew grants the permission, the retry removes him. This is the path used on testnet on Nov 10.
 
 Nothing here replaces a chain or external service with a simulated response. Live tests retry twice because the public testnet RPC rate-limits bursts (HTTP 429) from this machine. The sandbox binary is nearcore 2.14.0-rc.4: set `NEAR_SANDBOX_BIN_PATH` to reuse a local one, or let near-workspaces download it.
+
+
+## Judging R3 browser checks
+
+Install dependencies with `pnpm install`, install Google Chrome, then run `pnpm --filter @kumi/web build` and `pnpm test:e2e --read-only`. No credentials or backend are needed. The harness starts and stops its own production preview, reads NEAR testnet, checks 14 browser states at 1440 and 375, and saves local screenshots and `r3-e2e-read-only.json`. Set `KUMI_E2E_PORT` to an unused port from 5300–5999 if needed. The Nov 12 run passed with zero console/network errors or horizontal overflow.
+
+Contract builds also require Binaryen's `wasm-opt`. `pnpm build:contracts` compacts the hub after compilation. All 16 Rust tests pass with the compact artifact; the SDK has 13 passing tests. The invitation tests cover both proposal stages, rejection of outsiders/unfunded invitees, and recounting only current shareholders.

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { accountUrl, dryQuote, formatNear, formatUnits, getProposals, getTokens, held, memberShare, parseNear, ragequitPreview, seasonRow, view, LIVE_SWAP_SETUP, type Pnl } from '@kumi/sdk';
+import { accountUrl, dryQuote, formatNear, formatUnits, getProposals, getTokens, held, memberShare, parseNear, ragequitPreview, seasonRow, tally, view, LIVE_SWAP_SETUP, type Pnl } from '@kumi/sdk';
 import { HUB, useAsync, type CrewState } from '../lib/api';
 import { makeCaptainKey, type Session } from '../lib/session';
 import { ragequit, relay, vote } from './actions';
@@ -87,9 +87,9 @@ export function CrewInfo({ st, me, onChanged }: { st: CrewState; me: Session | n
   const { crew } = st;
   const open = useAsync(async () => {
     const last = await view<number>(crew.dao, 'get_last_proposal_id');
-    const from = Math.max(0, last - 8);
+    const from = Math.max(0, last - 12);
     const ps = last > 0 ? await getProposals(crew.dao, from, last - from) : [];
-    return ps.filter(p => p.status === 'InProgress' && !p.description.startsWith('Kumi trade')).reverse();
+    return ps.reverse();
   }, [crew.dao, st.readAt]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -110,8 +110,12 @@ export function CrewInfo({ st, me, onChanged }: { st: CrewState; me: Session | n
       <div className="card-head"><h3>Members</h3><span className="chip chip-plum">strict majority votes</span></div>
       {crew.allowed.map(a => {
         const s = memberShare(crew, a);
-        return <div className="member" key={a}><Avatar id={a} /><div style={{ minWidth: 0 }}><div className="n">{shortName(a)}{crew.captain?.account_id === a && <span className="chip chip-butter">captain</span>}</div><div className="s">{s.shares > 0n ? 'holds shares, votes' : 'invited, no deposit yet'}</div></div>
-          <div className="share" style={{ ['--tone' as string]: memberHue(a) }}>{(s.bps / 100).toFixed(1)}%<i><b style={{ width: `${s.bps / 100}%` }} /></i></div></div>;
+        const exit = ragequitPreview(crew, s.shares);
+        return <div className="member" key={a}><Avatar id={a} /><div style={{ minWidth: 0 }}><div className="n">{shortName(a)}{crew.captain?.account_id === a && <span className="chip chip-butter">captain</span>}</div><div className="s">{s.shares > 0n ? 'holds shares, votes' : 'invited, no deposit yet'}</div>
+          {s.shares > 0n && <p className="mini">Ragequit: {formatNear(exit.near, 8)} NEAR{exit.tokens.map(t => ` + ${formatUnits(t.amount, st.assets.find(asset => asset.symbol === t.symbol)?.decimals ?? 0, st.assets.find(asset => asset.symbol === t.symbol)?.decimals ?? 0)} t${t.symbol}`).join('')}</p>}
+        </div>
+          <div className="share" style={{ ['--tone' as string]: memberHue(a) }}>{(s.bps / 100).toFixed(1)}%<i><b style={{ width: `${s.bps / 100}%` }} /></i></div>
+        </div>;
       })}
       <p className="mini" style={{ marginTop: 6, fontSize: 13 }}>Sputnik DAO <a className="hash" href={accountUrl(crew.dao)} target="_blank" rel="noreferrer">{crew.dao}</a> · {crew.slippage_bps / 100}% max slippage</p>
     </div>
@@ -122,12 +126,12 @@ export function CrewInfo({ st, me, onChanged }: { st: CrewState; me: Session | n
       {isMember && !isCaptain && <button className="btn btn-sm btn-block" style={{ marginTop: 12 }} disabled={!!busy} onClick={() => act('cap', proposeMe)}>{busy === 'cap' ? 'Filing…' : 'Propose me as captain'}</button>}
     </div>
     <div className="card">
-      <div className="card-head"><h3>Other DAO votes</h3></div>
+      <div className="card-head"><h3>DAO proposals</h3></div>
       {open.error ? <Notice error>Could not read DAO votes: {open.error}</Notice> : open.loading && !open.data ? <div className="skeleton" style={{ height: 60 }} /> : (open.data ?? []).length === 0 ? <MiniEmpty obj="vote">None open. Trade votes live in the chat.</MiniEmpty> :
         open.data!.map(p => <div key={p.id} style={{ padding: '10px 0', borderTop: '1px solid var(--line)' }}>
-          <p className="mini" style={{ color: 'var(--ink)' }}>{p.description}</p>
-          <div className="row-between" style={{ marginTop: 8 }}><span className="faint mono" style={{ fontSize: 11 }}>#{p.id} · {Object.keys(p.votes).length} voted</span>
-            {isMember && !p.votes[me!.accountId] && <button className="btn btn-sm btn-butter" disabled={!!busy} onClick={() => act(`v${p.id}`, () => vote(me!, crew.dao, p.id, p.kind, true, crew.id))}><Ic name="thumb" size={15} />Approve</button>}</div>
+          <p className="mini" style={{ color: 'var(--ink)', overflowWrap: 'anywhere' }}>{p.description}</p>
+          <div className="row-between" style={{ marginTop: 8 }}><span className="faint mono" style={{ fontSize: 11 }}>#{p.id} · {p.status} · {tally(p, st.policy).approve}/{tally(p, st.policy).needed} approvals · {Object.keys(p.votes).length} voted</span>
+            {isMember && p.status === 'InProgress' && !p.votes[me!.accountId] && !p.description.startsWith('Kumi invite') && <button className="btn btn-sm btn-butter" disabled={!!busy} onClick={() => act(`v${p.id}`, () => vote(me!, crew.dao, p.id, p.kind, true, crew.id))}><Ic name="thumb" size={15} />Approve</button>}</div>
         </div>)}
       {error && <Notice error>{error}</Notice>}
     </div>

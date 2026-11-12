@@ -63,7 +63,9 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[], refreshMs = 0
   return { ...state, reload };
 }
 
-export function useConfig() { return useAsync(() => api<Config>('/api/config'), []); }
+export function useConfig() {
+  return useAsync(async () => (await api<{ config: Config | null }>('/api/availability')).config, [], 10_000);
+}
 
 export type HubState = { hub: string; assets: Asset[]; crews: Crew[]; marks: Mark[]; readAt: number };
 export async function readHub(hub = HUB, rpc = rpcUrl()): Promise<HubState> {
@@ -90,13 +92,13 @@ export async function readProposals(dao: string, ids: number[]): Promise<Record<
 }
 
 /** Live crew chat over WebSocket. */
-export function useChat(crewId: number | null) {
+export function useChat(crewId: number | null, enabled = true) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<'connecting' | 'live' | 'offline'>('connecting');
   const [error, setError] = useState<string | null>(null);
   const ws = useRef<WebSocket | null>(null);
   useEffect(() => {
-    if (crewId === null) return;
+    if (crewId === null || !enabled) { setStatus('offline'); return; }
     let stop = false;
     let retry: ReturnType<typeof setTimeout>;
     const open = () => {
@@ -115,7 +117,7 @@ export function useChat(crewId: number | null) {
     };
     open();
     return () => { stop = true; clearTimeout(retry); ws.current?.close(); };
-  }, [crewId]);
+  }, [crewId, enabled]);
   const send = useCallback((payload: unknown) => {
     if (ws.current?.readyState !== WebSocket.OPEN) { setError('Chat is offline. Start the Kumi server with: pnpm run server'); return false; }
     setError(null);

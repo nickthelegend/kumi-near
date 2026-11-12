@@ -11,13 +11,15 @@
     "run:testnet": "tsx scripts/testnet-run.ts",
     "verify:testnet": "tsx scripts/verify-testnet.ts",
     "dev": "pnpm --filter @kumi/web dev",
-    "server": "pnpm --filter @kumi/server start"
+    "server": "pnpm --filter @kumi/server start",
+    "test:e2e": "tsx scripts/e2e.ts"
   },
   "devDependencies": {
     "@kumi/sdk": "workspace:*",
     "@kumi/server": "workspace:*",
     "@types/node": "22.15.30",
     "near-api-js": "5.0.0",
+    "playwright-core": "1.65.0",
     "tsx": "4.20.6",
     "typescript": "5.9.3"
   },
