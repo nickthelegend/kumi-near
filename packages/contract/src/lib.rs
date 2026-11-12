@@ -378,21 +378,6 @@ impl Kumi {
         require!(crew.shares.get(&proposer).copied().unwrap_or(0) > 0, "ERR_NOT_SHAREHOLDER");
         require!(!crew.allowed.contains(&account_id), "ERR_ALREADY_MEMBER");
         require!(crew.allowed.len() < MAX_MEMBERS, "ERR_MEMBERS");
-        Promise::new(crew.dao.clone())
-            .function_call("get_proposal", json!({"id": role_proposal_id}).to_string().into_bytes(), NearToken::from_yoctonear(0), GAS_VIEW_PROPOSAL)
-            .then(Self::ext(env::current_account_id()).with_static_gas(Gas::from_tgas(75))
-                .on_invite_checked(crew_id, account_id, proposer, role_proposal_id))
-    }
-
-    #[private]
-    pub fn on_invite_checked(&mut self, crew_id: u64, account_id: AccountId, proposer: AccountId, role_proposal_id: u64) -> Promise {
-        let role = promise_json(0);
-        require!(role["kind"] == invitation_role(&account_id), "ERR_INVITE_ROLE");
-        require!(role["proposer"].as_str() == Some(proposer.as_str()), "ERR_INVITE_PROPOSER");
-        require!(role["status"] == "InProgress" || role["status"] == "Approved", "ERR_INVITE_ROLE_STATE");
-        let crew = self.crew(crew_id);
-        require!(crew.shares.get(&proposer).copied().unwrap_or(0) > 0, "ERR_NOT_SHAREHOLDER");
-        require!(!crew.allowed.contains(&account_id), "ERR_ALREADY_MEMBER");
         let dao = crew.dao.clone();
         let id = invite_count(crew_id);
         env::storage_write(&invite_count_key(crew_id), &(id + 1).to_le_bytes());
@@ -443,6 +428,7 @@ impl Kumi {
         let mut invite = read_invite(crew_id, invite_id);
         require!(invite.status == "voting", "ERR_INVITE_STATE");
         require!(role["kind"] == invitation_role(&invite.account_id) && role["status"] == "Approved", "ERR_INVITE_ROLE_STATE");
+        require!(role["proposer"].as_str() == Some(invite.proposer.as_str()), "ERR_INVITE_PROPOSER");
         let crew = self.crew(crew_id);
         require_shareholder_majority(&crew, &gate);
         require_shareholder_majority(&crew, &role);

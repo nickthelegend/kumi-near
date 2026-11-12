@@ -4,7 +4,7 @@
   "packageManager": "pnpm@10.29.2",
   "scripts": {
     "build": "pnpm -r build && pnpm build:contracts",
-    "build:contracts": "cargo near build non-reproducible-wasm --no-abi --manifest-path packages/contract/Cargo.toml && cargo near build non-reproducible-wasm --no-abi --manifest-path packages/testpool/Cargo.toml",
+    "build:contracts": "cargo near build non-reproducible-wasm --no-abi --manifest-path packages/contract/Cargo.toml && cargo near build non-reproducible-wasm --no-abi --manifest-path packages/testpool/Cargo.toml && node scripts/compact-contract.mjs",
     "test": "pnpm -r test && pnpm test:contracts",
     "test:contracts": "node scripts/fetch-sputnik.mjs && cargo test --workspace -- --test-threads=1",
     "deploy:testnet": "tsx scripts/deploy-testnet.ts",
