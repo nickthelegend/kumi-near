@@ -31,4 +31,4 @@ The human posts this (209 characters; limit 280):
 pooling money with friends shouldn't mean handing one person the keys. kumi puts trade votes in a Sputnik DAO, with exits and on-chain receipts. built at NEAR HACKATHON on testnet. @NEARProtocol #NEARHackathon
 ```
 
-attach: /Volumes/Extreme SSD/Projects/grokbot/videos/kumi-near/kumi-near-film-share.mp4
+attach: kumi-near-film-share.mp4
