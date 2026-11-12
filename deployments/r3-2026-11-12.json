@@ -1,0 +1,38 @@
+{
+  "network": "testnet",
+  "status": "running",
+  "started_at": "2026-11-12T12:08:51.387Z",
+  "total_cap_yocto": "300000000000000000000000",
+  "transactions": [
+    {
+      "step": "hub_storage_buffer",
+      "hash": "FHyvWM2WeBVdmZLN5oWSZ1ZjdaZ6DUvTejqR62BPtqb3",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/FHyvWM2WeBVdmZLN5oWSZ1ZjdaZ6DUvTejqR62BPtqb3",
+      "gas_yocto": "44636512500000000000",
+      "deposits_yocto": "220740182144323800000014",
+      "cumulative_yocto": "220784818656823800000014",
+      "events": [],
+      "failure": null
+    },
+    {
+      "step": "deploy_invitation_gate",
+      "hash": "5gszqu6JzNPbYM93Y83m5duCAF1dEJqELhbtszrLGPZq",
+      "signer": "hub.kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/5gszqu6JzNPbYM93Y83m5duCAF1dEJqELhbtszrLGPZq",
+      "gas_yocto": "3146906547631800000000",
+      "deposits_yocto": "0",
+      "cumulative_yocto": "223931725204455600000014",
+      "events": [],
+      "failure": null
+    }
+  ],
+  "before": {
+    "code_hash": "EGMA9HvgXMkBuD838EdxPDQMYWDFvRtQUEqLdGab5dYB",
+    "storage_usage": 430128,
+    "crew_count": 1
+  },
+  "new_code_hash": "46jqjVAFdFqHApnYzEvmZbpis2cy2uhHwbGt6Xxn5nte",
+  "storage_topup_yocto": "220740182144323800000014",
+  "deployed": true
+}
