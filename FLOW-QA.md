@@ -114,3 +114,26 @@ Screenshots were captured locally during QA and are not committed.
 - Before: `before-offline-1440.png`, `before-offline-375.png`. After: `r3-invite-draft-1440.png`, `r3-invite-draft-375.png`, `r3-invite-admitted-1440.png`, `r3-invite-admitted-375.png`, `r3-chip-in-receipt-1440.png`, `r3-chip-in-receipt-375.png`, `r3-member-board-1440.png`, `r3-member-board-375.png`.
 - PASS: three new sandbox tests cover complete admission and join, outsider/unfunded invite rejection, and native DAO approvals that fail the current-shareholder recount. All 16 Rust tests pass. SDK: 13; server: 4, including relayer restrictions on invitation roles and outsiders. Production web and server typechecks pass.
 - Historical Nov 11 statements about a missing invite command are superseded by this R3 result. No second crew or account-key deletion was performed.
+
+## Judging R3 — full harness and budget stop (Nov 12)
+
+Screenshots were captured locally during QA and are not committed.
+
+| Ordered step | Result | Evidence |
+| --- | --- | --- |
+| Landing → understand → browse/detail/season | PASS | Credential-free production preview at 1440/375; `r3-read-only-landing-1440.png`, `r3-read-only-lobby-375.png`, `r3-read-only-crew-1440.png`, `r3-read-only-season-375.png`. |
+| Offline room → holdings/NAV → members/exits → proposals/votes/captain | FIXED | 14 read-only browser states; `r3-read-only-room-1440.png`, `r3-read-only-room-375.png`, member and proposal screenshots listed above. All values are checked against the listed view calls. |
+| Email sign-in | PASS | `G21xLgarYvEBUyBDgVgcKbBsj34iiSTtFym5fZiL3KP9`; `r3-sign-in-1440.png`, `r3-sign-in-375.png`. |
+| Follow 0.01 NEAR | PASS | `HtDLSG9nSSjwkvGheuvY72yiHMDRSwFuKmrqpERdorAu`; `r3-follow-1440.png`, `r3-follow-375.png`. |
+| Post invitation → file role/gate → both shareholders approve | PASS | Proposals #16/#17 approved; invitation #0 admitted; exact hashes above and in the R3 ledger. |
+| Chip in 0.01 NEAR → member shares/position | PASS | `BznsdFreDnzMBiv4pE9pu6hA53QMWxThyvc1b2P2GEoU`; `r3-chip-in-receipt-1440.png`, `r3-chip-in-receipt-375.png`, refreshed `r3-member-board-1440.png`, `r3-member-board-375.png`. |
+| File SOL sale → vote → execution/receipt | BLOCKED | Trade #9 / proposal #18 was filed in `6wCdnEP5vtqiCi48BhCwVud37pbBoahVy7beViGgb81Y`. The corrected harness's preflight refused the next vote before broadcasting: 0.0162835976367066 NEAR remains, less than its 0.02145 NEAR gas reserve. No votes were sent. |
+| Captain trade | BLOCKED | Not reached because of the same total-budget limit; no R3 captain execution is claimed. |
+| Full ragequit → token payout → removed position/DAO vote | BLOCKED | Not reached because of the same total-budget limit. The new member retains its 0.01 NEAR deposit's shares. |
+| Follower-vault exit → final original members/followers | BLOCKED | Not reached; the fresh account remains a follower. |
+
+The committed harness uses headless Chrome under the shared lock, guards every write, resumes from local sessions and public step checkpoints, and cleans up its own preview, backend and browser. It checks console/network errors and overflow at both widths. Initial harness selector/loading races were fixed; the final stop is a budget refusal, not a completed full-run PASS.
+
+R3 totals: **12 transactions**, **0.0169762202189696 NEAR gas**, **0.2667401821443238 gross allocations**, **0.2837164023632934 combined**. The hub storage top-up was 0.2207401821443238 NEAR. The incomplete full browser run consumed 0.0597846771588378 NEAR, below its 0.1 NEAR sub-cap. All hashes and cumulative costs are in `deployments/r3-2026-11-12.json`; `pnpm exec tsx scripts/verify-r3.ts` rechecked all 12 receipts and exact fees. The hub still has its full-access key and only one crew exists. Native free balance was 0.33432864097884046 NEAR versus 0.32517554752647226 in crew/vault native books at verification.
+
+The first invitation run captured 12 unique browser states with zero errors/overflow; the resumed run recaptured the live member board at both widths. SDK/server/MCP: 18 tests pass. Rust: 16 tests passed earlier in R3. `pnpm test:e2e --read-only` passes; **a complete `pnpm test:e2e` pass remains BLOCKED**. No additional budget was assumed and no further writes were made after the guard refusal.

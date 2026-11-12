@@ -21,13 +21,14 @@ export class Budget {
     this.save();
   }
   get spent() { return this.evidence.transactions.reduce((sum, r) => sum + BigInt(r.gas_yocto) + BigInt(r.deposits_yocto), 0n); }
-  beginFullRun() { this.scopeStart = this.spent; this.evidence.full_run_started_at = new Date().toISOString(); this.save(); }
+  beginFullRun() { this.scopeStart = BigInt(String(this.evidence.full_run_baseline_yocto ?? this.spent)); this.evidence.full_run_baseline_yocto = this.scopeStart.toString(); this.evidence.full_run_started_at = new Date().toISOString(); this.save(); }
   get fullSpent() { return this.scopeStart === null ? 0n : this.spent - this.scopeStart; }
   async guard(step: string, signer: string, gas: bigint, deposit = 0n, depositor = signer) {
     if (!signer.endsWith('.testnet') || !depositor.endsWith('.testnet')) throw new Error('Testnet accounts only');
     const price = BigInt((await rpc<{ gas_price: string }>('gas_price', [null])).gas_price);
     const reserve = gas * price * 11n / 10n + deposit;
-    if (this.spent + reserve > TOTAL_CAP || this.scopeStart !== null && this.fullSpent + reserve > ONE / 10n) throw new Error(`BLOCKED: budget guard refused ${step}`);
+    if (this.spent + reserve > TOTAL_CAP) throw new Error(`BLOCKED: budget guard refused ${step}; ${TOTAL_CAP - this.spent} yoctoNEAR remains, ${reserve} is reserved for gas and deposit`);
+    if (this.scopeStart !== null && this.fullSpent + reserve > ONE / 10n) throw new Error(`BLOCKED: full-run budget refused ${step}; ${ONE / 10n - this.fullSpent} yoctoNEAR remains, ${reserve} is reserved`);
     const account = await viewAccount(signer);
     const free = BigInt(account.amount) - BigInt(account.storage_usage) * 10n ** 19n;
     if (free < gas * price * 11n / 10n + (depositor === signer ? deposit : 0n)) throw new Error(`BLOCKED: ${signer} balance too low for ${step}`);
@@ -51,5 +52,5 @@ export class Budget {
     await this.guard(step, signer, gas, deposit, depositor);
     const result = await send(); await this.record(step, result.transaction.hash, signer, deposit); return result;
   }
-  save() { writeFileSync(this.file, JSON.stringify(this.evidence, null, 2) + '\n'); }
+  save() { writeFileSync(this.file, JSON.stringify(this.evidence, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2) + '\n'); }
 }

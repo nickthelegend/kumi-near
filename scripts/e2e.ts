@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium, type Page } from 'playwright-core';
-import { computePnl, formatNear, getAssets, getCrew, getMarks, getPolicy, getProposals, getReceipts, ragequitPreview, tally, view } from '@kumi/sdk';
+import { computePnl, formatNear, formatUnits, held, memberShare, getAssets, getCrew, getMarks, getPolicy, getProposals, getReceipts, ragequitPreview, tally, view } from '@kumi/sdk';
 import evidence from '../deployments/testnet-2026-11-09.json' with { type: 'json' };
 import { freePort, preview, SHOTS, withChromeLock } from './e2e-support.js';
 
@@ -42,14 +42,23 @@ async function readOnly() {
             assert(text.includes('Chat and actions need'), 'Offline setup sentence missing from fund');
             assert(text.includes(pnl.navNear.toFixed(4)), 'NAV differs from chain');
             for (const [member, shares] of crew.members) {
+              const row = fund.locator('.member').filter({ hasText: member.split('.')[0] });
+              assert.equal(await row.count(), 1, 'Member row missing or duplicated');
+              assert((await row.locator('.share').innerText()).includes(`${(memberShare(crew, member).bps / 100).toFixed(1)}%`), 'Member shares differ from chain');
               assert(text.includes(member.split('.')[0]));
               assert(text.includes(`Ragequit: ${formatNear(ragequitPreview(crew, BigInt(shares)).near, 8)} NEAR`), 'Exit differs from chain');
             }
+            assert((await fund.locator('.holding').first().innerText()).includes(formatNear(crew.near, 4)), 'Native holding differs');
+            for (const [n, asset] of assets.entries()) assert((await fund.locator('.holding').nth(n + 1).innerText()).includes(formatUnits(held(crew.tokens, asset.symbol), asset.decimals, Math.min(asset.decimals, 8))), 'Token holding differs');
             for (const proposal of proposals) {
               const count = tally(proposal, policy);
               assert(text.includes(`#${proposal.id} · ${proposal.status} · ${count.approve}/${count.needed} approvals`), 'Proposal count differs from chain');
             }
-            if (crew.captain) assert(text.includes(`${crew.captain.max_bps / 100}%`), 'Captain limit differs');
+            if (crew.captain) {
+              assert(text.includes(`${crew.captain.max_bps / 100}%`), 'Captain size limit differs');
+              assert(text.includes(`${crew.captain.max_daily} a day, in ${crew.captain.assets.join(', ')}`), 'Captain daily/asset limits differ');
+              assert(text.includes(`${crew.captain_trades_today} used today`), 'Captain usage differs');
+            }
           }
           await shot(p, `r3-read-only-${name}`);
           if (name === 'room') {
@@ -65,6 +74,14 @@ async function readOnly() {
 }
 try {
   if (readonly) await readOnly();
-  else throw new Error('BLOCKED: full browser flow is being added; use --read-only for the credential-free checks');
-  console.log(`PASS: ${checks.length} browser states; no writes, no credentials, no console errors`);
-} finally { mkdirSync(SHOTS, { recursive: true }); writeFileSync(join(SHOTS, 'r3-e2e-read-only.json'), JSON.stringify({ checks, errors }, null, 2)); }
+  else await (await import('./e2e-full.js')).fullFlow(shot, errors);
+  console.log(`PASS: ${checks.length} browser states; ${readonly ? 'no writes, no credentials, ' : ''}no console errors`);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error)); process.exitCode = 1;
+} finally {
+  mkdirSync(SHOTS, { recursive: true });
+  const file = join(SHOTS, readonly ? 'r3-e2e-read-only.json' : 'r3-e2e-full.json');
+  const previous = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
+  const runs = [...(previous.runs ?? []), { at: new Date().toISOString(), checks, errors, passed: !process.exitCode }];
+  writeFileSync(file, JSON.stringify({ checks, errors, runs }, null, 2));
+}

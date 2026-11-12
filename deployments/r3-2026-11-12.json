@@ -25,6 +25,126 @@
       "cumulative_yocto": "223931725204455600000014",
       "events": [],
       "failure": null
+    },
+    {
+      "step": "sign_in_create_account",
+      "hash": "G21xLgarYvEBUyBDgVgcKbBsj34iiSTtFym5fZiL3KP9",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/G21xLgarYvEBUyBDgVgcKbBsj34iiSTtFym5fZiL3KP9",
+      "gas_yocto": "7114989537500000000000",
+      "deposits_yocto": "26000000000000000000000",
+      "cumulative_yocto": "257046714741955600000014",
+      "events": [],
+      "failure": null
+    },
+    {
+      "step": "qamwdiemgn_follow",
+      "hash": "HtDLSG9nSSjwkvGheuvY72yiHMDRSwFuKmrqpERdorAu",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/HtDLSG9nSSjwkvGheuvY72yiHMDRSwFuKmrqpERdorAu",
+      "gas_yocto": "887007154009100000000",
+      "deposits_yocto": "10000000000000000000000",
+      "cumulative_yocto": "267933721895964700000014",
+      "events": [
+        "follow"
+      ],
+      "failure": null
+    },
+    {
+      "step": "mika_add_proposal",
+      "hash": "9aqGLHmx2DQVj4Ufo8uSPfx4fpKeZKGU48QVLiMfLiwG",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/9aqGLHmx2DQVj4Ufo8uSPfx4fpKeZKGU48QVLiMfLiwG",
+      "gas_yocto": "315701029735900000000",
+      "deposits_yocto": "0",
+      "cumulative_yocto": "268249422925700600000014",
+      "events": [],
+      "failure": null
+    },
+    {
+      "step": "mika_propose_invite",
+      "hash": "97fx6A24dBy7yjG2SHtBBfR8VgyaaDSvSTTqccjsCjwq",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/97fx6A24dBy7yjG2SHtBBfR8VgyaaDSvSTTqccjsCjwq",
+      "gas_yocto": "814574077688000000000",
+      "deposits_yocto": "0",
+      "cumulative_yocto": "269063997003388600000014",
+      "events": [
+        "invite_proposed"
+      ],
+      "failure": null
+    },
+    {
+      "step": "mika_act_proposal",
+      "hash": "AxUS4RXudoAN5Az4euR4DF6mD1CKAaagbWF7QdvXCtrZ",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/AxUS4RXudoAN5Az4euR4DF6mD1CKAaagbWF7QdvXCtrZ",
+      "gas_yocto": "334046320718500000000",
+      "deposits_yocto": "0",
+      "cumulative_yocto": "269398043324107100000014",
+      "events": [],
+      "failure": null
+    },
+    {
+      "step": "juno_act_proposal",
+      "hash": "777ghHY21m2csV8gA8JvWGsqRShm7jwnjqjWvmK5hvqe",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/777ghHY21m2csV8gA8JvWGsqRShm7jwnjqjWvmK5hvqe",
+      "gas_yocto": "402725749336700000000",
+      "deposits_yocto": "0",
+      "cumulative_yocto": "269800769073443800000014",
+      "events": [],
+      "failure": null
+    },
+    {
+      "step": "mika_act_proposal",
+      "hash": "BShvEzVwBNiYaaMkfvqhb26FaEvEyHqEv1mFtsdNqjhU",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/BShvEzVwBNiYaaMkfvqhb26FaEvEyHqEv1mFtsdNqjhU",
+      "gas_yocto": "338667957983000000000",
+      "deposits_yocto": "0",
+      "cumulative_yocto": "270139437031426800000014",
+      "events": [],
+      "failure": null
+    },
+    {
+      "step": "juno_act_proposal",
+      "hash": "8jqdM6oNeJhKuL2kbffUB11vsdqnFGwuHpzdhzywX4jc",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/8jqdM6oNeJhKuL2kbffUB11vsdqnFGwuHpzdhzywX4jc",
+      "gas_yocto": "1869371829417100000000",
+      "deposits_yocto": "0",
+      "cumulative_yocto": "272008808860843900000014",
+      "events": [
+        "member_added"
+      ],
+      "failure": null
+    },
+    {
+      "step": "qamwdiemgn_join",
+      "hash": "BznsdFreDnzMBiv4pE9pu6hA53QMWxThyvc1b2P2GEoU",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/BznsdFreDnzMBiv4pE9pu6hA53QMWxThyvc1b2P2GEoU",
+      "gas_yocto": "888048447607100000000",
+      "deposits_yocto": "10000000000000000000000",
+      "cumulative_yocto": "282896857308451000000014",
+      "events": [
+        "join"
+      ],
+      "failure": null
+    },
+    {
+      "step": "mika_propose_trade",
+      "hash": "6wCdnEP5vtqiCi48BhCwVud37pbBoahVy7beViGgb81Y",
+      "signer": "kumi-77b50457fb.testnet",
+      "explorer": "https://testnet.nearblocks.io/txns/6wCdnEP5vtqiCi48BhCwVud37pbBoahVy7beViGgb81Y",
+      "gas_yocto": "819545054842400000000",
+      "deposits_yocto": "0",
+      "cumulative_yocto": "283716402363293400000014",
+      "events": [
+        "trade_proposed"
+      ],
+      "failure": null
     }
   ],
   "before": {
@@ -34,5 +154,50 @@
   },
   "new_code_hash": "46jqjVAFdFqHApnYzEvmZbpis2cy2uhHwbGt6Xxn5nte",
   "storage_topup_yocto": "220740182144323800000014",
-  "deployed": true
+  "deployed": true,
+  "full_run_baseline_yocto": "223931725204455600000014",
+  "full_run_started_at": "2026-11-12T12:24:53.944Z",
+  "full_run": {
+    "handle": "qamwdiemgn",
+    "email": "qamwdiemgn@example.test",
+    "done": [
+      "sign-in",
+      "follow",
+      "invite",
+      "chip-in"
+    ],
+    "started_at": "2026-11-12T12:13:40.535Z",
+    "initial_members": [
+      "juno.kumi-77b50457fb.testnet",
+      "mika.kumi-77b50457fb.testnet"
+    ],
+    "initial_followers": [
+      "rin.kumi-77b50457fb.testnet",
+      "sora.kumi-77b50457fb.testnet"
+    ],
+    "inviteId": 0
+  },
+  "full_run_result": {
+    "status": "BLOCKED",
+    "reason": "BLOCKED: budget guard refused voted_trade_vote; 16283597636706599999986 yoctoNEAR remains, 21450000000000000000000 is reserved for gas and deposit",
+    "spent_yocto": "59784677158837800000000",
+    "steps": [
+      "sign-in",
+      "follow",
+      "invite",
+      "chip-in"
+    ]
+  },
+  "browser_checks": [
+    {
+      "screenshot": "r3-member-board-1440.png",
+      "width": 1440,
+      "overflow": 0
+    },
+    {
+      "screenshot": "r3-member-board-375.png",
+      "width": 375,
+      "overflow": 0
+    }
+  ]
 }
