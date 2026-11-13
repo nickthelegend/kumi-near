@@ -252,6 +252,78 @@
    "signer": "aki.kumi-77b50457fb.testnet",
    "explorer": "https://testnet.nearblocks.io/txns/EV9ZGBmNQLnMx1GQUkSayRk8b4ead3uEh2CpJSYS6cHK",
    "card": "ragequit with their exact share"
+  },
+  {
+   "step": "invite:invitation role filed",
+   "hash": "4QPK2riE4xzv21h1M5W6gePvjVfW8i1FBBu7JhMAawKn",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/4QPK2riE4xzv21h1M5W6gePvjVfW8i1FBBu7JhMAawKn",
+   "card": "/invite aki.kumi-77b50457fb.testnet",
+   "note": "Nov 14 re-shoot: aki re-invited and chipped in for the tab-bar takes"
+  },
+  {
+   "step": "invite:invitation gate filed",
+   "hash": "TBHyVoUg1v2B3sC29btpH5cmVqNJNznRTfSruajag99",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/TBHyVoUg1v2B3sC29btpH5cmVqNJNznRTfSruajag99",
+   "card": "/invite aki.kumi-77b50457fb.testnet",
+   "note": "Nov 14 re-shoot: aki re-invited and chipped in for the tab-bar takes"
+  },
+  {
+   "step": "invite:yes \u00b7 mika",
+   "hash": "Hdu67smXNFHTaGL53xEj7riSCAubhVn7cgt6BLLrC8ow",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/Hdu67smXNFHTaGL53xEj7riSCAubhVn7cgt6BLLrC8ow",
+   "card": "/invite aki.kumi-77b50457fb.testnet",
+   "note": "Nov 14 re-shoot: aki re-invited and chipped in for the tab-bar takes"
+  },
+  {
+   "step": "invite:yes \u00b7 mika",
+   "hash": "ARkxCZdCcuq7L352G6HHD8QP8HuGp6DykzVR5UGKZ5NQ",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/ARkxCZdCcuq7L352G6HHD8QP8HuGp6DykzVR5UGKZ5NQ",
+   "card": "/invite aki.kumi-77b50457fb.testnet",
+   "note": "Nov 14 re-shoot: aki re-invited and chipped in for the tab-bar takes"
+  },
+  {
+   "step": "invite:yes \u00b7 juno",
+   "hash": "Dw5Up4N5suRhNRsSjdRgCoBAL4VXw9H9F6VM25PW1AqS",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/Dw5Up4N5suRhNRsSjdRgCoBAL4VXw9H9F6VM25PW1AqS",
+   "card": "/invite aki.kumi-77b50457fb.testnet",
+   "note": "Nov 14 re-shoot: aki re-invited and chipped in for the tab-bar takes"
+  },
+  {
+   "step": "invite:yes \u00b7 juno",
+   "hash": "95msoNAonGGVya7NcZxoZh42Ck369fhqcTmPzAnnnK3n",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/95msoNAonGGVya7NcZxoZh42Ck369fhqcTmPzAnnnK3n",
+   "card": "/invite aki.kumi-77b50457fb.testnet",
+   "note": "Nov 14 re-shoot: aki re-invited and chipped in for the tab-bar takes"
+  },
+  {
+   "step": "invite:yes \u00b7 qamwdiemgn",
+   "hash": "6wNGtoYoC1N7qx5LFwc7x2aeHEpeBjPSoBFTwLHZwukK",
+   "signer": "qamwdiemgn.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/6wNGtoYoC1N7qx5LFwc7x2aeHEpeBjPSoBFTwLHZwukK",
+   "card": "/invite aki.kumi-77b50457fb.testnet",
+   "note": "Nov 14 re-shoot: aki re-invited and chipped in for the tab-bar takes"
+  },
+  {
+   "step": "system:admitted",
+   "hash": "6wNGtoYoC1N7qx5LFwc7x2aeHEpeBjPSoBFTwLHZwukK",
+   "signer": "qamwdiemgn.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/6wNGtoYoC1N7qx5LFwc7x2aeHEpeBjPSoBFTwLHZwukK",
+   "card": "invited by a shareholder majority",
+   "note": "Nov 14 re-shoot: aki re-invited and chipped in for the tab-bar takes"
+  },
+  {
+   "step": "system:join",
+   "hash": "9hK7GEuJDqgDpyzxpufWyRNGN9GM2rkAQZgJoAaEvpuQ",
+   "signer": "aki.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/9hK7GEuJDqgDpyzxpufWyRNGN9GM2rkAQZgJoAaEvpuQ",
+   "card": "joined the crew",
+   "note": "Nov 14 re-shoot: aki re-invited and chipped in for the tab-bar takes"
   }
  ],
  "updated_at": "2026-11-13T16:54:17.658Z",

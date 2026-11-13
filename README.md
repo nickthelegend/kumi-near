@@ -41,7 +41,7 @@ Kumi is also a native phone app: `mobile/` is an Expo Router app (React Native 0
 | Screen | What it does on NEAR testnet |
 | --- | --- |
 | Onboarding | **Create my key** makes an ed25519 key on the phone (expo-crypto CSPRNG) and keeps it in the iOS keychain (expo-secure-store, this device only). A name and an email code later, Kumi's relayer creates `<name>.kumi-77b50457fb.testnet` with that key. |
-| Your crews | Your crews with their last message and live fund value, other crews, and an **On-chain now** feed of the hub's receipts. |
+| Your crews | Your crews with their last message and live fund value, other crews, and an **On-chain now** feed of the hub's receipts. Navigation is an icon-only floating tab bar (Chats, Market, Top, Wallet) with a springy active blob and a raised centre button that opens the crew room. |
 | Join code / Scan | Your join code (`kumi://invite/0/<account>`) as a QR; a member scans it (camera or photo) and the app drafts `/invite <account>`. |
 | Crew room | Messages signed by each member's NEAR key over the server WebSocket; `/buy SOL 10%` cards with the testnet pool quote and a mainnet NEAR Intents dry quote; **Put it to a vote**; the live Sputnik tally (shareholders, needs N, who voted) that springs when a vote lands; **Vote yes / No**; "You cast the deciding vote" when your vote runs the trade; invite cards with both DAO votes. |
 | Fund | Value and return rebuilt from the hub's receipts (count-up on change), your position and exact exit, chip in, **Leave with my share** (ragequit), holdings, members, follower vault, captain lane. |

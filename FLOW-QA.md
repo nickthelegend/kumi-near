@@ -29,6 +29,11 @@ Defects found and fixed during the run: the app aborted when the native CSPRNG r
 | 21 | `ios-21-nearblocks-vote.png` | The deciding vote on NearBlocks (Success, delegate for aki) | PASS |
 | 22 | `ios-22-leave-confirm.png` | Leave: exact payout preview, Leaving with your share… | PASS |
 | 23 | `ios-23-left-with-share.png` | You left with your share: storage + ragequit tx links | PASS |
+| 24 | `ios-24-tabbar-crews.png` | Icon-only floating tab bar, springy coral blob, raised crew button (Nov 14) | PASS |
+| 25 | `ios-25-tabbar-market.png` | Market tab active (blob springs, light haptic) | PASS |
+| 26 | `ios-26-tabbar-top.png` | Top tab active | PASS |
+| 27 | `ios-27-tabbar-wallet.png` | Wallet tab active | PASS |
+| 28 | `ios-28-tabbar-no-crew.png` | No-crew empty state above the new bar | PASS |
 
 # Kumi full-flow QA — 2026-11-11
 

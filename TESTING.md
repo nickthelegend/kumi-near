@@ -6,7 +6,7 @@
 | --- | --- | ---: | --- |
 | Mobile links | `cd mobile && npm test` | 4 passed | Join codes (`kumi://invite/<crew>/<account.testnet>`), crew links, a pasted account, and refusal of anything else. |
 | Mobile types | `cd mobile && npx tsc --noEmit` | clean | The app and the shared SDK it bundles. |
-| iOS build | `mobile/scripts/build-ios-sim.sh` | passed | Release, arm64 simulator, ad-hoc signed; `Kumi-NEAR-iOS-Simulator.zip` (SHA-256 `1ed4aea9644f0064e32a4dd7814c6c3efb8bc414a37c0f7e8b14f9f1fc51363e`). |
+| iOS build | `mobile/scripts/build-ios-sim.sh` | passed | Release, arm64 simulator, ad-hoc signed; `Kumi-NEAR-iOS-Simulator.zip` (Nov 14 rebuild with the icon-only tab bar: SHA-256 `08bf59cc1d2d05b9ae9a98c2600a1bbea071ea9ad4b21414614d84c2fbd5b7aa`). |
 | SDK | `pnpm --filter @kumi/sdk test` | 14 passed | Adds: a provider that reports a rate limit inside a 200 body is skipped (and cooled for 30 s); the 408 fallback now accepts any listed backup (drpc is tried first). |
 | Relayer | `NEAR_RPC_URL=https://near-testnet.drpc.org pnpm --filter @kumi/server test` | 4 passed | Allow-list now refuses any attached NEAR in a relayed delegate (a delegate's deposit would be paid by the relayer); votes still relay. |
 | Live phone session | Release app on the iOS Simulator + `scripts/crew-act.ts` for the QA members | passed | New account, invite with two DAO votes, chip in (paid by the phone's account), deciding vote that runs the trade, ragequit. Hashes: `deployments/phone-2026-11-13.json`; screenshots: FLOW-QA.md (iOS). |
