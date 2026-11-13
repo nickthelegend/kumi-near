@@ -21,7 +21,7 @@ Before submitting, Nick fills the remaining fields and replaces the README's oth
 
 ## Risks and disclosures
 
-Q-002/Q-015: Kumi also has an [Avalanche edition](https://kumi-avax-web.vercel.app), built on Nov 12, 2026. This NEAR submission claims only the NEAR-specific code built in the hackathon window.
+The phone app (`mobile/`) is a NEAR port of the Avalanche edition's Expo app: its screens, components and art are reused, and its chain layer is new NEAR code (on-device NEAR key, NEP-366 delegates, Sputnik votes). Q-002/Q-015: Kumi also has an [Avalanche edition](https://kumi-avax-web.vercel.app), built on Nov 12, 2026. This NEAR submission claims only the NEAR-specific code built in the hackathon window.
 
 ## X post draft
 
@@ -31,4 +31,4 @@ The human posts this (209 characters; limit 280):
 pooling money with friends shouldn't mean handing one person the keys. kumi puts trade votes in a Sputnik DAO, with exits and on-chain receipts. built at NEAR HACKATHON on testnet. @NEARProtocol #NEARHackathon
 ```
 
-attach: kumi-near-film-share.mp4
+attach: kumi-near-film-share.mp4 (2:24, 720p, 5.6 MB: the Kumi iOS app on the iOS Simulator, recorded live on NEAR testnet; opens on a crew vote passing and the trade executing from the phone).

@@ -2,8 +2,8 @@
 // key generated in the player's browser) and submits their NEP-366 signed delegates, paying gas.
 // It only relays calls on an allow-list: the hub, the crews' DAOs, and the listed test pools.
 import { readFileSync } from 'node:fs';
-import { Account, Connection, InMemorySigner, KeyPair, keyStores, transactions, utils } from 'near-api-js';
-import { decodeDelegate, describeDelegate, kumiEvents, listCrews, getAssets, rpc as rpcCall, txFailure, TESTNET_RPC, TESTNET_RPC_FALLBACKS, accountExists, viewAccessKey, type TxStatus } from '@kumi/sdk';
+import { Account, Connection, InMemorySigner, KeyPair, keyStores, transactions } from 'near-api-js';
+import { decodeDelegate, describeDelegate, kumiEvents, listCrews, getAssets, sendActions, txFailure, TESTNET_RPC, accountExists, viewAccessKey, type TxStatus } from '@kumi/sdk';
 import { PublicKey } from '@near-js/crypto';
 
 export const ONE_NEAR = 10n ** 24n;
@@ -18,6 +18,7 @@ export class Relayer {
   /** Where the relayer polls for finality (defaults to `rpc`); every public fallback is tried too. */
   readonly readRpc: string;
   private account: Account;
+  private key: KeyPair;
 
   constructor(cfg: RelayerConfig) {
     this.accountId = cfg.accountId;
@@ -27,7 +28,8 @@ export class Relayer {
     const creds = JSON.parse(readFileSync(cfg.credentialsFile, 'utf8')) as { account_id?: string; private_key?: string };
     if (creds.account_id !== cfg.accountId || !creds.private_key) throw new Error(`Relayer credentials in ${cfg.credentialsFile} do not belong to ${cfg.accountId}`);
     const keyStore = new keyStores.InMemoryKeyStore();
-    keyStore.setKey(cfg.networkId ?? 'testnet', cfg.accountId, KeyPair.fromString(creds.private_key as `ed25519:${string}`));
+    this.key = KeyPair.fromString(creds.private_key as `ed25519:${string}`);
+    keyStore.setKey(cfg.networkId ?? 'testnet', cfg.accountId, this.key);
     const connection = Connection.fromConfig({ networkId: cfg.networkId ?? 'testnet', provider: { type: 'JsonRpcProvider', args: { url: this.rpc } },
       signer: new InMemorySigner(keyStore), jsvmAccountId: `jsvm.${cfg.networkId ?? 'testnet'}` });
     this.account = new Account(connection, cfg.accountId);
@@ -75,30 +77,11 @@ export class Relayer {
   async balance(): Promise<bigint> { return BigInt((await this.account.state()).amount); }
 
   /**
-   * Signs a transaction from the relayer, broadcasts it without waiting (send_tx, wait_until INCLUDED: an invalid transaction fails here), then polls for FINAL on
-   * the read provider and the public fallbacks. A rate-limited or slow provider can delay the receipt but never makes
-   * the relayer resend a different transaction for the same signed delegate.
+   * Signs a transaction from the relayer and sends it through the SDK (send_tx INCLUDED, then FINAL), which spreads
+   * load over the read provider and the public fallbacks and skips any that are rate-limiting.
    */
   private async send(receiverId: string, actions: unknown[]): Promise<TxStatus> {
-    const [hashBytes, signed] = await withRetry(() => (this.account as unknown as { signTransaction(r: string, a: unknown[]): Promise<[Uint8Array, unknown]> }).signTransaction(receiverId, actions));
-    const hash = utils.serialize.base_encode(hashBytes);
-    const encoded = Buffer.from((signed as { encode(): Uint8Array }).encode()).toString('base64');
-    const urls = [...new Set([this.readRpc, this.rpc, TESTNET_RPC, ...TESTNET_RPC_FALLBACKS])];
-    let sent = false;
-    for (const u of urls) {
-      try { await rpcCall('send_tx', { signed_tx_base64: encoded, wait_until: 'INCLUDED' }, u); sent = true; break; } catch { /* next provider */ }
-    }
-    if (!sent) throw new Error(`Could not broadcast ${hash}: every NEAR testnet RPC refused it`);
-    const until = Date.now() + 120_000;
-    for (let i = 0; Date.now() < until; i++) {
-      await new Promise(r => setTimeout(r, i ? 1200 : 1800));
-      const u = urls[i % urls.length]!;
-      try {
-        const tx = await rpcCall<TxStatus & { final_execution_status?: string }>('EXPERIMENTAL_tx_status', { tx_hash: hash, sender_account_id: this.accountId, wait_until: 'NONE' }, u);
-        if (tx.final_execution_status === 'FINAL' && tx.receipts_outcome?.length) return tx;
-      } catch { /* not seen yet, or this provider is busy */ }
-    }
-    throw new Error(`Transaction ${hash} was sent but not final after 2 minutes; check it on NearBlocks`);
+    return sendActions({ senderId: this.accountId, keyPair: this.key as never, receiverId, actions: actions as never, rpc: this.readRpc });
   }
 }
 
@@ -145,15 +128,3 @@ export async function checkDelegate(b64: string, ctx: { relayerId: string; hub: 
 }
 
 export class RelayRefused extends Error {}
-
-/** The public RPC rate-limits by IP (HTTP 429 / code -429). A signed delegate stays valid for
- * ~120 blocks, so back off and resend instead of failing the player's action. */
-async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
-  for (let attempt = 0; ; attempt++) {
-    try { return await fn(); }
-    catch (e) {
-      if (attempt >= 5 || !/429|Rate limits exceeded/i.test(String(e))) throw e;
-      await new Promise(r => setTimeout(r, 1500 * 2 ** attempt));
-    }
-  }
-}

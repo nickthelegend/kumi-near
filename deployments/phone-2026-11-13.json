@@ -1,22 +1,259 @@
 {
-  "network": "testnet",
-  "rpc": "https://rpc.testnet.near.org",
-  "started_at": "2026-11-13T16:54:06.451Z",
-  "accounts": {
-    "dao": "owls-mw1n.sputnikv2.testnet",
-    "relayer": "kumi-77b50457fb.testnet",
-    "hub": "hub.kumi-77b50457fb.testnet"
+ "network": "testnet",
+ "rpc": "https://rpc.testnet.near.org",
+ "started_at": "2026-11-13T16:54:06.451Z",
+ "accounts": {
+  "dao": "owls-mw1n.sputnikv2.testnet",
+  "relayer": "kumi-77b50457fb.testnet",
+  "hub": "hub.kumi-77b50457fb.testnet"
+ },
+ "config": {},
+ "transactions": [
+  {
+   "step": "fund_dao_storage_1794588846452",
+   "hash": "DUnBuQ3nk2CHs9TXpYg8tw28ymnZUjJzxwacmjinGphq",
+   "signer": "kumi-77b50457fb.testnet",
+   "receiver": "owls-mw1n.sputnikv2.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/DUnBuQ3nk2CHs9TXpYg8tw28ymnZUjJzxwacmjinGphq",
+   "note": "relayer -> owls-mw1n.sputnikv2.testnet (0.200 NEAR) for proposal storage"
   },
-  "config": {},
-  "transactions": [
-    {
-      "step": "fund_dao_storage_1794588846452",
-      "hash": "DUnBuQ3nk2CHs9TXpYg8tw28ymnZUjJzxwacmjinGphq",
-      "signer": "kumi-77b50457fb.testnet",
-      "receiver": "owls-mw1n.sputnikv2.testnet",
-      "explorer": "https://testnet.nearblocks.io/txns/DUnBuQ3nk2CHs9TXpYg8tw28ymnZUjJzxwacmjinGphq",
-      "note": "relayer -> owls-mw1n.sputnikv2.testnet (0.200 NEAR) for proposal storage"
-    }
-  ],
-  "updated_at": "2026-11-13T16:54:17.658Z"
+  {
+   "step": "phone_signup_ren",
+   "hash": "Bjgh4ohvY4PncF4Bd2KasSqiLo8hAb1bUNPEqr838sNB",
+   "explorer": "https://testnet.nearblocks.io/txns/Bjgh4ohvY4PncF4Bd2KasSqiLo8hAb1bUNPEqr838sNB",
+   "note": "Kumi relayer creates the phone account (key made on the iOS Simulator)"
+  },
+  {
+   "step": "phone_signup_aki",
+   "hash": "AbjUXBBALx6hNhY8KYf3J7s4A4vjW9UvBQLP9sM1j3Xv",
+   "explorer": "https://testnet.nearblocks.io/txns/AbjUXBBALx6hNhY8KYf3J7s4A4vjW9UvBQLP9sM1j3Xv",
+   "note": "Kumi relayer creates the phone account (key made on the iOS Simulator)"
+  },
+  {
+   "step": "invite:invitation role filed (failed)",
+   "hash": "22qadH1cd8s7NSojMPmimSYtPPHKg82ew7xH65etSjbX",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/22qadH1cd8s7NSojMPmimSYtPPHKg82ew7xH65etSjbX",
+   "card": "/invite ren.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:invitation gate filed (failed)",
+   "hash": "4LgmpRJs2mR1qAtktnadS4Xg8ycN3qwBKiQ3X5566TMt",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/4LgmpRJs2mR1qAtktnadS4Xg8ycN3qwBKiQ3X5566TMt",
+   "card": "/invite ren.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:invitation role filed",
+   "hash": "R4GvVZPtvV8DQGdiL6Vo8ttL8Vndojpy6GouM1wCzpN",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/R4GvVZPtvV8DQGdiL6Vo8ttL8Vndojpy6GouM1wCzpN",
+   "card": "/invite ren.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:invitation gate filed",
+   "hash": "BtHjYxLkeAy2SM6R9c49kN8CEn6nDt7zrPRPjdkyqEjU",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/BtHjYxLkeAy2SM6R9c49kN8CEn6nDt7zrPRPjdkyqEjU",
+   "card": "/invite ren.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 mika",
+   "hash": "5mo3N1VYhvCJzkqCej96MgPW58QbVQeJqgdErFwVifft",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/5mo3N1VYhvCJzkqCej96MgPW58QbVQeJqgdErFwVifft",
+   "card": "/invite ren.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 mika",
+   "hash": "GC5HMcHxYWNahdzoErfTHLzY8DEisTxRnYAeuNX5FHsq",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/GC5HMcHxYWNahdzoErfTHLzY8DEisTxRnYAeuNX5FHsq",
+   "card": "/invite ren.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 juno",
+   "hash": "D8TDizxZwK2owfyxYF8VKmzrrx4juUSc1BDsWi8WKhZL",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/D8TDizxZwK2owfyxYF8VKmzrrx4juUSc1BDsWi8WKhZL",
+   "card": "/invite ren.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 juno",
+   "hash": "Gb2bqg25dqZSP47Cc1d6vRaMBneeVfx1Uh7DocUQwLAY",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/Gb2bqg25dqZSP47Cc1d6vRaMBneeVfx1Uh7DocUQwLAY",
+   "card": "/invite ren.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 qamwdiemgn",
+   "hash": "9JKmPZSPteGxRZopWjtjJWQ4BpQkP2pf8q4j1c1Pe4ad",
+   "signer": "qamwdiemgn.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/9JKmPZSPteGxRZopWjtjJWQ4BpQkP2pf8q4j1c1Pe4ad",
+   "card": "/invite ren.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "system:admitted",
+   "hash": "9JKmPZSPteGxRZopWjtjJWQ4BpQkP2pf8q4j1c1Pe4ad",
+   "signer": "qamwdiemgn.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/9JKmPZSPteGxRZopWjtjJWQ4BpQkP2pf8q4j1c1Pe4ad",
+   "card": "invited by a shareholder majority"
+  },
+  {
+   "step": "trade:proposed by mika",
+   "hash": "EKXMhf8q7VPqW7CuvFyyuv494Xt1oT83fZeMM9BhGSyo",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/EKXMhf8q7VPqW7CuvFyyuv494Xt1oT83fZeMM9BhGSyo",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "trade:yes \u00b7 mika",
+   "hash": "CuGRASVLHWQ7vDDhD8oC6nNjgsWR81ww4jMk3ahZy8Wf",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/CuGRASVLHWQ7vDDhD8oC6nNjgsWR81ww4jMk3ahZy8Wf",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "trade:yes \u00b7 juno",
+   "hash": "Fq3K9D4tmcs6SXJwBDSVNW6E8TyM4qW2U1v9nwPw6kcr",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/Fq3K9D4tmcs6SXJwBDSVNW6E8TyM4qW2U1v9nwPw6kcr",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "trade:yes \u00b7 ren",
+   "hash": "DtEgsF5TUQKSvxXbjM6eTdkQiMYo7JFHg91hweh9gYfi",
+   "signer": "ren.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/DtEgsF5TUQKSvxXbjM6eTdkQiMYo7JFHg91hweh9gYfi",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "trade:executed",
+   "hash": "DtEgsF5TUQKSvxXbjM6eTdkQiMYo7JFHg91hweh9gYfi",
+   "signer": "ren.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/DtEgsF5TUQKSvxXbjM6eTdkQiMYo7JFHg91hweh9gYfi",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "system:join",
+   "hash": "nPZgvxcwTskozwNxKkcRNzVje33knTDVN7mJ2j71yaA",
+   "signer": "ren.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/nPZgvxcwTskozwNxKkcRNzVje33knTDVN7mJ2j71yaA",
+   "card": "joined the crew"
+  },
+  {
+   "step": "system:ragequit",
+   "hash": "9o9T4Jq56suuMkeNvrjC3hP2rhMNVTmZPjAabSyW5w15",
+   "signer": "ren.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/9o9T4Jq56suuMkeNvrjC3hP2rhMNVTmZPjAabSyW5w15",
+   "card": "ragequit with their exact share"
+  },
+  {
+   "step": "invite:invitation role filed",
+   "hash": "2XgXjqN7aVwzmAshiSj6gQ9JKZzUJwRPbuSVMxQQu9dL",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/2XgXjqN7aVwzmAshiSj6gQ9JKZzUJwRPbuSVMxQQu9dL",
+   "card": "/invite aki.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:invitation gate filed",
+   "hash": "9Y72eB9qi2Tra3PFUKTBu4FP5buN5E6GJyDT3oFGjDQ9",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/9Y72eB9qi2Tra3PFUKTBu4FP5buN5E6GJyDT3oFGjDQ9",
+   "card": "/invite aki.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 mika",
+   "hash": "3aJdoBqAxgLc9kJtX4fWkEXApWYbu4C7M7FWpEgrTGz6",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/3aJdoBqAxgLc9kJtX4fWkEXApWYbu4C7M7FWpEgrTGz6",
+   "card": "/invite aki.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 mika",
+   "hash": "5saxwrQXw5YW5fhDRXH5FE3Et2GJqMoPeGYCiUR4jcEW",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/5saxwrQXw5YW5fhDRXH5FE3Et2GJqMoPeGYCiUR4jcEW",
+   "card": "/invite aki.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 juno",
+   "hash": "DgGsVy4Ki5seZDaC8yZ8sm3EyECADgWKj7jZE9JGjfDC",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/DgGsVy4Ki5seZDaC8yZ8sm3EyECADgWKj7jZE9JGjfDC",
+   "card": "/invite aki.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 juno",
+   "hash": "5R53AW5fLt1kcH5EEkUueFoNFGHLabyhewCc9s2YG7cW",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/5R53AW5fLt1kcH5EEkUueFoNFGHLabyhewCc9s2YG7cW",
+   "card": "/invite aki.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "invite:yes \u00b7 qamwdiemgn",
+   "hash": "TSNLLLPZPym6P3bXCp9amVUmu31nwD6vtDVg2u6fzhp",
+   "signer": "qamwdiemgn.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/TSNLLLPZPym6P3bXCp9amVUmu31nwD6vtDVg2u6fzhp",
+   "card": "/invite aki.kumi-77b50457fb.testnet"
+  },
+  {
+   "step": "system:admitted",
+   "hash": "TSNLLLPZPym6P3bXCp9amVUmu31nwD6vtDVg2u6fzhp",
+   "signer": "qamwdiemgn.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/TSNLLLPZPym6P3bXCp9amVUmu31nwD6vtDVg2u6fzhp",
+   "card": "invited by a shareholder majority"
+  },
+  {
+   "step": "system:join",
+   "hash": "5GHLYvqNhShnewpFxCEa2j14ksKg3UvpnxyasvJYsaDg",
+   "signer": "aki.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/5GHLYvqNhShnewpFxCEa2j14ksKg3UvpnxyasvJYsaDg",
+   "card": "joined the crew"
+  },
+  {
+   "step": "trade:proposed by mika",
+   "hash": "H7u95zbECinaLZpbmSovL3VqyjB79SU83MbNx66iCzh2",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/H7u95zbECinaLZpbmSovL3VqyjB79SU83MbNx66iCzh2",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "trade:yes \u00b7 mika",
+   "hash": "8nx2Lbmb4CWARDtPsMrM9QuTVXyuemjKxCKQnE2U6Raz",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/8nx2Lbmb4CWARDtPsMrM9QuTVXyuemjKxCKQnE2U6Raz",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "trade:yes \u00b7 juno",
+   "hash": "EeC9UDENXJKGXaxpiaB1MQaGNCGzoPjUfdmN1WaJzvaS",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/EeC9UDENXJKGXaxpiaB1MQaGNCGzoPjUfdmN1WaJzvaS",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "trade:yes \u00b7 aki",
+   "hash": "UK2SFWdLh8wKzH4xH6G2TXTJqZemWiRBFpbFVF1riUk",
+   "signer": "aki.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/UK2SFWdLh8wKzH4xH6G2TXTJqZemWiRBFpbFVF1riUk",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "trade:executed",
+   "hash": "UK2SFWdLh8wKzH4xH6G2TXTJqZemWiRBFpbFVF1riUk",
+   "signer": "aki.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/UK2SFWdLh8wKzH4xH6G2TXTJqZemWiRBFpbFVF1riUk",
+   "card": "/buy SOL 10%"
+  },
+  {
+   "step": "system:ragequit",
+   "hash": "EV9ZGBmNQLnMx1GQUkSayRk8b4ead3uEh2CpJSYS6cHK",
+   "signer": "aki.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/EV9ZGBmNQLnMx1GQUkSayRk8b4ead3uEh2CpJSYS6cHK",
+   "card": "ragequit with their exact share"
+  }
+ ],
+ "updated_at": "2026-11-13T16:54:17.658Z",
+ "note": "Nov 13 phone session: the Kumi iOS app (Release build on the iOS Simulator) on NEAR testnet. ren = rehearsal account; aki = the film account. mika, juno and qamwdiemgn are Kumi QA accounts acting through scripts/crew-act.ts (the same server and relayer). Fund-DAO and send-near rows are relayer top-ups."
 }

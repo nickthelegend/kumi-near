@@ -1,5 +1,16 @@
 # Testing record
 
+## Nov 13 phone app (iOS, Expo) and relayer changes
+
+| Suite | Command | Count | What it checks |
+| --- | --- | ---: | --- |
+| Mobile links | `cd mobile && npm test` | 4 passed | Join codes (`kumi://invite/<crew>/<account.testnet>`), crew links, a pasted account, and refusal of anything else. |
+| Mobile types | `cd mobile && npx tsc --noEmit` | clean | The app and the shared SDK it bundles. |
+| iOS build | `mobile/scripts/build-ios-sim.sh` | passed | Release, arm64 simulator, ad-hoc signed; `Kumi-NEAR-iOS-Simulator.zip` (SHA-256 `1ed4aea9644f0064e32a4dd7814c6c3efb8bc414a37c0f7e8b14f9f1fc51363e`). |
+| SDK | `pnpm --filter @kumi/sdk test` | 14 passed | Adds: a provider that reports a rate limit inside a 200 body is skipped (and cooled for 30 s); the 408 fallback now accepts any listed backup (drpc is tried first). |
+| Relayer | `NEAR_RPC_URL=https://near-testnet.drpc.org pnpm --filter @kumi/server test` | 4 passed | Allow-list now refuses any attached NEAR in a relayed delegate (a delegate's deposit would be paid by the relayer); votes still relay. |
+| Live phone session | Release app on the iOS Simulator + `scripts/crew-act.ts` for the QA members | passed | New account, invite with two DAO votes, chip in (paid by the phone's account), deciding vote that runs the trade, ragequit. Hashes: `deployments/phone-2026-11-13.json`; screenshots: FLOW-QA.md (iOS). |
+
 ## Nov 11 full-flow QA
 
 The production web build and server typecheck pass. The current JavaScript suites pass **15 tests**: SDK 11 (including HTTP 408 provider fallback), server 3 (including returning-browser identity), and MCP 1. `pnpm verify:testnet` passes against all 46 Nov 9 hashes via the public archival testnet RPC, all 3 deployed code hashes, live DAO policy and receipt-derived P&L.

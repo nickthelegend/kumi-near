@@ -16,21 +16,36 @@ export const accountUrl = (id: string) => `${EXPLORER}/address/${id}`;
 export class ChainError extends Error {}
 
 /** Tried in order when the primary public RPC rate-limits (HTTP 429) or errors. */
-export const TESTNET_RPC_FALLBACKS = ['https://rpc.testnet.near.org', 'https://near-testnet.drpc.org'];
+export const TESTNET_RPC_FALLBACKS = ['https://near-testnet.drpc.org', 'https://rpc.testnet.near.org'];
 
+/** Providers that answered 429 recently are skipped for 30 s, so a burst spreads across the public RPCs. */
+const cooling = new Map<string, number>();
 export async function rpc<T>(method: string, params: unknown, url = rpcUrl()): Promise<T> {
   // A same-origin proxy (the Kumi server) falls back to the public RPCs if it is down.
-  const urls = url === TESTNET_RPC ? [url, ...TESTNET_RPC_FALLBACKS] : url.includes('/api/rpc') ? [url, TESTNET_RPC, ...TESTNET_RPC_FALLBACKS] : [url];
+  const all = url === TESTNET_RPC || TESTNET_RPC_FALLBACKS.includes(url) ? [url, ...[TESTNET_RPC, ...TESTNET_RPC_FALLBACKS].filter(u => u !== url)]
+    : url.includes('/api/rpc') ? [url, TESTNET_RPC, ...TESTNET_RPC_FALLBACKS] : [url];
+  const fresh = all.filter(u => (cooling.get(u) ?? 0) < Date.now());
+  const urls = fresh.length ? fresh : all;
   let response: Response | undefined;
   let used = url;
-  // Public RPCs rate-limit bursts; back off, then fall back, then fail loudly.
+  // A rate-limited provider is skipped at once (and cooled); other errors back off, then fall back, then fail loudly.
   outer: for (const u of urls) {
     for (let attempt = 0; attempt < 3; attempt++) {
       used = u;
       try {
         response = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 'kumi', method, params }), signal: AbortSignal.timeout(12000) });
       } catch { response = undefined; }
-      if (response && response.status !== 429 && response.status !== 408 && response.status < 500 && response.status !== 404) break outer;
+      if (response && response.status === 429) { cooling.set(u, Date.now() + 30_000); continue outer; }
+      if (response && response.ok && urls.length > 1) {
+        // Some providers report rate limits inside a 200/400 body; treat those like a 429.
+        const text = await response.clone().text();
+        if (/rate limit|Rate limits exceeded|-429|free plan/i.test(text) && !/"result"/.test(text.slice(0, 60))) { cooling.set(u, Date.now() + 30_000); response = undefined; continue outer; }
+      }
+      if (response && response.status === 400 && urls.length > 1) {
+        const text = await response.clone().text();
+        if (/rate limit|free plan|not available/i.test(text)) { cooling.set(u, Date.now() + 30_000); response = undefined; continue outer; }
+      }
+      if (response && response.status !== 408 && response.status < 500 && response.status !== 404) break outer;
       if (response && (response.status === 502 || response.status === 404) && u.includes('/api/rpc')) break;
       await new Promise(r => setTimeout(r, 600 * 2 ** attempt));
     }

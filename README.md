@@ -34,6 +34,32 @@ Recorded highlights (exact links from the deployment files):
 
 Testnet trades use Kumi's labelled tSOL/tBTC pools. NEAR Intents 1Click supplies mainnet dry quotes only; live mainnet swaps and private trading are not enabled. The hub still has its deployer's full-access key. Full evidence and limits appear below.
 
+## Phone app (iOS, Expo)
+
+Kumi is also a native phone app: `mobile/` is an Expo Router app (React Native 0.88, Expo SDK 58) with the same screens, components and clay art as Kumi's Avalanche phone app, and NEAR as its only chain. The film (`kumi-near-film.mp4`) is this app on the iOS Simulator, recorded live on NEAR testnet.
+
+| Screen | What it does on NEAR testnet |
+| --- | --- |
+| Onboarding | **Create my key** makes an ed25519 key on the phone (expo-crypto CSPRNG) and keeps it in the iOS keychain (expo-secure-store, this device only). A name and an email code later, Kumi's relayer creates `<name>.kumi-77b50457fb.testnet` with that key. |
+| Your crews | Your crews with their last message and live fund value, other crews, and an **On-chain now** feed of the hub's receipts. |
+| Join code / Scan | Your join code (`kumi://invite/0/<account>`) as a QR; a member scans it (camera or photo) and the app drafts `/invite <account>`. |
+| Crew room | Messages signed by each member's NEAR key over the server WebSocket; `/buy SOL 10%` cards with the testnet pool quote and a mainnet NEAR Intents dry quote; **Put it to a vote**; the live Sputnik tally (shareholders, needs N, who voted) that springs when a vote lands; **Vote yes / No**; "You cast the deciding vote" when your vote runs the trade; invite cards with both DAO votes. |
+| Fund | Value and return rebuilt from the hub's receipts (count-up on change), your position and exact exit, chip in, **Leave with my share** (ragequit), holdings, members, follower vault, captain lane. |
+| Market | tSOL/tBTC pool price (live), price history from receipts, what a buy would get and its price impact, the crew's fills, a 1Click mainnet reference quote. |
+| Top | This week's season and the crew's callers, marked live. |
+| Wallet | Account, live balance, crews, join code, every transaction this phone signed with its NearBlocks link, key backup. |
+
+Votes, pitches, invites and chat cost the player nothing: the phone signs NEP-366 delegates and Kumi's relayer pays the gas. Anything that attaches NEAR (chip in, follow, token storage) is a normal transaction the phone signs and pays for itself, so player money never comes from the relayer. Not ported from the Avalanche app: its perps order book, eERC private sends, the gas station and Kumi AI.
+
+**Live phone session, Nov 13** (all hashes in [deployments/phone-2026-11-13.json](deployments/phone-2026-11-13.json)): a new account `aki` made on the simulator ([account](https://testnet.nearblocks.io/txns/AbjUXBBALx6hNhY8KYf3J7s4A4vjW9UvBQLP9sM1j3Xv)); Mika files `/invite aki` and the shareholders vote it in (crew role and hub admission); aki chips in 0.1 NEAR from its own account ([join](https://testnet.nearblocks.io/txns/5GHLYvqNhShnewpFxCEa2j14ksKg3UvpnxyasvJYsaDg)); Mika pitches `/buy SOL 10%`, Mika and Juno vote yes, and aki's tap on the phone is the deciding vote that runs the trade in the same transaction ([vote + trade](https://testnet.nearblocks.io/txns/UK2SFWdLh8wKzH4xH6G2TXTJqZemWiRBFpbFVF1riUk)); aki leaves with its exact share ([ragequit](https://testnet.nearblocks.io/txns/EV9ZGBmNQLnMx1GQUkSayRk8b4ead3uEh2CpJSYS6cHK)). Mika, Juno and `qamwdiemgn` are Kumi QA accounts acting live through `scripts/crew-act.ts`.
+
+Build and run:
+
+1. `pnpm run server` with `KUMI_SERVER_PORT=5411` (the app reads `EXPO_PUBLIC_KUMI_SERVER`, default `http://127.0.0.1:5411`). Optional `KUMI_READ_RPC_URL` gives reads their own provider.
+2. Dev: `cd mobile && npm install && npx expo start`, then open it in Expo Go on the simulator.
+3. Standalone iOS Simulator app: `mobile/scripts/build-ios-sim.sh` (Release, arm64, ad-hoc signed so the keychain works) writes `mobile/build-out/Kumi-NEAR-iOS-Simulator.zip` and its SHA-256; unzip, then `xcrun simctl install booted Kumi.app && xcrun simctl launch booted xyz.kumi.near`.
+4. Tests: `cd mobile && npm test` (join-code links) and `npx tsc --noEmit`.
+
 ## Product and local interaction guide
 
 Kumi gives each crew a Sputnik DAO. Chat commands become quoted trade proposals. A captain can trade within contract limits using a function-call key. Members can exit with their share when no swap is in flight. Followers can mirror the crew through a vault that charges fees above a high-water mark. Browser keys sign NEP-366 meta transactions; the relayer pays gas.
@@ -129,13 +155,14 @@ See [TESTING.md](TESTING.md). In short:
 - 10 sandbox tests run against the real testnet Sputnik factory and DAO code (one also runs the Nov 9 hub code and upgrades it), plus 3 contract unit tests.
 - 10 SDK tests, 2 relayer allow-list tests and 1 MCP stdio test.
 - The web build, and a recorded headless Chrome check of four routes at 1440 and 390 (see TESTING.md).
+- Phone app: 4 join-code link tests (`mobile`), `tsc` clean, a Release iOS Simulator build, and the live phone session above (FLOW-QA.md, iOS section).
 - `pnpm verify:testnet`.
 
 ## Trust boundary and gaps
 
 - The hub account still has its deployer's full-access key (`hub.kumi-77b50457fb.testnet`). Until that key is deleted, the deployer could upgrade the code. Deleting it is a one-way step for Nick to decide (see BLOCKED.md).
 - Testnet marks are **pool spot prices**, read on-chain at each join, follow and fee, so a large trade right before a join moves the mark. Pyth ended NEAR support. A mainnet build would need the Rhea oracle or a signed price relayer. A join priced while a swap is in flight is refused.
-- Players' keys live in browser localStorage. Linking a second device is not built: the server says so if an email signs in from a new browser.
+- Players' keys live in browser localStorage, or in the iOS keychain in the phone app. Linking a second device is not built: the server says so if an email signs in from a new browser.
 - Mainnet 1Click is quote-only (`dry: true`), and live swaps need `NEAR_MAINNET_ACCOUNT`. NEAR Intents has no testnet.
 - Demo scale: a crew has at most 16 members and a hub lists at most 4 assets.
 - The vote recount covers trades and both stages of membership invitations. Other DAO proposals (captain, policy) are tallied by Sputnik over the `crew` role, which also holds invited members who have not deposited yet. A member who ragequits leaves that role in the same transaction; if the removal fails, it is listed by `get_stale_voters` until `remove_ex_member` succeeds.
@@ -145,7 +172,7 @@ See [TESTING.md](TESTING.md). In short:
 - **Event:** Built for NEAR HACKATHON 2026 (Nov 1-14).
 - **Prior work before Nov 1, 2026:** No Kumi code is recorded before that date in this repo's non-shallow git history. The first commit is `1de3186d737183ff2f9174f515a954c31f3fed0b`, dated Nov 9, adding the MIT license and gitignore. LICENSE credits Nivesh Gajengi (2026); there is no NOTICE file. The README previously credited Alpha Group Trading on Solana as concept inspiration. This repo does not establish its authorship or any shared code, so it is not claimed as Kumi hackathon work.
 - **Built in the window:** The Nov 9 commits add the monorepo, an initial single-crew prototype, then the per-crew Sputnik hub, test pools, SDK, relayer, chat, web app, read-only MCP tools, tests and testnet deployment. Nov 10 adds the ragequit vote-removal fix and its testnet evidence. [REPORT.md](REPORT.md) distinguishes the earlier Nov 9 prototype from the implementation that replaced it. That prototype was also built in the window. Only NEAR work in the window is claimed for judging; external libraries and the earlier Solana concept are dependencies or inspiration. This disclosure uses Nov 1 as the conservative baseline cutoff; the [current official Q-001](https://nearhackathon.com/HACKATHON.md) allows work from the Oct 19 announcement.
-- **Other edition (Q-002/Q-015):** Kumi’s Avalanche edition was built on Nov 12, 2026 ([web app](https://kumi-avax-web.vercel.app), [phone app](https://kumi-avax-app.vercel.app)); this NEAR submission claims only the NEAR-specific code built in the hackathon window.
+- **Other edition (Q-002/Q-015):** Kumi’s Avalanche edition was built on Nov 12, 2026 ([web app](https://kumi-avax-web.vercel.app), [phone app](https://kumi-avax-app.vercel.app)); this NEAR submission claims only the NEAR-specific code built in the hackathon window. The phone app (`mobile/`, Nov 13) reuses that edition's Expo screens, components and art; its chain layer (on-device NEAR key, NEP-366 delegates, Sputnik votes, direct deposits) is new NEAR code.
 - **AI-assisted code:** Built with AI coding agents (Claude Code, Codex) under human direction; all code reviewed and tested by the team.
 - **Other projects by the same team in this hackathon:**
 

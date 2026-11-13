@@ -1,3 +1,35 @@
+# Phone app QA (iOS Simulator, Nov 13)
+
+The standalone Release build (`mobile/scripts/build-ios-sim.sh`) on an iPhone 17 Pro simulator (iOS 26.5), against the Kumi server on NEAR testnet. Screenshots are full-resolution (1206x2622) frames of the session recording, kept outside the repo in `orchestration/shots/kumi/ios/` under these names. Hashes: `deployments/phone-2026-11-13.json`.
+
+Defects found and fixed during the run: the app aborted when the native CSPRNG received a `Buffer` (key now from `expo-crypto` bytes); a stale polling loop overwrote fresh DAO tallies (each effect now owns its loop); relayed deposits were paid by the relayer (deposits now go from the player's account, and the relayer refuses attached NEAR); a rate-limited public RPC hung votes (async send + finality polling across providers, 30 s cooldown); the crew's DAO lacked storage for new proposals (topped up, recorded); a superseded failed invite card is hidden; dust amounts read `<0.000001`.
+
+| # | Screenshot | Checked | Result |
+| --- | --- | --- | --- |
+| 01 | `ios-01-onboarding.png` | Landing: hero art, 'Your group chat is a fund.', three steps | PASS |
+| 02 | `ios-02-key-ready.png` | Create my key: ed25519 key made on the phone, kept in the keychain | PASS |
+| 03 | `ios-03-signup-code.png` | Name + email; the code shows because the server has no RESEND_API_KEY (Setup required notice) | PASS |
+| 04 | `ios-04-on-near.png` | Relayer created aki.kumi-77b50457fb.testnet; account tx link | PASS |
+| 05 | `ios-05-crews-empty.png` | No crew yet: empty state with art and 'Show my join code' | PASS |
+| 06 | `ios-06-join-code.png` | Join code QR kumi://invite/0/aki… | PASS |
+| 07 | `ios-07-invite-voting.png` | Invite card: crew role + hub admission, live tallies | PASS |
+| 08 | `ios-08-invite-admitted.png` | Admitted; 'You were voted into the crew'; Chip in | PASS |
+| 09 | `ios-09-chip-in.png` | Fund sheet: chip in 0.1 NEAR (paid by the phone's own account) | FIXED (was relayer-funded) |
+| 10 | `ios-10-chipped-in.png` | You chipped in: tx link, value counts up 0.342 → 0.442 | PASS |
+| 11 | `ios-11-pitch-card.png` | BUY SOL 10%: pool quote + NEAR Intents dry quote | PASS |
+| 12 | `ios-12-vote-open.png` | 2 of 4 yes, needs 3, Vote yes / No | PASS |
+| 13 | `ios-13-deciding-vote-executed.png` | Executed: 'You cast the deciding vote… same transaction' | PASS |
+| 14 | `ios-14-fund.png` | Fund value + return from receipts, position, exact exit | PASS |
+| 15 | `ios-15-fund-members-vault-captain.png` | Members' shares, follower vault, captain lane | PASS |
+| 16 | `ios-16-chats-onchain-feed.png` | Your crews + On-chain now receipts feed | PASS |
+| 17 | `ios-17-market.png` | tSOL pool price, history from receipts, 1Click reference | PASS |
+| 18 | `ios-18-market-fills.png` | If the crew buys (impact) and crew fills | PASS |
+| 19 | `ios-19-top.png` | Season board + callers marked live | PASS |
+| 20 | `ios-20-wallet.png` | Account, balance, crews, join code, signed-on-this-phone list | PASS |
+| 21 | `ios-21-nearblocks-vote.png` | The deciding vote on NearBlocks (Success, delegate for aki) | PASS |
+| 22 | `ios-22-leave-confirm.png` | Leave: exact payout preview, Leaving with your share… | PASS |
+| 23 | `ios-23-left-with-share.png` | You left with your share: storage + ragequit tx links | PASS |
+
 # Kumi full-flow QA — 2026-11-11
 
 Completed report. PASS means observed working, FIXED means a reproduced defect was corrected and rechecked, and BLOCKED names an existing capability or setup limit.

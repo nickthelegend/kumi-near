@@ -2,7 +2,7 @@
 // wraps it in a transaction and pays the gas, so players never hold NEAR for gas or see a wallet.
 import { Buffer } from 'buffer';
 import { KeyPair, PublicKey } from '@near-js/crypto';
-import { actionCreators, buildDelegateAction, createTransaction, encodeSignedDelegate, encodeTransaction, signDelegateAction, Signature, SignedTransaction, SCHEMA, type SignedDelegate } from '@near-js/transactions';
+import { type Action, actionCreators, buildDelegateAction, createTransaction, encodeSignedDelegate, encodeTransaction, signDelegateAction, Signature, SignedTransaction, SCHEMA, type SignedDelegate } from '@near-js/transactions';
 import { deserialize } from 'borsh';
 import { latestBlock, rpc, rpcUrl, viewAccessKey, type TxStatus } from './chain.js';
 
@@ -54,15 +54,22 @@ function unb58(text: string): Uint8Array {
  * would make the relayer pay attached deposits). Sent with send_tx (wait_until INCLUDED, so an invalid transaction fails loudly), then polled to FINAL. Returns the final status.
  */
 export async function sendDirect(opts: { senderId: string; keyPair: KeyPair; receiverId: string; calls: CallSpec[]; rpc?: string }): Promise<TxStatus> {
+  const actions = opts.calls.map(c => actionCreators.functionCall(c.methodName, Buffer.from(JSON.stringify(c.args)), c.gas ?? 100n * TGAS, c.deposit ?? 0n));
+  return sendActions({ ...opts, actions });
+}
+
+/** Signs any actions from `senderId` with `keyPair`, sends with send_tx (INCLUDED) and polls to FINAL. */
+export async function sendActions(opts: { senderId: string; keyPair: KeyPair; receiverId: string; actions: Action[]; rpc?: string }): Promise<TxStatus> {
   const url = opts.rpc ?? rpcUrl();
   const publicKey = opts.keyPair.getPublicKey();
   const [key, block] = await Promise.all([viewAccessKey(opts.senderId, publicKey.toString(), url), latestBlock(url)]);
-  const actions = opts.calls.map(c => actionCreators.functionCall(c.methodName, Buffer.from(JSON.stringify(c.args)), c.gas ?? 100n * TGAS, c.deposit ?? 0n));
+  const actions = opts.actions;
   const tx = createTransaction(opts.senderId, publicKey, opts.receiverId, nextNonce(publicKey.toString(), BigInt(key.nonce)), actions, unb58(block.hash));
   const digest = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', encodeTransaction(tx) as Uint8Array<ArrayBuffer>));
   const signed = new SignedTransaction({ transaction: tx, signature: new Signature({ keyType: publicKey.keyType, data: opts.keyPair.sign(digest).signature }) });
   const hash = b58(digest);
-  await rpc('send_tx', { signed_tx_base64: Buffer.from(encodeTransaction(signed)).toString('base64'), wait_until: 'INCLUDED' }, url);
+  try { await rpc('send_tx', { signed_tx_base64: Buffer.from(encodeTransaction(signed)).toString('base64'), wait_until: 'INCLUDED' }, url); }
+  catch (e) { if (!/timeout|TIMEOUT/i.test(String(e))) throw e; /* accepted, still waiting: poll below */ }
   for (let i = 0; i < 80; i++) {
     await new Promise(r => setTimeout(r, i ? 1200 : 1500));
     try {
