@@ -5,8 +5,9 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+import { useIsFocused } from 'expo-router';
 import {
-  computePnl, getAssets, getCrew, getInvites, getMarks, getPolicy, getProposals, getReceipts, getTrades, listCrews, setDefaultRpc,
+  computePnl, getAssets, getCrew, getInvites, getMarks, getPolicy, getProposal, getReceipts, getTrades, listCrews, setDefaultRpc,
   signChat, signDelegate, storageBalance, txUrl, accountUrl, TESTNET_RPC, TGAS,
   type Asset, type CallSpec, type Crew, type DaoPolicy, type Invite, type Mark, type Pnl, type Proposal, type Receipt, type Trade, type TradeQuote,
 } from '@kumi/sdk';
@@ -51,27 +52,31 @@ export function nameOf(a: string | undefined | null, me?: string | null): string
 
 // ---------------------------------------------------------------- polling
 /** Polls `fn` every `ms` while the app is in the foreground; keeps the last good value when a refresh fails. */
-export function useLive<T>(fn: () => Promise<T>, deps: unknown[], ms = 5000) {
-  const [state, set] = useState<{ data?: T; error?: string; at?: number }>({});
+export function useLive<T>(fn: () => Promise<T>, deps: unknown[], ms = 5000, initial?: T) {
+  const [state, set] = useState<{ data?: T; error?: string; at?: number }>(initial === undefined ? {} : { data: initial });
   const [tick, setTick] = useState(0);
-  const alive = useRef(true);
+  // Tabs stay mounted: a screen that is not in front polls six times slower (the public RPC rate-limits by IP).
+  const focused = useIsFocused();
+  const front = useRef(focused);
+  front.current = focused;
   const key = JSON.stringify(deps);
   const lastKey = useRef(key);
   useEffect(() => {
-    alive.current = true;
+    // Each effect run owns its own loop: a re-run (new inputs, reload) stops the previous loop for good.
+    let active = true;
     if (lastKey.current !== key) { lastKey.current = key; set({}); }
     let timer: ReturnType<typeof setTimeout> | undefined;
     const run = async () => {
       try {
         const data = await fn();
-        if (alive.current) set({ data, at: Date.now() });
+        if (active) set({ data, at: Date.now() });
       } catch (e) {
-        if (alive.current) set(s => ({ ...s, error: readable(e) }));
+        if (active) set(s => ({ ...s, error: readable(e) }));
       }
-      if (alive.current && ms > 0) timer = setTimeout(run, AppState.currentState === 'active' || AppState.currentState == null ? ms : ms * 6);
+      if (active && ms > 0) timer = setTimeout(run, (AppState.currentState === 'active' || AppState.currentState == null) && front.current ? ms : ms * 6);
     };
     void run();
-    return () => { alive.current = false; if (timer) clearTimeout(timer); };
+    return () => { active = false; if (timer) clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, tick]);
   const reload = useCallback(() => setTick(t => t + 1), []);
@@ -82,7 +87,8 @@ export function useLive<T>(fn: () => Promise<T>, deps: unknown[], ms = 5000) {
 export function readable(e: unknown): string {
   const m = String((e as Error)?.message ?? e);
   if (/429|rate-limit/i.test(m)) return 'NEAR testnet RPC is rate-limiting right now. Retrying shortly.';
-  if (/Network request failed|unreachable|fetch|timed? ?out|aborted/i.test(m)) return 'NEAR testnet did not answer. Check the connection; retrying shortly.';
+  if (/timeout on the free plan|timed? ?out/i.test(m)) return 'NEAR took too long to confirm. The transaction may still land: the fund refreshes on its own.';
+  if (/Network request failed|unreachable|fetch|aborted/i.test(m)) return 'NEAR testnet did not answer. Check the connection; retrying shortly.';
   return m.replace(/^NEAR RPC:? ?/, '').split('\n')[0]!;
 }
 
@@ -98,7 +104,7 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
   const text = await r.text();
   let parsed: any = null;
   try { parsed = JSON.parse(text); } catch { /* below */ }
-  if (!r.ok || parsed === null) throw Error(parsed?.error ?? `Kumi server HTTP ${r.status}`);
+  if (!r.ok || parsed === null) throw Error(readable(parsed?.error ?? `Kumi server HTTP ${r.status}`));
   return parsed as T;
 }
 
@@ -196,23 +202,28 @@ export async function fileInvite(me: Account, crew: Crew, messageId: string, acc
 
 // ---------------------------------------------------------------- reads
 export type CrewState = { crew: Crew; invites: Invite[]; trades: Trade[]; receipts: Receipt[]; pnl: Pnl; assets: Asset[]; marks: Mark[]; policy: DaoPolicy; readAt: number };
+const crewCache = new Map<number, CrewState>();
+/** The last crew read on this phone, so a screen opened from another paints at once and then refreshes. */
+export const cachedCrew = (crewId = CREW_ID) => crewCache.get(crewId);
 export async function readCrew(crewId = CREW_ID): Promise<CrewState> {
   const crew = await getCrew(HUB, crewId);
   if (!crew) throw Error(`Crew ${crewId} does not exist on ${HUB}`);
   const [trades, receipts, assets, policy, invites] = await Promise.all([getTrades(HUB, crew), getReceipts(HUB, crew), getAssets(HUB), getPolicy(crew.dao), getInvites(HUB, crewId)]);
   const marks = await getMarks(assets);
-  return { crew, invites, trades, receipts, pnl: computePnl(receipts, crew, marks), assets, marks, policy, readAt: Date.now() };
+  const out = { crew, invites, trades, receipts, pnl: computePnl(receipts, crew, marks), assets, marks, policy, readAt: Date.now() };
+  crewCache.set(crewId, out);
+  return out;
 }
 export async function readHub() {
   const [assets, crews] = await Promise.all([getAssets(HUB), listCrews(HUB)]);
   return { assets, crews, marks: await getMarks(assets) };
 }
 export async function readProposals(dao: string, ids: number[]): Promise<Record<number, Proposal>> {
+  // Only the newest cards' proposals, each read on its own (a wide get_proposals range is slow and can time out).
+  const want = [...new Set(ids.filter(i => Number.isSafeInteger(i) && i >= 0))].sort((a, b) => a - b).slice(-8);
+  const got = await Promise.all(want.map(id => getProposal(dao, id).catch(() => null)));
   const out: Record<number, Proposal> = {};
-  const clean = ids.filter(i => Number.isSafeInteger(i) && i >= 0);
-  if (!clean.length) return out;
-  const from = Math.min(...clean), to = Math.max(...clean);
-  for (const p of await getProposals(dao, from, to - from + 1)) out[p.id] = p;
+  got.forEach(p => { if (p) out[p.id] = p; });
   return out;
 }
 export const isHolder = (crew: Crew | undefined, a?: string | null) => !!crew && !!a && crew.members.some(([m, n]) => m === a && BigInt(n) > 0n);

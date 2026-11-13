@@ -9,7 +9,7 @@ import { Backdrop } from '../../components/Screen';
 import { Bubble, EventPill, InviteCard, TradeCard } from '../../components/Message';
 import { CountUp, LiveDot } from '../../components/Live';
 import { Btn, CrewAvatar, Empty, Ic, Notice, Skeleton, TxLink, st, tap, useBusy } from '../../components/ui';
-import { fileInvite, fileTrade, isHolder, readCrew, readProposals, signedChat, useChat, useLive, vote, type ChatMessage } from '../../lib/near';
+import { fileInvite, fileTrade, isHolder, readCrew, cachedCrew, readProposals, signedChat, useChat, useLive, vote, type ChatMessage } from '../../lib/near';
 import { crewChat, useApp } from '../../lib/store';
 import { C, F, art } from '../../lib/theme';
 
@@ -30,12 +30,12 @@ export default function ChatRoom() {
   const [text, setText] = useState(typeof draft === 'string' ? draft : '');
   const [lastTxs, setLastTxs] = useState<{ hash: string; label: string }[]>([]);
   const room = useChat(crewId);
-  const live = useLive(() => readCrew(crewId), [crewId], 5000);
+  const live = useLive(() => readCrew(crewId), [crewId], 7000, cachedCrew(crewId));
   const st8 = live.data;
   const crew = st8?.crew;
 
   const ids = useMemo(() => room.messages.flatMap(m => [m.trade?.proposalId, m.invite?.roleProposalId, m.invite?.proposalId]).filter((x): x is number => typeof x === 'number'), [room.messages]);
-  const props = useLive(async () => (crew ? readProposals(crew.dao, ids.slice(-24)) : {}), [crew?.dao, ids.join(',')], 3000);
+  const props = useLive(async () => (crew ? readProposals(crew.dao, ids) : {}), [crew?.dao, ids.join(',')], 3500);
   // A card update (someone's vote landed) re-reads the DAO and the crew right away.
   useEffect(() => { props.reload(); live.reload(); }, [room.messages]);
   useEffect(() => { const last = room.messages[room.messages.length - 1]; if (last) markSeen(chat, last.ts); }, [room.messages.length]);
@@ -52,6 +52,10 @@ export default function ChatRoom() {
       if (m.kind !== 'text' || !m.text.startsWith('/')) return;
       const next = ms.slice(i + 1, i + 4).find(n => (n.kind === 'trade' || n.kind === 'invite') && n.account === m.account);
       if (next) hidden.add(m.id);
+    });
+    // An invite card whose filing failed is dropped once a later card invites the same account.
+    ms.forEach((m, i) => {
+      if (m.kind === 'invite' && m.txs.some(t => /\(failed\)/.test(t.label)) && ms.slice(i + 1).some(n => n.kind === 'invite' && n.invite?.accountId === m.invite?.accountId)) hidden.add(m.id);
     });
     return ms.filter(m => !hidden.has(m.id)).slice(-80).reverse();
   }, [room.messages]);
@@ -96,7 +100,7 @@ export default function ChatRoom() {
       const hash = m.txs[0]?.hash;
       if (/ragequit/.test(t)) return <EventPill who={m.account} me={me} tone="pink" icon="exit" text="left with their exact share" hash={hash} />;
       if (/joined/.test(t)) return <EventPill who={m.account} me={me} tone="butter" icon="coin" text="chipped in and got shares" hash={hash} />;
-      if (/invited/.test(t)) return <EventPill who={m.account} me={me} tone="mint" icon="plus" text="was voted into the crew" hash={hash} />;
+      if (/invited/.test(t)) return <EventPill who={m.account} me={me} tone="mint" icon="plus" text={m.account === me ? 'were voted into the crew' : 'was voted into the crew'} hash={hash} />;
       if (/follow/.test(t)) return <EventPill who={m.account} me={me} tone="mint" icon="star" text="started following the crew" hash={hash} />;
       return <EventPill who={m.account} me={me} tone="coral" icon="bolt" text={t} hash={hash} />;
     }

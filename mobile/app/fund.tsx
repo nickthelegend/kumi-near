@@ -8,7 +8,7 @@ import { Screen, SheetHeader } from '../components/Screen';
 import { inp } from '../components/Sheet';
 import { CountUp, LiveDot, Spark } from '../components/Live';
 import { Avatar, Btn, Card, Chip, Empty, Ic, Notice, Obj, Skeleton, TokenLogo, TxLink, st, tap, useBusy } from '../components/ui';
-import { chipIn, follow, isHolder, nameOf, near, priceOf, ragequit, readCrew, units, useLive } from '../lib/near';
+import { chipIn, follow, isHolder, nameOf, near, priceOf, ragequit, readCrew, cachedCrew, units, useLive } from '../lib/near';
 import { useApp } from '../lib/store';
 import { C, F, art } from '../lib/theme';
 
@@ -18,7 +18,7 @@ export default function Fund() {
   const crewId = Number(crewParam ?? 0) || 0;
   const { account, record } = useApp();
   const me = account?.accountId ?? null;
-  const live = useLive(() => readCrew(crewId), [crewId], 5000);
+  const live = useLive(() => readCrew(crewId), [crewId], 8000, cachedCrew(crewId));
   const bal = useLive(async () => (me ? BigInt((await viewAccount(me)).amount) : 0n), [me], 8000);
   const [w, setW] = useState(0);
   const [amount, setAmount] = useState('0.05');

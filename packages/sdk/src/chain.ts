@@ -16,7 +16,7 @@ export const accountUrl = (id: string) => `${EXPLORER}/address/${id}`;
 export class ChainError extends Error {}
 
 /** Tried in order when the primary public RPC rate-limits (HTTP 429) or errors. */
-export const TESTNET_RPC_FALLBACKS = ['https://rpc.testnet.near.org'];
+export const TESTNET_RPC_FALLBACKS = ['https://rpc.testnet.near.org', 'https://near-testnet.drpc.org'];
 
 export async function rpc<T>(method: string, params: unknown, url = rpcUrl()): Promise<T> {
   // A same-origin proxy (the Kumi server) falls back to the public RPCs if it is down.

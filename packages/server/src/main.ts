@@ -14,10 +14,12 @@ const need = (name: string) => {
 };
 const hub = need('KUMI_HUB');
 const relayerId = need('KUMI_RELAYER_ACCOUNT');
-const relayer = new Relayer({ accountId: relayerId, hub, rpc: process.env.NEAR_RPC_URL,
+const relayer = new Relayer({ accountId: relayerId, hub, rpc: process.env.NEAR_RPC_URL, readRpc: process.env.KUMI_READ_RPC_URL || undefined,
   credentialsFile: resolve(root, process.env.KUMI_RELAYER_CREDENTIALS ?? `.near-credentials/${relayerId}.json`) });
 const gift = BigInt(Math.round(Number(process.env.KUMI_GIFT_NEAR ?? '0.2') * 1000)) * 10n ** 21n;
-const { server } = createApp({ hub, relayer, store: new Store(resolve(root, 'data')), rpc: process.env.NEAR_RPC_URL, giftYocto: gift,
+// Reads (the app's RPC proxy, crew and quote reads) may use a separate provider from the relayer's sends, so a
+// burst of phone and browser polling cannot rate-limit the relayer's transactions on the same public endpoint.
+const { server } = createApp({ hub, relayer, store: new Store(resolve(root, 'data')), rpc: process.env.KUMI_READ_RPC_URL || process.env.NEAR_RPC_URL, giftYocto: gift,
   resendKey: process.env.RESEND_API_KEY || undefined, emailFrom: process.env.KUMI_EMAIL_FROM || undefined,
   mainnetAccount: process.env.NEAR_MAINNET_ACCOUNT || undefined, oneclickJwt: process.env.ONECLICK_JWT || undefined });
 const port = Number(process.env.KUMI_SERVER_PORT ?? 15196);

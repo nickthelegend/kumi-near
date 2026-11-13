@@ -2,25 +2,29 @@
 // key generated in the player's browser) and submits their NEP-366 signed delegates, paying gas.
 // It only relays calls on an allow-list: the hub, the crews' DAOs, and the listed test pools.
 import { readFileSync } from 'node:fs';
-import { Account, Connection, InMemorySigner, KeyPair, keyStores, transactions } from 'near-api-js';
-import { decodeDelegate, describeDelegate, kumiEvents, listCrews, getAssets, txStatus, txFailure, TESTNET_RPC, accountExists, viewAccessKey, type TxStatus } from '@kumi/sdk';
+import { Account, Connection, InMemorySigner, KeyPair, keyStores, transactions, utils } from 'near-api-js';
+import { decodeDelegate, describeDelegate, kumiEvents, listCrews, getAssets, rpc as rpcCall, txFailure, TESTNET_RPC, TESTNET_RPC_FALLBACKS, accountExists, viewAccessKey, type TxStatus } from '@kumi/sdk';
+import { PublicKey } from '@near-js/crypto';
 
 export const ONE_NEAR = 10n ** 24n;
 const MAX_DEPOSIT = ONE_NEAR; // per relayed call, except create_crew
 const DAO_DEPOSIT_CAP = 6n * ONE_NEAR;
 
-export type RelayerConfig = { accountId: string; credentialsFile: string; hub: string; rpc?: string; networkId?: string };
+export type RelayerConfig = { accountId: string; credentialsFile: string; hub: string; rpc?: string; networkId?: string; readRpc?: string };
 
 export class Relayer {
   readonly accountId: string;
   readonly hub: string;
   readonly rpc: string;
+  /** Where the relayer polls for finality (defaults to `rpc`); every public fallback is tried too. */
+  readonly readRpc: string;
   private account: Account;
 
   constructor(cfg: RelayerConfig) {
     this.accountId = cfg.accountId;
     this.hub = cfg.hub;
     this.rpc = cfg.rpc ?? TESTNET_RPC;
+    this.readRpc = cfg.readRpc ?? this.rpc;
     const creds = JSON.parse(readFileSync(cfg.credentialsFile, 'utf8')) as { account_id?: string; private_key?: string };
     if (creds.account_id !== cfg.accountId || !creds.private_key) throw new Error(`Relayer credentials in ${cfg.credentialsFile} do not belong to ${cfg.accountId}`);
     const keyStore = new keyStores.InMemoryKeyStore();
@@ -40,7 +44,7 @@ export class Relayer {
   async createPlayer(accountId: string, publicKey: string, gift: bigint): Promise<string> {
     if (!accountId.endsWith(`.${this.accountId}`)) throw new Error('Players are sub-accounts of the relayer');
     if (await accountExists(accountId, this.rpc)) throw new Error(`${accountId} already exists`);
-    const outcome = await withRetry(() => this.account.createAccount(accountId, publicKey, gift)) as unknown as TxStatus;
+    const outcome = await this.send(accountId, [transactions.createAccount(), transactions.transfer(gift), transactions.addKey(PublicKey.fromString(publicKey), transactions.fullAccessKey())]);
     const failure = txFailure(outcome);
     if (failure) throw new Error(`Account creation failed: ${failure}`);
     // Wait until the key is readable at 'final', so the player can sign right away.
@@ -60,10 +64,9 @@ export class Relayer {
     const signed = decodeDelegate(b64);
     const action = transactions.Action ? new transactions.Action({ signedDelegate: signed } as never) : null;
     if (!action) throw new Error('near-api-js has no SignedDelegate action');
-    const outcome = await withRetry(() => this.account.signAndSendTransaction({ receiverId: checked.summary.senderId, actions: [action], returnError: true })) as unknown as TxStatus;
-    const hash = outcome.transaction.hash;
     // Wait for every receipt (cross-contract callbacks included) at FINAL.
-    const tx = await txStatus(hash, this.accountId, this.rpc);
+    const tx = await this.send(checked.summary.senderId, [action]);
+    const hash = tx.transaction.hash;
     const failure = txFailure(tx);
     const last = [...tx.receipts_outcome].reverse().find(r => r.outcome.status.SuccessValue && r.outcome.executor_id === checked.summary.receiverId);
     const value = last?.outcome.status.SuccessValue ? Buffer.from(last.outcome.status.SuccessValue, 'base64').toString('utf8') : null;
@@ -71,6 +74,33 @@ export class Relayer {
   }
 
   async balance(): Promise<bigint> { return BigInt((await this.account.state()).amount); }
+
+  /**
+   * Signs a transaction from the relayer, broadcasts it without waiting (broadcast_tx_async), then polls for FINAL on
+   * the read provider and the public fallbacks. A rate-limited or slow provider can delay the receipt but never makes
+   * the relayer resend a different transaction for the same signed delegate.
+   */
+  private async send(receiverId: string, actions: unknown[]): Promise<TxStatus> {
+    const [hashBytes, signed] = await withRetry(() => (this.account as unknown as { signTransaction(r: string, a: unknown[]): Promise<[Uint8Array, unknown]> }).signTransaction(receiverId, actions));
+    const hash = utils.serialize.base_encode(hashBytes);
+    const encoded = Buffer.from((signed as { encode(): Uint8Array }).encode()).toString('base64');
+    const urls = [...new Set([this.readRpc, this.rpc, TESTNET_RPC, ...TESTNET_RPC_FALLBACKS])];
+    let sent = false;
+    for (const u of urls) {
+      try { await rpcCall('broadcast_tx_async', [encoded], u); sent = true; break; } catch { /* next provider */ }
+    }
+    if (!sent) throw new Error(`Could not broadcast ${hash}: every NEAR testnet RPC refused it`);
+    const until = Date.now() + 120_000;
+    for (let i = 0; Date.now() < until; i++) {
+      await new Promise(r => setTimeout(r, i ? 1200 : 1800));
+      const u = urls[i % urls.length]!;
+      try {
+        const tx = await rpcCall<TxStatus & { final_execution_status?: string }>('EXPERIMENTAL_tx_status', { tx_hash: hash, sender_account_id: this.accountId, wait_until: 'NONE' }, u);
+        if (tx.final_execution_status === 'FINAL' && tx.receipts_outcome?.length) return tx;
+      } catch { /* not seen yet, or this provider is busy */ }
+    }
+    throw new Error(`Transaction ${hash} was sent but not final after 2 minutes; check it on NearBlocks`);
+  }
 }
 
 /** The relayer's allow-list: player senders only, Kumi contracts only, capped deposits and gas. */

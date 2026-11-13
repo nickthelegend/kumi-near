@@ -6,7 +6,7 @@ import { Text } from '../../components/T';
 import { Screen } from '../../components/Screen';
 import { LiveDot } from '../../components/Live';
 import { Avatar, Card, Chip, CrewAvatar, Notice, Obj, Skeleton, st } from '../../components/ui';
-import { HUB, nameOf, readCrew, readHub, useLive } from '../../lib/near';
+import { HUB, nameOf, readCrew, cachedCrew, readHub, useLive } from '../../lib/near';
 import { useApp } from '../../lib/store';
 import { C, F, art } from '../../lib/theme';
 
@@ -22,7 +22,7 @@ export default function Top() {
     const rows = await Promise.all(h.crews.map(async c => seasonRow(c, computePnl(await getReceipts(HUB, c), c, h.marks))));
     return rankSeason(rows);
   }, [], 15000);
-  const crew = useLive(() => readCrew(0), [], 15000);
+  const crew = useLive(() => readCrew(0), [], 15000, cachedCrew(0));
   const callers = useMemo(() => {
     const d = crew.data;
     if (!d) return [];

@@ -114,7 +114,7 @@ export function createApp(cfg: AppConfig) {
     const cacheable = (method === 'query' && !rt.startsWith('view_access_key')) || method === 'block';
     const key = JSON.stringify([method, b.params]);
     const hit = rpcCache.get(key);
-    if (cacheable && hit && Date.now() - hit.at < 6000) return { jsonrpc: '2.0', id: b.id, result: hit.value };
+    if (cacheable && hit && Date.now() - hit.at < 2500) return { jsonrpc: '2.0', id: b.id, result: hit.value };
     try {
       // Identical reads in flight share one upstream call.
       let p = inflight.get(key);

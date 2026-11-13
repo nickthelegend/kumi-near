@@ -6,7 +6,7 @@ import { Text } from '../../components/T';
 import { Screen } from '../../components/Screen';
 import { CountUp, LiveDot, Spark } from '../../components/Live';
 import { Btn, Card, Chip, Notice, Skeleton, TokenLogo, TxLink, ago, st, tap } from '../../components/ui';
-import { HUB, nameOf, near, readCrew, units, useLive } from '../../lib/near';
+import { HUB, nameOf, near, readCrew, cachedCrew, units, useLive } from '../../lib/near';
 import { useApp } from '../../lib/store';
 import { C, F } from '../../lib/theme';
 
@@ -21,7 +21,7 @@ export default function Market() {
   const { account } = useApp();
   const router = useRouter();
   const [w, setW] = useState(0);
-  const crew = useLive(() => readCrew(0), [], 8000);
+  const crew = useLive(() => readCrew(0), [], 8000, cachedCrew(0));
   const asset = crew.data?.assets.find(a => a.symbol === sym);
   const pool = useLive(async () => (asset ? getReserves(asset.token) : null), [asset?.token], 4000);
   // A real mainnet 1Click dry quote for 1 NEAR -> the real asset (no funds move), refreshed once a minute.

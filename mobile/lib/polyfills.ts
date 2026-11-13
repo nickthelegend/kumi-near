@@ -11,9 +11,13 @@ import { sha256 } from '@noble/hashes/sha256';
 
 const g = globalThis as any;
 if (!g.crypto) g.crypto = {};
-if (typeof g.crypto.getRandomValues !== 'function') {
-  g.crypto.getRandomValues = <T extends ArrayBufferView | null>(array: T): T => ExpoCrypto.getRandomValues(array as any) as T;
-}
+// Always a plain Uint8Array to the native side (a Buffer or other view there aborts the app), copied into the caller's view.
+g.crypto.getRandomValues = <T extends ArrayBufferView | null>(array: T): T => {
+  if (!array) return array;
+  const bytes = ExpoCrypto.getRandomBytes(array.byteLength);
+  new Uint8Array(array.buffer, array.byteOffset, array.byteLength).set(bytes);
+  return array;
+};
 if (!g.crypto.subtle) g.crypto.subtle = {};
 if (typeof g.crypto.subtle.digest !== 'function') {
   g.crypto.subtle.digest = async (algo: string | { name: string }, data: ArrayBuffer | ArrayBufferView) => {

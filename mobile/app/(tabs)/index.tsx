@@ -27,7 +27,7 @@ export default function Chats() {
     const last = chats.map(l => l.filter(m => m.kind !== 'system').slice(-1)[0] ?? null);
     const unread = chats.map((l, i) => l.filter(m => m.ts > (seen[crewChat(h.crews[i]!.id)] ?? 0) && m.account !== me).length);
     return { ...h, receipts, last, unread };
-  }, [me, seen], 6000);
+  }, [me, seen], 10000);
   const d = hub.data;
   const rows = useMemo(() => (d ? d.crews.map((c, i) => ({ c, pnl: computePnl(d.receipts[i]!, c, d.marks), last: d.last[i], unread: d.unread[i] ?? 0, mine: !!me && c.allowed.includes(me) })) : []), [d, me]);
   const mine = rows.filter(r => r.mine);

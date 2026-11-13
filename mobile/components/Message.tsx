@@ -115,9 +115,9 @@ export function TradeCard({ m, me, crew, trade, proposal, assets, isMember, busy
   const asset = assets.find(a => a.symbol === t.asset);
   const dec = asset?.decimals ?? 8;
   const mine = !!me && m.account === me;
-  const status = t.error ? 'error' : proposal?.status === 'Expired' ? 'expired' : trade?.status ?? (q ? 'draft' : 'error');
+  const status = t.error ? 'error' : proposal?.status === 'Expired' ? 'expired' : trade?.status === 'executed' || trade?.status === 'failed' ? trade.status : proposal?.status === 'InProgress' ? 'voting' : trade?.status ?? (q ? 'draft' : 'error');
   const myVote = me ? proposal?.votes?.[me] : undefined;
-  const canVote = isMember && proposal?.status === 'InProgress' && !myVote && trade?.status === 'voting';
+  const canVote = isMember && proposal?.status === 'InProgress' && !myVote && trade?.status !== 'executed' && trade?.status !== 'failed';
   const canFile = mine && t.lane === 'vote' && q && t.proposalId === undefined && !t.error;
   const filled = trade?.status === 'executed';
   const buy = t.side === 'buy';
@@ -168,11 +168,7 @@ export function TradeCard({ m, me, crew, trade, proposal, assets, isMember, busy
           )}
           {myVote && !filled && <Chip text={myVote === 'Approve' ? 'You voted yes' : 'You voted no'} tone={myVote === 'Approve' ? 'mint' : 'pink'} dot />}
           {canFile && <Btn testID="file-trade" title={busy === 'file' ? 'Filing to the DAO…' : 'Put it to a vote'} tone="coral" icon="arrow" busy={busy === 'file'} onPress={onFile} />}
-          {m.txs.length > 0 && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 4 }}>
-              {m.txs.filter((x, i, a) => a.findIndex(y => y.hash === x.hash) === i).map(x => <TxLink key={x.hash + x.label} hash={x.hash} label={x.hash === exec?.hash ? 'vote + trade' : x.label} />)}
-            </View>
-          )}
+          {m.txs.length > 0 && <TxList txs={m.txs} rename={x => (x.hash === exec?.hash ? 'deciding vote + trade' : x.label)} />}
         </View>
       </View>
     </Animated.View>
@@ -184,7 +180,7 @@ function Leg({ k, sym, test, v, unit }: { k: string; sym: string; test?: boolean
     <View style={{ flex: 1, padding: 10, borderRadius: 16, backgroundColor: C.panel2, borderWidth: 1, borderColor: C.line, gap: 3 }}>
       <Text style={{ fontSize: 11.5, color: C.ink3, fontWeight: '600' }}>{k}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <TokenLogo sym={sym} size={20} test={test} />
+        <TokenLogo sym={sym} size={20} />
         <Text style={{ fontFamily: F.monoBold, fontSize: 14, color: C.ink, flexShrink: 1 }} numberOfLines={1}>{v}</Text>
       </View>
       <Text style={{ fontSize: 11, color: C.ink3 }}>{unit}</Text>
@@ -220,7 +216,7 @@ export function InviteCard({ m, me, crew, stored, role, gate, isHolder, busy, on
           {!admitted && <Text style={{ fontSize: 13.5, color: C.ink2, lineHeight: 19 }}>Two votes: the crew's DAO role, then the hub's admission. Each needs a majority of current shareholders.</Text>}
           {role && <VoteBand p={role} crew={crew} me={me} label="Crew role" />}
           {gate && <VoteBand p={gate} crew={crew} me={me} label="Hub admission" />}
-          {admitted && <Text style={{ fontSize: 13.5, color: C.mintInk, fontWeight: '700' }}>{isMe ? 'You are in. Chip in to get shares and a vote.' : `${nameOf(i.accountId, me)} can chip in now.`}</Text>}
+          {admitted && <Text style={{ fontSize: 13.5, color: C.mintInk, fontWeight: '700' }}>{isMe ? (isHolder ? 'You are in, with shares and a vote.' : 'You are in. Chip in to get shares and a vote.') : `${nameOf(i.accountId, me)} was voted in.`}</Text>}
           {canVote && (
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <Btn title={busy === 'invite' ? 'Signing…' : 'Vote yes'} tone="mint" icon="thumb" busy={busy === 'invite'} onPress={() => onVote(true)} style={{ flex: 1 }} />
@@ -228,9 +224,21 @@ export function InviteCard({ m, me, crew, stored, role, gate, isHolder, busy, on
             </View>
           )}
           {isHolder && me === m.account && i.proposalId === undefined && !failed && <Btn title={busy === 'file-invite' ? 'Filing…' : 'Put the invite to a vote'} tone="plum" busy={busy === 'file-invite'} onPress={onFile} />}
-          {m.txs.length > 0 && <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 4 }}>{m.txs.map(x => <TxLink key={x.hash + x.label} hash={x.hash} label={x.label} />)}</View>}
+          {m.txs.length > 0 && <TxList txs={m.txs} />}
         </View>
       </View>
     </Animated.View>
+  );
+}
+
+/** A card's NearBlocks links: the newest three, and a count of the rest (every one is on the explorer). */
+function TxList({ txs, rename }: { txs: ChatMessage['txs']; rename?: (t: ChatMessage['txs'][number]) => string }) {
+  const uniq = txs.filter((x, i, a) => a.findIndex(y => y.hash === x.hash) === i);
+  const shown = uniq.slice(-3);
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 4, alignItems: 'center' }}>
+      {uniq.length > 3 && <Text style={{ fontSize: 11.5, color: C.ink3 }}>+{uniq.length - 3} earlier txs ·</Text>}
+      {shown.map(x => <TxLink key={x.hash + x.label} hash={x.hash} label={rename ? rename(x) : x.label} />)}
+    </View>
   );
 }

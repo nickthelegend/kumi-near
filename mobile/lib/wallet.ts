@@ -1,5 +1,8 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as ExpoCrypto from 'expo-crypto';
+import { ed25519 } from '@noble/curves/ed25519';
+import { baseEncode } from '@near-js/utils';
 import { KeyPair } from '@kumi/sdk';
 
 /**
@@ -41,10 +44,19 @@ export async function loadWallet(): Promise<{ publicKey: string | null; account:
 export async function createKey(): Promise<string> {
   if (!cached) {
     const s = await get(KEY);
-    cached = s ? KeyPair.fromString(s as `ed25519:${string}`) : KeyPair.fromRandom('ed25519');
+    cached = s ? KeyPair.fromString(s as `ed25519:${string}`) : freshKey();
     if (!s) await set(KEY, cached.toString());
   }
   return cached.getPublicKey().toString();
+}
+
+/** 32 bytes from the OS CSPRNG (expo-crypto), expanded to NEAR's ed25519 secret format (seed || public key). */
+function freshKey(): KeyPair {
+  const seed = ExpoCrypto.getRandomBytes(32);
+  const pub = ed25519.getPublicKey(seed);
+  const sk = new Uint8Array(64);
+  sk.set(seed); sk.set(pub, 32);
+  return KeyPair.fromString(`ed25519:${baseEncode(sk)}` as `ed25519:${string}`);
 }
 
 export async function saveAccount(a: Account) { await set(ACCOUNT, JSON.stringify(a)); }
