@@ -20,7 +20,7 @@ export default function Invite() {
   const me = account?.accountId ?? '';
   const link = `kumi://invite/${Number(crew) || 0}/${me}`;
   return (
-    <Screen>
+    <Screen modal>
       <SheetHeader title="Your join code" sub={name ? `Show it to a ${name} member` : 'Show it to a crew member'} />
       <Card pad={18}>
         <View style={{ alignItems: 'center', gap: 14 }}>

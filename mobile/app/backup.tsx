@@ -13,7 +13,7 @@ export default function Backup() {
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   return (
-    <Screen>
+    <Screen modal>
       <SheetHeader title="Back up your key" sub="Anyone with this key controls your NEAR account." />
       <Card pad={16}>
         <View style={{ gap: 12 }}>

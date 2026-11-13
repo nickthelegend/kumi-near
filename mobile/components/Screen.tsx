@@ -13,15 +13,17 @@ export function Backdrop() {
   return <LinearGradient colors={['#ffe3a3', '#fff0cf', C.cream]} locations={[0, 0.3, 0.7]} style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 760 }} pointerEvents="none" />;
 }
 
-export function Screen({ children, scroll = true, tabs, pad = 16, style }: { children: ReactNode; scroll?: boolean; tabs?: boolean; pad?: number; style?: StyleProp<ViewStyle> }) {
+export function Screen({ children, scroll = true, tabs, modal, pad = 16, style }: { children: ReactNode; scroll?: boolean; tabs?: boolean; modal?: boolean; pad?: number; style?: StyleProp<ViewStyle> }) {
   const insets = useSafeAreaInsets();
-  const body = { paddingTop: insets.top + 8, paddingHorizontal: pad, paddingBottom: (tabs ? TAB_SPACE : 24) + insets.bottom, gap: 16 };
+  // An iOS page sheet already sits below the status bar: no inset (it left a tall empty band above the title).
+  const top = modal ? 22 : insets.top + 8;
+  const body = { paddingTop: top, paddingHorizontal: pad, paddingBottom: (tabs ? TAB_SPACE : 24) + insets.bottom, gap: 16 };
   return (
     <View style={{ flex: 1, backgroundColor: C.cream }}>
       <Backdrop />
       {scroll ? <ScrollView contentContainerStyle={[body, style]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>{children}</ScrollView> : <View style={[{ flex: 1 }, body, style]}>{children}</View>}
       {/* Status-bar scrim: scrolled content never runs under the clock or the Dynamic Island (same cream as the chat header). */}
-      {insets.top > 0 && <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: insets.top, backgroundColor: 'rgba(255,240,207,0.96)' }} />}
+      {!modal && insets.top > 0 && <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: insets.top, backgroundColor: 'rgba(255,240,207,0.96)' }} />}
     </View>
   );
 }
@@ -32,7 +34,7 @@ export function SheetHeader({ title, sub, back }: { title: string; sub?: string;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: '800', fontSize: 24, color: C.ink, letterSpacing: -0.3 }}>{title}</Text>
+        <Text style={{ fontWeight: '800', fontSize: 26, color: C.ink, letterSpacing: -0.4 }}>{title}</Text>
         {sub ? <Text style={{ fontSize: 14, color: C.ink2, marginTop: 2 }}>{sub}</Text> : null}
       </View>
       <Pressable accessibilityRole="button" accessibilityLabel={back ? 'Back' : 'Close'} onPress={() => { tap(); router.canGoBack() ? router.back() : router.replace('/'); }} hitSlop={10}

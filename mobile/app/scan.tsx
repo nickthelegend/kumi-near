@@ -33,7 +33,7 @@ export default function Scan() {
     } catch (e) { setErr(`Could not read that photo: ${(e as Error).message}`); }
   };
   return (
-    <Screen>
+    <Screen modal>
       <SheetHeader title="Scan a join code" sub="Vote a friend into your crew: scan their code, a photo of it, or paste it" />
       <Card pad={10}>
         {IS_WEB ? <View style={{ height: 220, borderRadius: 20, backgroundColor: C.plum, alignItems: 'center', justifyContent: 'center', padding: 20 }}><Text style={{ color: '#fff', textAlign: 'center', fontSize: 14.5 }}>The camera scanner runs on the phone. In the web preview, paste the link below.</Text></View>

@@ -28,7 +28,7 @@ export default function Fund() {
   const d = live.data;
 
   if (!d) return (
-    <Screen><SheetHeader title="Crew fund" sub="Reading NEAR testnet…" />
+    <Screen modal><SheetHeader title="Crew fund" sub="Reading NEAR testnet…" />
       {live.error ? <Card pad={6}><Empty scene={art.scene.offline} alt="A worried penguin holding an unplugged cable" title="Can't reach NEAR testnet" body={live.error} action={<Btn title="Try again" tone="plum" size="sm" onPress={live.reload} />} /></Card> : <Skeleton rows={4} height={90} />}
     </Screen>
   );
@@ -51,7 +51,7 @@ export default function Fund() {
   const yocto = (() => { try { return parseNear(amount); } catch { return 0n; } })();
 
   return (
-    <Screen>
+    <Screen modal>
       <SheetHeader title={crew.name} sub="The crew's fund, read from NEAR testnet" />
 
       <View style={{ borderRadius: 28, backgroundColor: C.plumEdge, paddingBottom: 7 }}>
