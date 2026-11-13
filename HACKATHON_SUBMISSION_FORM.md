@@ -31,4 +31,4 @@ The human posts this (209 characters; limit 280):
 pooling money with friends shouldn't mean handing one person the keys. kumi puts trade votes in a Sputnik DAO, with exits and on-chain receipts. built at NEAR HACKATHON on testnet. @NEARProtocol #NEARHackathon
 ```
 
-attach: kumi-near-film-share.mp4 (2:24, 720p, 5.6 MB: the Kumi iOS app on the iOS Simulator, recorded live on NEAR testnet; opens on a crew vote passing and the trade executing from the phone).
+attach: kumi-near-film-share.mp4 (2:26, 720p, 6.4 MB: the Kumi iOS app on the iOS Simulator, recorded live on NEAR testnet; opens on a crew vote passing and the trade executing from the phone).
