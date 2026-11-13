@@ -70,7 +70,7 @@ export default function Chats() {
                   <Text numberOfLines={1} style={{ fontWeight: '800', fontSize: 17, color: C.ink, flexShrink: 1 }}>{r.c.name}</Text>
                   <Chip text={isHolder(r.c, me) ? 'member' : 'invited'} tone={isHolder(r.c, me) ? 'plum' : 'mint'} style={{ height: 20, paddingHorizontal: 7 }} textStyle={{ fontSize: 10.5 }} />
                 </View>
-                <Text numberOfLines={1} style={{ fontSize: 13.5, color: r.unread ? C.ink : C.ink2, fontWeight: r.unread ? '600' : '400', marginTop: 1 }}>{r.last ? `${nameOf(r.last.account, me)}: ${r.last.kind === 'trade' ? `pitched ${r.last.trade?.side} ${r.last.trade?.asset} ${(r.last.trade?.bps ?? 0) / 100}%` : r.last.kind === 'invite' ? `invited ${nameOf(r.last.invite?.accountId, me)}` : r.last.text}` : 'No messages yet'}</Text>
+                <Text numberOfLines={1} style={{ fontSize: 13.5, color: r.unread ? C.ink : C.ink2, fontWeight: r.unread ? '600' : '400', marginTop: 1 }}>{r.last ? `${nameOf(r.last.account, me)}: ${r.last.kind === 'trade' ? `pitched ${r.last.trade?.side} ${r.last.trade?.asset} ${(r.last.trade?.bps ?? 0) / 100}%` : r.last.kind === 'invite' ? `invited ${r.last.invite?.accountId === me ? 'you' : nameOf(r.last.invite?.accountId, me)}` : r.last.text}` : 'No messages yet'}</Text>
               </View>
               <View style={{ alignItems: 'flex-end', gap: 5 }}>
                 <Text style={{ fontFamily: F.mono, fontSize: 11, color: C.ink3 }}>{r.last ? ago(r.last.ts / 1000) : ''}</Text>
@@ -114,7 +114,7 @@ export default function Chats() {
               <View key={`${c.id}-${r.seq}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderColor: C.line }}>
                 <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: TONE[tone].base, alignItems: 'center', justifyContent: 'center' }}><Ic name={icon} size={15} color={C.plum2} /></View>
                 <View style={{ flex: 1 }}>
-                  <Text numberOfLines={1} style={{ fontSize: 14, color: C.ink }}><Text style={{ fontWeight: '800' }}>{r.kind.includes('trade') ? c.name : nameOf(r.account_id, me)}</Text> {label}</Text>
+                  <Text numberOfLines={1} style={{ fontSize: 14, color: C.ink }}><Text style={{ fontWeight: '800' }}>{r.kind.includes('trade') ? c.name : nameOf(r.account_id, me)}</Text> {r.account_id === me ? label.replace('their', 'your') : label}</Text>
                   <Text style={{ fontSize: 11.5, color: C.ink3 }}>{r.asset ? `${r.asset} · ` : ''}{near(BigInt(r.near_in) > 0n ? r.near_in : r.near_out, 4)} NEAR · {ago(Number(BigInt(r.at) / 1_000_000_000n))} ago</Text>
                 </View>
                 {r.asset ? <TokenLogo sym={r.asset} size={24} test /> : <TokenLogo sym="NEAR" size={24} />}

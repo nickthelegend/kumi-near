@@ -98,7 +98,7 @@ export default function ChatRoom() {
     if (m.kind === 'system') {
       const t = m.text;
       const hash = m.txs[0]?.hash;
-      if (/ragequit/.test(t)) return <EventPill who={m.account} me={me} tone="pink" icon="exit" text="left with their exact share" hash={hash} />;
+      if (/ragequit/.test(t)) return <EventPill who={m.account} me={me} tone="pink" icon="exit" text={m.account === me ? 'left with your exact share' : 'left with their exact share'} hash={hash} />;
       if (/joined/.test(t)) return <EventPill who={m.account} me={me} tone="butter" icon="coin" text="chipped in and got shares" hash={hash} />;
       if (/invited/.test(t)) return <EventPill who={m.account} me={me} tone="mint" icon="plus" text={m.account === me ? 'were voted into the crew' : 'was voted into the crew'} hash={hash} />;
       if (/follow/.test(t)) return <EventPill who={m.account} me={me} tone="mint" icon="star" text="started following the crew" hash={hash} />;
