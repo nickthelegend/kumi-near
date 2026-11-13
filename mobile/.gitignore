@@ -8,3 +8,4 @@ android/
 dist-check/
 .tmp/
 build/
+build-out/
