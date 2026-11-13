@@ -77,22 +77,6 @@ export default function Fund() {
         </View></Card>
       )}
 
-      {allowed && !leaving && (
-        <Card pad={16}>
-          <View style={{ gap: 12 }}>
-            <View style={st.row}><Obj name="coins" size={52} /><View style={{ flex: 1 }}><Text style={st.h2}>{holder ? 'Add to your stake' : 'Chip in'}</Text><Text style={{ fontSize: 13.5, color: C.ink2 }}>Shares are minted at today's fund value. Your wallet: {bal.data !== undefined ? `${near(bal.data, 4)} NEAR` : '…'}</Text></View></View>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {['0.02', '0.05', '0.1'].map(a => <Pressable key={a} onPress={() => { tap(); setAmount(a); }} style={{ flex: 1, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: amount === a ? C.butter : '#fff', borderWidth: 2, borderColor: amount === a ? C.butterEdge : C.edge }}><Text style={{ fontFamily: F.monoBold, fontSize: 14, color: C.ink }}>{a}</Text></Pressable>)}
-            </View>
-            <TextInput testID="chip-amount" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" style={inp} />
-            {act.error && <Notice error>{act.error}</Notice>}
-            <Btn testID="confirm-chip" title={act.busy ? `${act.busy}…` : `Chip in ${amount} NEAR`} tone="butter" size="lg" icon="coin" busy={!!act.busy} disabled={yocto <= 0n}
-              onPress={() => act.run('Signing on this phone', async () => { const r = await chipIn(account!, crewId, yocto); const txs = [{ hash: r.hash, label: `Chip in ${amount} NEAR` }]; record(txs); setDone({ title: 'You chipped in', txs }); live.reload(); bal.reload(); })} />
-            {chip === '1' && !holder && <Text style={{ fontSize: 12.5, color: C.ink3, textAlign: 'center' }}>Minimum 0.01 NEAR. Kumi's relayer pays the gas.</Text>}
-          </View>
-        </Card>
-      )}
-
       {holder && (
         <Card pad={16}>
           <View style={{ gap: 10 }}>
@@ -114,6 +98,22 @@ export default function Fund() {
                 <Btn title="Stay" tone="ghost" onPress={() => setLeaving(false)} />
               </View>
             )}
+          </View>
+        </Card>
+      )}
+
+      {allowed && !leaving && (
+        <Card pad={16}>
+          <View style={{ gap: 12 }}>
+            <View style={st.row}><Obj name="coins" size={52} /><View style={{ flex: 1 }}><Text style={st.h2}>{holder ? 'Add to your stake' : 'Chip in'}</Text><Text style={{ fontSize: 13.5, color: C.ink2 }}>Shares are minted at today's fund value. Your wallet: {bal.data !== undefined ? `${near(bal.data, 4)} NEAR` : '…'}</Text></View></View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {['0.02', '0.05', '0.1'].map(a => <Pressable key={a} onPress={() => { tap(); setAmount(a); }} style={{ flex: 1, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: amount === a ? C.butter : '#fff', borderWidth: 2, borderColor: amount === a ? C.butterEdge : C.edge }}><Text style={{ fontFamily: F.monoBold, fontSize: 14, color: C.ink }}>{a}</Text></Pressable>)}
+            </View>
+            <TextInput testID="chip-amount" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" style={inp} />
+            {act.error && <Notice error>{act.error}</Notice>}
+            <Btn testID="confirm-chip" title={act.busy ? `${act.busy}…` : `Chip in ${amount} NEAR`} tone="butter" size="lg" icon="coin" busy={!!act.busy} disabled={yocto <= 0n}
+              onPress={() => act.run('Signing on this phone', async () => { const r = await chipIn(account!, crewId, yocto); const txs = [{ hash: r.hash, label: `Chip in ${amount} NEAR` }]; record(txs); setDone({ title: 'You chipped in', txs }); live.reload(); bal.reload(); })} />
+            {chip === '1' && !holder && <Text style={{ fontSize: 12.5, color: C.ink3, textAlign: 'center' }}>Minimum 0.01 NEAR, paid from your own account.</Text>}
           </View>
         </Card>
       )}
@@ -155,9 +155,9 @@ export default function Fund() {
         <View style={{ gap: 10 }}>
           <View style={st.row}><Obj name="rocket" size={48} /><View style={{ flex: 1 }}><Text style={st.h2}>Follower vault</Text><Text style={{ fontSize: 13, color: C.ink2 }}>Anyone can mirror the crew. Every trade fills the vault in the same swap; a {crew.vault_fee_bps / 100}% fee above the high-water mark goes to the crew.</Text></View></View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Stat k="Vault value" v={`${near(vaultNav(crew, marks), 4)} NEAR`} />
+            <Stat k="Vault (NEAR)" v={near(vaultNav(crew, marks), 4)} />
             <Stat k="Followers" v={String(crew.followers.length)} />
-            <Stat k="Fees paid" v={`${near(crew.vault_fees_paid, 4)}`} />
+            <Stat k="Fees (NEAR)" v={near(crew.vault_fees_paid, 4)} />
           </View>
           {account && !holder && <Btn title="Follow with 0.02 NEAR" tone="mint" icon="plus" busy={act.busy === 'Following'} onPress={() => act.run('Following', async () => { const r = await follow(account, crewId, parseNear('0.02')); const txs = [{ hash: r.hash, label: 'Follow 0.02 NEAR' }]; record(txs); setDone({ title: 'Following the crew', txs }); live.reload(); })} />}
         </View>

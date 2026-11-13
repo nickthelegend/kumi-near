@@ -9,7 +9,7 @@ import { actionCreators, buildDelegateAction, encodeSignedDelegate, signDelegate
 import { checkDelegate } from '../src/relayer.js';
 
 const ev = JSON.parse(readFileSync(resolve(import.meta.dirname, '../../../deployments/testnet-2026-11-09.json'), 'utf8'));
-const ctx = { relayerId: ev.accounts.root as string, hub: ev.accounts.hub as string, rpc: 'https://test.rpc.fastnear.com' };
+const ctx = { relayerId: ev.accounts.root as string, hub: ev.accounts.hub as string, rpc: process.env.NEAR_RPC_URL ?? "https://test.rpc.fastnear.com" };
 const kp = KeyPair.fromRandom('ed25519');
 
 async function signed(senderId: string, receiverId: string, methodName: string, args: object, deposit = 0n, gas = 100n * 10n ** 12n) {
@@ -21,15 +21,16 @@ async function signed(senderId: string, receiverId: string, methodName: string, 
 const player = `mika.${ctx.relayerId}`;
 
 describe('relayer allow-list', () => {
-  it('relays a player join and a crew-DAO vote', async () => {
-    expect((await checkDelegate(await signed(player, ctx.hub, 'join', { crew_id: 0 }, 10n ** 22n), ctx)).ok).toBe(true);
+  it('relays a crew-DAO vote but never a player deposit (the relayer would pay it)', async () => {
+    const r = await checkDelegate(await signed(player, ctx.hub, 'join', { crew_id: 0 }, 10n ** 22n), ctx);
+    expect(r.ok ? 'ok' : r.reason).toMatch(/sent by the player directly/);
     expect((await checkDelegate(await signed(player, ev.accounts.dao, 'act_proposal', { id: 0, action: 'VoteApprove' }), ctx)).ok).toBe(true);
   }, 30_000);
   it('refuses outsiders, foreign contracts, big deposits and dangerous DAO actions', async () => {
     const reason = async (b64: Promise<string>) => { const r = await checkDelegate(await b64, ctx); return r.ok ? 'ok' : r.reason; };
     expect(await reason(signed('someone.testnet', ctx.hub, 'join', { crew_id: 0 }))).toMatch(/Only Kumi player accounts/);
     expect(await reason(signed(player, 'wrap.testnet', 'near_deposit', {}))).toMatch(/not a Kumi contract/);
-    expect(await reason(signed(player, ctx.hub, 'join', { crew_id: 0 }, 2n * 10n ** 24n))).toMatch(/cap/);
+    expect(await reason(signed(player, ctx.hub, 'join', { crew_id: 0 }, 2n * 10n ** 24n))).toMatch(/sent by the player directly/);
     expect(await reason(signed(player, ctx.hub, 'add_asset', {}))).toMatch(/not relayed/);
     expect(await reason(signed(player, ev.accounts.dao, 'act_proposal', { id: 0, action: 'RemoveProposal' }))).toMatch(/approve and reject/);
     expect(await reason(signed(player, ev.accounts.dao, 'add_proposal', { proposal: { kind: { Transfer: { receiver_id: player, amount: '1' } } } }))).toMatch(/captain and crew invite/);

@@ -62,7 +62,7 @@ export default function Wallet() {
               <Text style={{ fontFamily: F.displayBold, fontSize: 18, color: C.butter, marginBottom: 7 }}>NEAR</Text>
             </View>
           )}
-          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)' }}>Kumi's relayer pays every gas fee (NEP-366). This NEAR is only for chipping in.</Text>
+          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)' }}>Votes, pitches and chat are gas-free (Kumi relays them, NEP-366). Chipping in spends this NEAR.</Text>
         </LinearGradient>
       </View>
 

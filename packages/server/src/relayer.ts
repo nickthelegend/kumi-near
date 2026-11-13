@@ -7,7 +7,6 @@ import { decodeDelegate, describeDelegate, kumiEvents, listCrews, getAssets, rpc
 import { PublicKey } from '@near-js/crypto';
 
 export const ONE_NEAR = 10n ** 24n;
-const MAX_DEPOSIT = ONE_NEAR; // per relayed call, except create_crew
 const DAO_DEPOSIT_CAP = 6n * ONE_NEAR;
 
 export type RelayerConfig = { accountId: string; credentialsFile: string; hub: string; rpc?: string; networkId?: string; readRpc?: string };
@@ -76,7 +75,7 @@ export class Relayer {
   async balance(): Promise<bigint> { return BigInt((await this.account.state()).amount); }
 
   /**
-   * Signs a transaction from the relayer, broadcasts it without waiting (broadcast_tx_async), then polls for FINAL on
+   * Signs a transaction from the relayer, broadcasts it without waiting (send_tx, wait_until INCLUDED: an invalid transaction fails here), then polls for FINAL on
    * the read provider and the public fallbacks. A rate-limited or slow provider can delay the receipt but never makes
    * the relayer resend a different transaction for the same signed delegate.
    */
@@ -87,7 +86,7 @@ export class Relayer {
     const urls = [...new Set([this.readRpc, this.rpc, TESTNET_RPC, ...TESTNET_RPC_FALLBACKS])];
     let sent = false;
     for (const u of urls) {
-      try { await rpcCall('broadcast_tx_async', [encoded], u); sent = true; break; } catch { /* next provider */ }
+      try { await rpcCall('send_tx', { signed_tx_base64: encoded, wait_until: 'INCLUDED' }, u); sent = true; break; } catch { /* next provider */ }
     }
     if (!sent) throw new Error(`Could not broadcast ${hash}: every NEAR testnet RPC refused it`);
     const until = Date.now() + 120_000;
@@ -116,7 +115,10 @@ export async function checkDelegate(b64: string, ctx: { relayerId: string; hub: 
   for (const c of summary.calls) {
     if (summary.receiverId === ctx.hub) {
       if (!['join', 'propose_invite', 'propose_trade', 'ragequit', 'follow', 'unfollow', 'claim_token', 'crystallize_fee', 'create_crew'].includes(c.methodName)) return { ok: false, reason: `hub.${c.methodName} is not relayed` };
-      if (c.deposit > (c.methodName === 'create_crew' ? DAO_DEPOSIT_CAP : MAX_DEPOSIT)) return { ok: false, reason: 'Deposit above the relayer cap' };
+      // A delegate's attached NEAR is paid by the relayer, so player money (chip in, follow) is never relayed: the
+      // player's own account sends it as a normal transaction.
+      if (c.methodName !== 'create_crew' && c.deposit > 0n) return { ok: false, reason: 'Attached NEAR is sent by the player directly, not relayed' };
+      if (c.deposit > DAO_DEPOSIT_CAP) return { ok: false, reason: 'Deposit above the relayer cap' };
     } else if (daos.has(summary.receiverId)) {
       if (c.methodName === 'act_proposal') {
         const action = (c.args as { action?: string })?.action;
@@ -134,7 +136,8 @@ export async function checkDelegate(b64: string, ctx: { relayerId: string; hub: 
       } else return { ok: false, reason: `DAO method ${c.methodName} is not relayed` };
       if (c.deposit > 0n) return { ok: false, reason: 'DAO calls carry no deposit' };
     } else if (tokens.has(summary.receiverId)) {
-      if (c.methodName !== 'storage_deposit' || c.deposit > ONE_NEAR / 100n) return { ok: false, reason: 'Only token storage registration is relayed' };
+      if (c.methodName !== 'storage_deposit') return { ok: false, reason: 'Only token storage registration is relayed' };
+      if (c.deposit > 0n) return { ok: false, reason: 'Attached NEAR is sent by the player directly, not relayed' };
     } else return { ok: false, reason: `Receiver ${summary.receiverId} is not a Kumi contract` };
     if (c.gas > 300n * 10n ** 12n) return { ok: false, reason: 'Gas above 300 Tgas' };
   }

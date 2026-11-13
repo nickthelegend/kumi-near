@@ -2,9 +2,9 @@
 // wraps it in a transaction and pays the gas, so players never hold NEAR for gas or see a wallet.
 import { Buffer } from 'buffer';
 import { KeyPair, PublicKey } from '@near-js/crypto';
-import { actionCreators, buildDelegateAction, encodeSignedDelegate, signDelegateAction, SCHEMA, type SignedDelegate } from '@near-js/transactions';
+import { actionCreators, buildDelegateAction, createTransaction, encodeSignedDelegate, encodeTransaction, signDelegateAction, Signature, SignedTransaction, SCHEMA, type SignedDelegate } from '@near-js/transactions';
 import { deserialize } from 'borsh';
-import { latestBlock, rpcUrl, viewAccessKey } from './chain.js';
+import { latestBlock, rpc, rpcUrl, viewAccessKey, type TxStatus } from './chain.js';
 
 export const TGAS = 10n ** 12n;
 
@@ -33,6 +33,44 @@ export async function signDelegate(opts: { senderId: string; keyPair: KeyPair; r
     sign: async (message: Uint8Array) => opts.keyPair.sign(new Uint8Array(await globalThis.crypto.subtle.digest("SHA-256", message as Uint8Array<ArrayBuffer>))).signature,
   } });
   return Buffer.from(encodeSignedDelegate(signedDelegateAction)).toString('base64');
+}
+
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function b58(bytes: Uint8Array): string {
+  let n = 0n; for (const b of bytes) n = n * 256n + BigInt(b);
+  let out = ''; while (n > 0n) { out = B58[Number(n % 58n)] + out; n /= 58n; }
+  for (const b of bytes) { if (b) break; out = '1' + out; }
+  return out;
+}
+function unb58(text: string): Uint8Array {
+  let n = 0n; for (const c of text) { const i = B58.indexOf(c); if (i < 0) throw new Error('bad base58'); n = n * 58n + BigInt(i); }
+  const out: number[] = []; while (n > 0n) { out.unshift(Number(n % 256n)); n /= 256n; }
+  for (const c of text) { if (c !== '1') break; out.unshift(0); }
+  return new Uint8Array(out);
+}
+
+/**
+ * A transaction the player signs and pays for directly (attached NEAR comes from the player's own account; NEP-366
+ * would make the relayer pay attached deposits). Sent with send_tx (wait_until INCLUDED, so an invalid transaction fails loudly), then polled to FINAL. Returns the final status.
+ */
+export async function sendDirect(opts: { senderId: string; keyPair: KeyPair; receiverId: string; calls: CallSpec[]; rpc?: string }): Promise<TxStatus> {
+  const url = opts.rpc ?? rpcUrl();
+  const publicKey = opts.keyPair.getPublicKey();
+  const [key, block] = await Promise.all([viewAccessKey(opts.senderId, publicKey.toString(), url), latestBlock(url)]);
+  const actions = opts.calls.map(c => actionCreators.functionCall(c.methodName, Buffer.from(JSON.stringify(c.args)), c.gas ?? 100n * TGAS, c.deposit ?? 0n));
+  const tx = createTransaction(opts.senderId, publicKey, opts.receiverId, nextNonce(publicKey.toString(), BigInt(key.nonce)), actions, unb58(block.hash));
+  const digest = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', encodeTransaction(tx) as Uint8Array<ArrayBuffer>));
+  const signed = new SignedTransaction({ transaction: tx, signature: new Signature({ keyType: publicKey.keyType, data: opts.keyPair.sign(digest).signature }) });
+  const hash = b58(digest);
+  await rpc('send_tx', { signed_tx_base64: Buffer.from(encodeTransaction(signed)).toString('base64'), wait_until: 'INCLUDED' }, url);
+  for (let i = 0; i < 80; i++) {
+    await new Promise(r => setTimeout(r, i ? 1200 : 1500));
+    try {
+      const st = await rpc<TxStatus & { final_execution_status?: string }>('EXPERIMENTAL_tx_status', { tx_hash: hash, sender_account_id: opts.senderId, wait_until: 'NONE' }, url);
+      if (st.final_execution_status === 'FINAL' && st.receipts_outcome?.length) return st;
+    } catch { /* not seen yet */ }
+  }
+  throw new Error(`Transaction ${hash} was sent but not final after 100 s; check it on NearBlocks`);
 }
 
 export function decodeDelegate(b64: string): SignedDelegate {

@@ -1,12 +1,21 @@
 // Player actions: each is a NEP-366 delegate signed here and relayed by the Kumi server.
 import { Account, Connection, InMemorySigner, keyStores } from 'near-api-js';
-import { storageBalance, TGAS, TESTNET_RPC, type TradeQuote } from '@kumi/sdk';
+import { sendDirect, storageBalance, txFailure, kumiEvents, TGAS, TESTNET_RPC, type TradeQuote } from '@kumi/sdk';
 import { api, type RelayResult } from '../lib/api';
-import { captainKey, delegate, type Session } from '../lib/session';
+import { captainKey, delegate, keyPair, type Session } from '../lib/session';
 
 export async function relay(s: Session, receiverId: string, methodName: string, args: Record<string, unknown>, deposit = 0n, link?: { crewId: number; messageId?: string; label?: string }) {
-  const d = await delegate(s, receiverId, [{ methodName, args, deposit, gas: (methodName === 'act_proposal' ? 190n : methodName === 'ragequit' || methodName === 'unfollow' ? 155n : 100n) * TGAS }]);
-  const r = await api<RelayResult>('/api/relay', { delegate: d, ...(link ?? {}) });
+  const gas = (methodName === 'act_proposal' ? 190n : methodName === 'ragequit' || methodName === 'unfollow' ? 155n : 100n) * TGAS;
+  let r: RelayResult;
+  if (deposit > 0n) {
+    // Attached NEAR comes from the player's own account (a relayed delegate would make Kumi's relayer pay it).
+    const tx = await sendDirect({ senderId: s.accountId, keyPair: keyPair(s), receiverId, calls: [{ methodName, args, deposit, gas }] });
+    r = link ? await api<RelayResult>('/api/link', { hash: tx.transaction.hash, sender: s.accountId, ...link })
+      : { hash: tx.transaction.hash, failure: txFailure(tx), events: kumiEvents(tx), value: null };
+  } else {
+    const d = await delegate(s, receiverId, [{ methodName, args, deposit, gas }]);
+    r = await api<RelayResult>('/api/relay', { delegate: d, ...(link ?? {}) });
+  }
   // A pool refusing a fill (ERR_SLIPPAGE) is handled by the hub, which restores holdings and
   // marks the trade failed; that is an outcome, not an error.
   const handled = r.events.some(e => e.event === 'trade_failed');

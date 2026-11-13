@@ -8,7 +8,7 @@ import { AppState } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import {
   computePnl, getAssets, getCrew, getInvites, getMarks, getPolicy, getProposal, getReceipts, getTrades, listCrews, setDefaultRpc,
-  signChat, signDelegate, storageBalance, txUrl, accountUrl, TESTNET_RPC, TGAS,
+  signChat, signDelegate, sendDirect, storageBalance, txFailure, kumiEvents, txUrl, accountUrl, TESTNET_RPC, TGAS,
   type Asset, type CallSpec, type Crew, type DaoPolicy, type Invite, type Mark, type Pnl, type Proposal, type Receipt, type Trade, type TradeQuote,
 } from '@kumi/sdk';
 import { keyPair, type Account } from './wallet';
@@ -86,6 +86,7 @@ export function useLive<T>(fn: () => Promise<T>, deps: unknown[], ms = 5000, ini
 /** One readable sentence for a NEAR, relayer or contract error (same wording as the web app). */
 export function readable(e: unknown): string {
   const m = String((e as Error)?.message ?? e);
+  if (/NotEnoughBalance/.test(m)) return 'Not enough NEAR in your account for this amount plus its gas. Try a smaller amount.';
   if (/429|rate-limit/i.test(m)) return 'NEAR testnet RPC is rate-limiting right now. Retrying shortly.';
   if (/timeout on the free plan|timed? ?out/i.test(m)) return 'NEAR took too long to confirm. The transaction may still land: the fund refreshes on its own.';
   if (/Network request failed|unreachable|fetch|aborted/i.test(m)) return 'NEAR testnet did not answer. Check the connection; retrying shortly.';
@@ -130,13 +131,23 @@ const REASONS: [RegExp, string][] = [
   [/NotEnoughBalance|lack_balance_for_state|insufficient/i, 'Your testnet account needs more NEAR for this action.'],
 ];
 
-/** Signs one call on this phone as a NEP-366 delegate and has the Kumi relayer send it. Fails loudly on a refusal. */
+/** Signs one call on this phone: a NEP-366 delegate the Kumi relayer sends (gas on Kumi), or, when it attaches NEAR, a
+ *  transaction the phone sends and pays for itself. Fails loudly on a refusal. */
 export async function relay(me: Account, receiverId: string, methodName: string, args: Record<string, unknown>, deposit = 0n,
   link?: { crewId: number; messageId?: string; label?: string }): Promise<RelayResult> {
   const gas = (methodName === 'act_proposal' ? 190n : methodName === 'ragequit' || methodName === 'unfollow' ? 155n : 100n) * TGAS;
   const calls: CallSpec[] = [{ methodName, args, deposit, gas }];
-  const delegate = await signDelegate({ senderId: me.accountId, keyPair: keyPair(), receiverId, calls });
-  const r = await api<RelayResult>('/api/relay', { delegate, ...(link ?? {}) });
+  let r: RelayResult;
+  if (deposit > 0n) {
+    // Attached NEAR (chip in, follow, token storage) comes from this phone's own account in a normal transaction:
+    // a relayed delegate would make Kumi's relayer pay it. The phone pays that one transaction's gas too.
+    const tx = await sendDirect({ senderId: me.accountId, keyPair: keyPair(), receiverId, calls }).catch(e => { throw Error(readable(e)); });
+    r = link ? await api<RelayResult>('/api/link', { hash: tx.transaction.hash, sender: me.accountId, ...link })
+      : { hash: tx.transaction.hash, failure: txFailure(tx), events: kumiEvents(tx), value: null };
+  } else {
+    const delegate = await signDelegate({ senderId: me.accountId, keyPair: keyPair(), receiverId, calls });
+    r = await api<RelayResult>('/api/relay', { delegate, ...(link ?? {}) });
+  }
   // A pool refusing a fill (ERR_SLIPPAGE) is handled by the hub, which restores holdings: an outcome, not an error.
   const handled = r.events.some(e => e.event === 'trade_failed');
   if (r.failure && !handled) {
@@ -169,9 +180,9 @@ async function registerPayout(me: Account, tokens: { token: string }[], step: (s
   const out: Sent[] = [];
   for (const t of tokens) {
     if (await storageBalance(t.token, me.accountId)) continue;
-    step(`Registering for ${t.token.split('.')[0]}`);
+    step(`Registering for t${t.token.split('.')[0].slice(1).toUpperCase()}`);
     const r = await relay(me, t.token, 'storage_deposit', {}, 1_250_000_000_000_000_000_000n);
-    out.push({ hash: r.hash, label: `Register ${t.token.split('.')[0]}` });
+    out.push({ hash: r.hash, label: `Storage for t${t.token.split('.')[0].slice(1).toUpperCase()} payout` });
   }
   return out;
 }
@@ -180,7 +191,7 @@ export async function ragequit(me: Account, crew: Crew, shares: bigint, assets: 
   const out = await registerPayout(me, assets.filter(a => crew.tokens.some(([s, v]) => s === a.symbol && BigInt(v) > 0n)), step);
   step('Leaving with your share');
   const r = await relay(me, HUB, 'ragequit', { crew_id: crew.id, shares: shares.toString() }, 0n, { crewId: crew.id, label: 'ragequit' });
-  return [...out, { hash: r.hash, label: 'Ragequit' }];
+  return [...out, { hash: r.hash, label: 'Left with my share' }];
 }
 
 export async function unfollow(me: Account, crew: Crew, shares: bigint, assets: Asset[], step: (s: string) => void = () => {}): Promise<Sent[]> {
@@ -273,6 +284,8 @@ export const near = (yocto: bigint | string, dp = 3) => {
 };
 export const units = (v: bigint | string, decimals: number, dp = 4) => {
   const n = Number(BigInt(v)) / 10 ** decimals;
+  // Dust below the shown precision reads as "<0.000001", never as 0.00.
+  if (n > 0 && n < 10 ** -dp) return `<${(10 ** -dp).toFixed(dp)}`;
   return n.toLocaleString('en-US', { maximumFractionDigits: dp, minimumFractionDigits: Math.min(dp, 2) });
 };
 /** NEAR per one whole token from a constant-product pool's reserves. */

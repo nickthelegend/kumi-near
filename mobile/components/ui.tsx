@@ -97,7 +97,7 @@ export function TokenLogo({ sym, size = 28, test }: { sym: string; size?: number
   return (
     <View accessibilityLabel={test ? `Test ${s}` : s} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: C.line }}>
       {svg ? <SvgXml xml={svg} width={size * 0.82} height={size * 0.82} /> : <Text style={{ fontSize: size * 0.32, fontWeight: '800', color: C.ink }}>{s.slice(0, 4)}</Text>}
-      {test && <View style={{ position: 'absolute', bottom: -4, right: -6, backgroundColor: C.butter, borderRadius: 6, paddingHorizontal: 3 }}><Text style={{ fontSize: 8, fontWeight: '800', color: C.plum2 }}>test</Text></View>}
+      {test && size >= 26 && <View style={{ position: 'absolute', bottom: -4, right: -6, backgroundColor: C.butter, borderRadius: 6, paddingHorizontal: 3 }}><Text style={{ fontSize: 8, fontWeight: '800', color: C.plum2 }}>test</Text></View>}
     </View>
   );
 }

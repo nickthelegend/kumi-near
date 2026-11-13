@@ -105,7 +105,7 @@ export function createApp(cfg: AppConfig) {
   // burst the public RPC (which rate-limits and then omits CORS headers).
   const rpcCache = new Map<string, { at: number; value: unknown }>();
   const inflight = new Map<string, Promise<unknown>>();
-  const RPC_METHODS = new Set(['query', 'block', 'EXPERIMENTAL_tx_status', 'tx', 'status', 'send_tx', 'broadcast_tx_commit']);
+  const RPC_METHODS = new Set(['query', 'block', 'EXPERIMENTAL_tx_status', 'tx', 'status', 'send_tx', 'broadcast_tx_commit', 'broadcast_tx_async']);
   async function proxyRpc(b: Record<string, unknown>) {
     const method = String(b.method ?? '');
     if (!RPC_METHODS.has(method)) throw new HttpError(403, `RPC method ${method} is not proxied`);
@@ -190,6 +190,17 @@ export function createApp(cfg: AppConfig) {
       });
       const crewId = b.crewId === undefined ? null : Number(b.crewId);
       if (crewId !== null && Number.isInteger(crewId)) await linkResult(crewId, String(b.messageId ?? ''), String(b.label ?? result.methods.join('+')), result);
+      return result;
+    },
+    /** Links a transaction a player signed and paid for directly (chip in, follow, token storage) to the chat. */
+    'POST /api/link': async (b) => {
+      const crewId = Number(b.crewId), hash = String(b.hash ?? ''), sender = String(b.sender ?? '');
+      if (!cfg.store.playerByAccount(sender)) throw new HttpError(403, 'Only Kumi player transactions are linked');
+      const tx = await txStatus(hash, sender, rpc);
+      if (tx.transaction.signer_id !== sender) throw new HttpError(400, 'Signer does not match');
+      const methods = ((tx.transaction as unknown as { actions?: { FunctionCall?: { method_name: string } }[] }).actions ?? []).map(a => a.FunctionCall?.method_name ?? 'other');
+      const result = { hash, sender, receiver: tx.transaction.receiver_id, methods, failure: txFailure(tx), events: kumiEvents(tx), value: null };
+      if (Number.isInteger(crewId) && tx.transaction.receiver_id === cfg.hub) await linkResult(crewId, String(b.messageId ?? ''), String(b.label ?? methods.join('+')), result);
       return result;
     },
     /** Records a captain trade the captain's browser sent with its function-call key. */
