@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+dist/
+*.log
+expo-env.d.ts
+ios/
+android/
+dist-check/
+.tmp/
+build/
