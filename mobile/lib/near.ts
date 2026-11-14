@@ -120,6 +120,31 @@ export type RelayResult = { hash: string; failure: string | null; events: { even
 
 // ---------------------------------------------------------------- signing
 export type Sent = { hash: string; label: string };
+
+/** What the player is about to sign: the Approve sheet shows it before the on-device key signs anything. */
+export type Approval = { title: string; gasFree: boolean; method: string; receiver: string; signer: string; rows: [string, string][]; deposit: bigint };
+let approver: ((a: Approval) => Promise<boolean>) | null = null;
+export const setApprover = (fn: typeof approver) => { approver = fn; };
+const nearAmt = (y: bigint) => `${(Number(y / 10n ** 21n) / 1000).toString()} NEAR`;
+function describe(me: Account, receiverId: string, methodName: string, args: Record<string, unknown>, deposit: bigint, gas: bigint): Approval {
+  const gasFree = deposit === 0n;
+  const a = args as Record<string, any>;
+  let title = 'Approve transaction'; let what: [string, string][] = [];
+  if (methodName === 'act_proposal') { title = 'Sign vote'; what = [['Action', `Vote ${a.action === 'VoteApprove' ? 'yes' : 'no'} on proposal #${a.id}`]]; }
+  else if (methodName === 'propose_trade') { title = 'Sign pitch'; what = [['Action', `Pitch: ${a.side} ${a.asset} ${(Number(a.bps) / 100).toString()}% of the pot`]]; }
+  else if (methodName === 'join') what = [['Action', `Chip in to crew #${a.crew_id}`]];
+  else if (methodName === 'follow') what = [['Action', `Follow crew #${a.crew_id}`]];
+  else if (methodName === 'ragequit') what = [['Action', `Leave crew #${a.crew_id} with your share`], ['Shares', String(a.shares)]];
+  else if (methodName === 'unfollow') what = [['Action', `Leave follower vault #${a.crew_id}`], ['Shares', String(a.shares)]];
+  else if (methodName === 'storage_deposit') what = [['Action', 'Register to receive this token']];
+  else what = [['Action', methodName]];
+  if (gasFree && (methodName === 'act_proposal' || methodName === 'propose_trade')) title += ' (Kumi pays the gas)';
+  return {
+    title, gasFree, method: methodName, receiver: receiverId, signer: me.accountId, deposit,
+    rows: [['Network', 'NEAR testnet'], ['Signer', handleOf(me.accountId)], ['Contract', receiverId], ['Method', methodName], ...what,
+      ['Attached', deposit > 0n ? nearAmt(deposit) : '0 NEAR'], ['Gas', gasFree ? `${Number(gas / TGAS)} Tgas, paid by Kumi (relayed)` : `${Number(gas / TGAS)} Tgas, paid by you`]],
+  };
+}
 const REASONS: [RegExp, string][] = [
   [/ERR_MIN_DEPOSIT/, 'The minimum deposit is 0.01 testnet NEAR.'],
   [/ERR_NOT_ALLOWED|ERR_NOT_INVITED/, 'This account is not invited to the crew yet. A shareholder majority has to vote you in first.'],
@@ -137,6 +162,7 @@ export async function relay(me: Account, receiverId: string, methodName: string,
   link?: { crewId: number; messageId?: string; label?: string }): Promise<RelayResult> {
   const gas = (methodName === 'act_proposal' ? 190n : methodName === 'ragequit' || methodName === 'unfollow' ? 155n : 100n) * TGAS;
   const calls: CallSpec[] = [{ methodName, args, deposit, gas }];
+  if (approver && !(await approver(describe(me, receiverId, methodName, args, deposit, gas)))) throw Error('You rejected this request. Nothing was signed.');
   let r: RelayResult;
   if (deposit > 0n) {
     // Attached NEAR (chip in, follow, token storage) comes from this phone's own account in a normal transaction:

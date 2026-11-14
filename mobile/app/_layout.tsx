@@ -10,6 +10,7 @@ import { Urbanist_400Regular, Urbanist_500Medium, Urbanist_600SemiBold, Urbanist
 import { AppProvider, useApp } from '../lib/store';
 import { C } from '../lib/theme';
 import { Brand } from '../components/ui';
+import { ApproveHost } from '../components/Approve';
 
 function Gate() {
   const { ready, account, onboarded } = useApp();
@@ -46,6 +47,7 @@ export default function Root() {
       <AppProvider>
         <StatusBar style="dark" />
         <Gate />
+        <ApproveHost />
       </AppProvider>
     </View>
   );
