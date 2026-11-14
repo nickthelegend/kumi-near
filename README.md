@@ -36,7 +36,7 @@ Testnet trades use Kumi's labelled tSOL/tBTC pools. NEAR Intents 1Click supplies
 
 ## Phone app (iOS, Expo)
 
-Kumi is also a native phone app: `mobile/` is an Expo Router app (React Native 0.88, Expo SDK 58) with the same screens, components and clay art as Kumi's Avalanche phone app, and NEAR as its only chain. The film (`kumi-near-film.mp4`) is this app on the iOS Simulator, recorded live on NEAR testnet.
+Kumi is also a native phone app: `mobile/` is an Expo Router app (React Native 0.88, Expo SDK 58) with the same screens, components and clay art as Kumi's Avalanche phone app, and NEAR as its only chain. The film (`kumi-near-film.mp4`, 4:40) opens on the web landing, downloads and installs this app on the iOS Simulator, and runs every feature live on NEAR testnet.
 
 | Screen | What it does on NEAR testnet |
 | --- | --- |
