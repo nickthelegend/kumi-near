@@ -3,6 +3,7 @@ import { EVIDENCE, HUB, readCrew, readHub, useAsync, type CrewState } from '../l
 import { Art, Avatar, CrewAvatar, Ic, Link, MiniEmpty, Notice, Obj, Sticker, Tx, shortName, type ObjName } from '../ui/bits';
 import { Spark } from '../ui/Fund';
 import { DaoGlyph, IntentsGlyph, NearMark, TokenLogo } from '../ui/logos';
+import { GetApp } from '../ui/GetApp';
 const OBJS: Record<string, [ObjName, string]> = { 'Sputnik DAO v2': ['vote', 'A ballot going into a ballot box'], 'Function-call keys': ['captain', "A captain's hat"], 'NEP-366 meta transactions': ['chat', 'A smiling chat bubble'], 'NEAR Intents (1Click)': ['rocket', 'A rocket taking off'], 'Sub-accounts': ['jar', 'A piggy fund jar'], 'NEP-245 + NEP-141': ['shield', 'A shield with a padlock'] };
 const MARKS: Record<string, React.ReactNode> = { 'Sputnik DAO v2': <DaoGlyph size={20} />, 'Function-call keys': <NearMark size={20} />, 'NEP-366 meta transactions': <NearMark size={20} />, 'NEAR Intents (1Click)': <span className="row" style={{ gap: 2 }}><IntentsGlyph size={20} /><TokenLogo sym="SOL" size={22} /><TokenLogo sym="BTC" size={22} /><TokenLogo sym="ETH" size={22} /><TokenLogo sym="USDC" size={22} /><TokenLogo sym="ZEC" size={22} /></span>, 'Sub-accounts': <NearMark size={20} />, 'NEP-245 + NEP-141': <span className="row" style={{ gap: 2 }}><TokenLogo sym="SOL" size={22} test /><TokenLogo sym="BTC" size={22} test /></span> };
 
@@ -39,8 +40,8 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
             <h1>Your group chat is a <em>fund.</em></h1>
             <p className="lead">Pool money with friends. Pitch a trade in chat with <code>/buy SOL 20%</code>. When the vote passes, it executes, and everyone's share stays exact and on-chain.</p>
             <div className="l-cta">
-              <Link to="/app" className="btn btn-primary btn-lg">Open Kumi <Ic name="arrow" /></Link>
-              <button className="btn btn-lg" onClick={onSignIn}>Join with email</button>
+              <a href="#app" className="btn btn-primary btn-lg"><Ic name="phone" />Get the iPhone app</a>
+              <Link to="/app" className="btn btn-lg">Open on the web <Ic name="arrow" /></Link>
             </div>
           </div>
           <div className="l-art">
@@ -63,6 +64,8 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
           </div>
         ))}
       </div>
+      <GetApp />
+
       {hub.error && <div className="l-sec" style={{ paddingTop: 16 }}><Notice error>Could not read the hub {HUB} from NEAR testnet: {hub.error}</Notice></div>}
 
       <section className="l-sec" id="how">

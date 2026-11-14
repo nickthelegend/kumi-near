@@ -416,6 +416,41 @@ img { display: block; max-width: 100%; }
 .footer { max-width: 1240px; margin: 0 auto; padding: 40px 24px 48px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-3); }
 .mini-crew .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 14px 0; }
 
+/* landing: get the iPhone app */
+.getapp-in { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 32px; align-items: center; border-radius: 36px; padding: 48px; background: radial-gradient(70% 90% at 100% 0%, rgba(255, 111, 89, .28), transparent 60%), radial-gradient(60% 70% at 0% 100%, rgba(61, 220, 151, .22), transparent 60%), var(--butter-soft); box-shadow: var(--shadow); overflow: hidden; }
+.getapp-copy h2 { margin: 8px 0 12px; font-size: clamp(34px, 4.4vw, 58px); font-weight: 800; letter-spacing: -.01em; line-height: 1; color: var(--plum); }
+.getapp-copy .lead { margin: 0 0 22px; font-size: 18px; line-height: 1.55; color: var(--ink-2); max-width: 40ch; }
+.getapp-steps { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 10px; }
+.getapp-steps li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 18px; background: rgba(255, 255, 255, .75); }
+.getapp-steps .n { flex: none; width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--plum); color: var(--butter); font-family: var(--mono); font-weight: 700; font-size: 13px; }
+.getapp-steps b { display: block; font-size: 16px; }
+.getapp-steps span { font-size: 14px; color: var(--ink-2); }
+.getapp-steps code, .getapp-dev code { font-family: var(--mono); font-size: 13px; background: var(--plum); color: #fff; padding: 3px 9px; border-radius: 8px; display: inline-block; margin-top: 4px; overflow-wrap: anywhere; }
+.getapp-dl { display: grid; gap: 10px; max-width: 460px; }
+.getapp-dl .btn { justify-self: start; }
+.getapp-dl .bar { height: 8px; border-radius: 999px; background: rgba(59, 31, 74, .1); overflow: hidden; }
+.getapp-dl .bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--coral), var(--butter)); transition: width .15s linear; }
+.getapp-dl.ok .bar i { background: var(--mint); }
+.getapp-dl .meta { font-size: 12.5px; color: var(--ink-2); overflow-wrap: anywhere; }
+.getapp-dl .okline { display: inline-flex; align-items: center; gap: 6px; color: var(--mint-ink); font-weight: 700; }
+.getapp-dl .badline, .getapp-dl.bad span { color: var(--pink-ink); }
+.getapp-dl.bad { padding: 14px; border-radius: 16px; background: var(--pink-soft); }
+.getapp-dev { margin: 18px 0 0; font-size: 14px; color: var(--ink-2); }
+.getapp-phones { position: relative; height: 560px; }
+.getapp-phones .phone { position: absolute; top: 50%; width: 220px; margin: 0; padding: 7px; border-radius: 38px; background: #1f0e29; box-shadow: 0 30px 60px -24px rgba(42, 20, 54, .65); }
+.getapp-phones .phone img { width: 100%; aspect-ratio: 1206 / 2622; object-fit: cover; border-radius: 31px; background: var(--cream); }
+.getapp-phones .p0 { left: 2%; transform: translateY(-50%) rotate(-7deg); }
+.getapp-phones .p1 { left: 50%; z-index: 2; transform: translate(-50%, -52%); width: 240px; }
+.getapp-phones .p2 { right: 2%; transform: translateY(-50%) rotate(7deg); }
+@media (max-width: 900px) {
+  .getapp-in { grid-template-columns: 1fr; padding: 28px 18px; border-radius: 28px; }
+  .getapp-phones { height: 380px; }
+  .getapp-phones .phone { width: 150px; padding: 5px; border-radius: 28px; }
+  .getapp-phones .phone img { border-radius: 23px; }
+  .getapp-phones .p1 { width: 164px; }
+  .getapp-phones .p0 { left: 0; } .getapp-phones .p2 { right: 0; }
+}
+
 /* =====================================================================
    CHUNKY: cute casual-game component language (3D edges, glossy pills, mascots)
    ===================================================================== */

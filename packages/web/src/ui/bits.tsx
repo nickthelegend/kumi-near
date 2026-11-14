@@ -122,6 +122,8 @@ export function TopNav({ path, onSignIn }: { path: string; onSignIn: () => void 
 const paths: Record<string, string> = {
   send: 'M4 12l16-8-6 16-2.5-6.5L4 12z',
   arrow: 'M5 12h14M13 6l6 6-6 6',
+  dl: 'M12 4v11M7 10l5 5 5-5M5 20h14',
+  phone: 'M8 2.5h8a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-15a2 2 0 0 1 2-2zM11 18h2',
   check: 'M5 12.5l4.5 4.5L19 7.5',
   x: 'M6 6l12 12M18 6L6 18',
   up: 'M7 17L17 7M9 7h8v8',
