@@ -1,0 +1,139 @@
+{
+ "network": "testnet",
+ "date": "2026-11-14",
+ "note": "Film v14 phone session: the standalone Kumi iOS Simulator build, installed from the landing's download, a new account rio, the whole crew flow live. mika, juno and qamwdiemgn are Kumi QA accounts acting through scripts/crew-act.ts.",
+ "accounts": {
+  "dao": "owls-mw1n.sputnikv2.testnet",
+  "relayer": "kumi-77b50457fb.testnet",
+  "hub": "hub.kumi-77b50457fb.testnet",
+  "phone": "rio.kumi-77b50457fb.testnet"
+ },
+ "transactions": [
+  {
+   "step": "phone_signup_rio",
+   "hash": "8u7UqEkfBC6CzztePjWsXkzL9vZkFtZW7V6no4AezGgM",
+   "signer": "kumi-77b50457fb.testnet",
+   "receiver": "rio.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/8u7UqEkfBC6CzztePjWsXkzL9vZkFtZW7V6no4AezGgM",
+   "note": "Kumi relayer creates rio.kumi-77b50457fb.testnet with the key made on the iOS Simulator (0.2 NEAR to chip in)"
+  },
+  {
+   "step": "invite_role_filed",
+   "hash": "Bys9f9H6MvdE2BkurQves1jxzegipuxNQR97pz4LN3Q",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "receiver": "owls-mw1n.sputnikv2.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/Bys9f9H6MvdE2BkurQves1jxzegipuxNQR97pz4LN3Q",
+   "note": "mika files the crew-role proposal for rio (relayed delegate)"
+  },
+  {
+   "step": "invite_gate_filed",
+   "hash": "2Mc7EqfWqFZd6yF6d4yyDnxpHceg71i1ZLimfihCPBqE",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "receiver": "hub.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/2Mc7EqfWqFZd6yF6d4yyDnxpHceg71i1ZLimfihCPBqE",
+   "note": "mika files the hub admission gate for rio (relayed delegate)"
+  },
+  {
+   "step": "invite_vote_mika_role",
+   "hash": "7H2afrdmSvCps2VhXW4tDcmaq6srYsj3N7vSLq4YH8Zh",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/7H2afrdmSvCps2VhXW4tDcmaq6srYsj3N7vSLq4YH8Zh",
+   "note": "yes on the role proposal"
+  },
+  {
+   "step": "invite_vote_mika_gate",
+   "hash": "2h4rfnWFgSo48ibkJfYnddrLwHrvGhmL3RMttr7K4cCG",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/2h4rfnWFgSo48ibkJfYnddrLwHrvGhmL3RMttr7K4cCG",
+   "note": "yes on the admission gate"
+  },
+  {
+   "step": "invite_vote_juno_role",
+   "hash": "GH2Ny2unqHJ61CtPnmweHheQyrhS3PcebY2naaLRQWmo",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/GH2Ny2unqHJ61CtPnmweHheQyrhS3PcebY2naaLRQWmo",
+   "note": "yes on the role proposal"
+  },
+  {
+   "step": "invite_vote_juno_gate",
+   "hash": "4PrGXmaZVjTZf3cxe5dFhDhLKsEdaTgELcsA6UxGAPvp",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/4PrGXmaZVjTZf3cxe5dFhDhLKsEdaTgELcsA6UxGAPvp",
+   "note": "yes on the admission gate"
+  },
+  {
+   "step": "invite_vote_qa_role",
+   "hash": "9h547hd51iMLJqxTManM6bD5fEby628y46nhhF7phUm2",
+   "signer": "qamwdiemgn.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/9h547hd51iMLJqxTManM6bD5fEby628y46nhhF7phUm2",
+   "note": "yes on the role proposal (majority)"
+  },
+  {
+   "step": "invite_vote_qa_gate",
+   "hash": "Ct76nvXKrj6wVg6HL3Syo8TRfSLCWH9Pef8RQQGmpawu",
+   "signer": "qamwdiemgn.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/Ct76nvXKrj6wVg6HL3Syo8TRfSLCWH9Pef8RQQGmpawu",
+   "note": "yes on the admission gate: member_added"
+  },
+  {
+   "step": "phone_chip_in_rio",
+   "hash": "FVoLjXXrmQtJCe5qNdr8yuvP1ToMq4r32v6LL6Xkvx6j",
+   "signer": "rio.kumi-77b50457fb.testnet",
+   "receiver": "hub.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/FVoLjXXrmQtJCe5qNdr8yuvP1ToMq4r32v6LL6Xkvx6j",
+   "note": "rio chips in 0.05 NEAR from its own account (join), approved on the phone"
+  },
+  {
+   "step": "phone_pitch_rio",
+   "hash": "HuYZVz6nfskfokeK63aw6qe5ej5zY3df4RKctvmtReAq",
+   "signer": "rio.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/HuYZVz6nfskfokeK63aw6qe5ej5zY3df4RKctvmtReAq",
+   "note": "rio's /buy SOL 10% filed to the DAO (gas-free delegate, Kumi relays)"
+  },
+  {
+   "step": "trade_vote_mika",
+   "hash": "7hTjM8E8TqA5qUSr2sLENYBU4SMuMUfbvXygEvpp257Y",
+   "signer": "mika.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/7hTjM8E8TqA5qUSr2sLENYBU4SMuMUfbvXygEvpp257Y",
+   "note": "mika votes yes"
+  },
+  {
+   "step": "trade_vote_juno",
+   "hash": "AKEiKdTPrsyxvZ8naqrNZS8yt8fzZJkq792Mxrmv2aPu",
+   "signer": "juno.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/AKEiKdTPrsyxvZ8naqrNZS8yt8fzZJkq792Mxrmv2aPu",
+   "note": "juno votes yes"
+  },
+  {
+   "step": "phone_deciding_vote_rio",
+   "hash": "8wTvuTXwrTixDietVC9eoaREZTa8EK6ayB2DQCvgy3i1",
+   "signer": "rio.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/8wTvuTXwrTixDietVC9eoaREZTa8EK6ayB2DQCvgy3i1",
+   "note": "rio's deciding vote (3 of 5) runs the trade in the same transaction (gas-free delegate)"
+  },
+  {
+   "step": "phone_storage_tsol_rio",
+   "hash": "85rDT7iE5bjFr3S5vh6wkvwA8pjyDFy3BYC4yQsJJ8aM",
+   "signer": "rio.kumi-77b50457fb.testnet",
+   "receiver": "tsol.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/85rDT7iE5bjFr3S5vh6wkvwA8pjyDFy3BYC4yQsJJ8aM",
+   "note": "rio registers to receive tSOL (storage_deposit, paid by rio)"
+  },
+  {
+   "step": "phone_storage_tbtc_rio",
+   "hash": "Ermu5gM1HpyNCqVkCenQGfa1A9oaoZCNeYFifv7Z2pHj",
+   "signer": "rio.kumi-77b50457fb.testnet",
+   "receiver": "tbtc.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/Ermu5gM1HpyNCqVkCenQGfa1A9oaoZCNeYFifv7Z2pHj",
+   "note": "rio registers to receive tBTC (storage_deposit, paid by rio)"
+  },
+  {
+   "step": "phone_ragequit_rio",
+   "hash": "7vUjVX2EX8VRBoCBDhNPmiym13k9yEQB33FCigHyLvgv",
+   "signer": "rio.kumi-77b50457fb.testnet",
+   "receiver": "hub.kumi-77b50457fb.testnet",
+   "explorer": "https://testnet.nearblocks.io/txns/7vUjVX2EX8VRBoCBDhNPmiym13k9yEQB33FCigHyLvgv",
+   "note": "rio leaves with its exact share (ragequit): NEAR, tSOL and tBTC paid to rio"
+  }
+ ]
+}
