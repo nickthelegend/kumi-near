@@ -64,8 +64,6 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
           </div>
         ))}
       </div>
-      <GetApp />
-
       {hub.error && <div className="l-sec" style={{ paddingTop: 16 }}><Notice error>Could not read the hub {HUB} from NEAR testnet: {hub.error}</Notice></div>}
 
       <section className="l-sec" id="how">
@@ -102,6 +100,8 @@ export function Landing({ onSignIn }: { onSignIn: () => void }) {
             <div className={`tech-item tone-${tone}`} key={h}><Obj name={OBJS[h][0]} size={48} alt={OBJS[h][1]} /><h4 className="row" style={{ gap: 8 }}>{MARKS[h]}{h}</h4><p>{p}</p></div>)}
         </div>
       </section>
+
+      <GetApp />
 
       <section className="cta-band">
         <div className="cta-in">
